@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Weather Station Flex Card — preview</title>
+    <style>
+      :root {
+        /* Approximation of Home Assistant's default dark theme. */
+        --primary-color: #03a9f4;
+        --text-primary-color: #fff;
+        --primary-text-color: #e1e1e1;
+        --secondary-text-color: #9b9b9b;
+        --divider-color: rgba(225, 225, 225, 0.12);
+        --card-background-color: #1c1c1c;
+        --secondary-background-color: #282828;
+        --state-icon-color: #44739e;
+        --ha-card-border-radius: 16px;
+        --ha-font-size-3xl: 28px;
+        --ha-font-size-2xl: 24px;
+        --ha-font-size-xl: 20px;
+        --ha-font-size-l: 16px;
+        --ha-font-size-m: 14px;
+        --ha-font-size-s: 12px;
+        --ha-line-height-condensed: 1.2;
+        --header-height: 56px;
+        font-family: Roboto, "Noto Sans", system-ui, sans-serif;
+        color: var(--primary-text-color);
+        background: #111;
+      }
+      :root.light {
+        --primary-text-color: #212121;
+        --secondary-text-color: #727272;
+        --divider-color: rgba(0, 0, 0, 0.12);
+        --card-background-color: #fff;
+        --secondary-background-color: #e5e5e5;
+        background: #fafafa;
+      }
+      body { margin: 0; }
+      header {
+        height: var(--header-height);
+        display: flex; align-items: center; gap: 16px; padding: 0 16px;
+        background: #101e24; color: #fff; font-size: 14px; box-sizing: border-box; flex-wrap: wrap;
+      }
+      header b { font-size: 16px; margin-right: auto; }
+      header label { display: flex; gap: 6px; align-items: center; }
+      select { font: inherit; }
+      main { padding: 8px; }
+      #frame { margin: 0 auto; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <b>Weather Station Flex Card — mockup</b>
+      <label>Layout <select data-param="layout"><option value="fullscreen">Full screen</option><option value="auto">Auto (normal card)</option></select></label>
+      <label>Width <select data-param="width"><option value="full">Desktop</option><option value="tablet">Tablet</option><option value="phone">Phone</option></select></label>
+      <label>Condition <select data-param="condition">
+        <option>partlycloudy</option><option>sunny</option><option>clear-night</option><option>cloudy</option>
+        <option>rainy</option><option>pouring</option><option>lightning-rainy</option><option>snowy</option><option>fog</option>
+      </select></label>
+      <label>Theme <select data-param="theme"><option value="dark">Dark</option><option value="light">Light</option></select></label>
+    </header>
+    <main><div id="frame"><weather-station-flex-card></weather-station-flex-card></div></main>
+    <script type="module" src="./build/main.js"></script>
+  </body>
+</html>
