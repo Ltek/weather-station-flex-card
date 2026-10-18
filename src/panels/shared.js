@@ -59,6 +59,25 @@ export const panelStyles = css`
   .note { color: var(--wsfc-muted); font-size: 13px; padding: 8px 0; }
 `;
 
+/** Panel-button chips (card top bar and heading panels). */
+export const chipStyles = css`
+    .chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      font: inherit; font-size: 13px; white-space: nowrap;
+      padding: 6px 12px; border-radius: 999px; cursor: pointer;
+      color: var(--secondary-text-color);
+      background: transparent;
+      border: 1px solid var(--divider-color, rgba(127, 127, 127, 0.35));
+      transition: background-color 0.15s, color 0.15s, border-color 0.15s;
+    }
+    .chip ha-icon { --mdc-icon-size: 18px; }
+    .chip ha-icon.open { --mdc-icon-size: 14px; opacity: 0.7; }
+    .chip.on { color: var(--text-primary-color, #fff); background: var(--primary-color); border-color: var(--primary-color); }
+    .chip.popup { color: var(--primary-text-color); }
+    .chip.popup.on { color: var(--text-primary-color, #fff); }
+    .chip:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 2px; }
+`;
+
 export const fmt = (v, digits = 0) =>
   v == null || Number.isNaN(v) ? "—" : Number(v).toLocaleString(undefined, { maximumFractionDigits: digits, minimumFractionDigits: digits });
 
@@ -71,10 +90,23 @@ export function seg(options, value, onPick, label) {
   </div>`;
 }
 
+/** Open Home Assistant's more-info dialog for an entity. */
+export function moreInfo(host, entityId) {
+  if (entityId) host.dispatchEvent(new CustomEvent("hass-more-info", { detail: { entityId }, bubbles: true, composed: true }));
+}
+
+/** Panel header: icon + title + optional right-side controls. */
+export function head(config, icon, defTitle, right = nothing) {
+  if (config?.show_title === false) return right === nothing ? nothing : html`<div class="head"><span class="title"></span>${right}</div>`;
+  return html`<div class="head">
+    <ha-icon icon=${config?.icon || icon}></ha-icon>
+    <span class="title">${config?.title || defTitle}</span>${right}
+  </div>`;
+}
+
 /** Big value + label; tapping opens Home Assistant's more-info dialog. */
 export function reading(host, { label, value, unit, digits = 0, color, entity }) {
-  const open = () =>
-    entity && host.dispatchEvent(new CustomEvent("hass-more-info", { detail: { entityId: entity }, bubbles: true, composed: true }));
+  const open = () => moreInfo(host, entity);
   return html`<div class="reading" @click=${open} role=${entity ? "button" : nothing} tabindex=${entity ? 0 : nothing}
     @keydown=${(e) => (e.key === "Enter" || e.key === " ") && open()}>
     <span class="v">${fmt(value, digits)}<small>${unit || ""}</small></span>

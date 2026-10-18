@@ -3117,7 +3117,7 @@ import { actionHandler as iq } from "../../vendor/weather-forecast-card/src/hass
   };
 
   // Card name for the editor header (version intentionally omitted).
-  const WFC_CARD_NAME = "Weather Flex Card";
+  const WFC_CARD_NAME = "Weather Flex sections";
 
   // Full editor render override: header (name/version + accordion toggle), the
   // reorganized stock ha-form, then our custom panels.
@@ -6107,4 +6107,8 @@ import { actionHandler as iq } from "../../vendor/weather-forecast-card/src/hass
     "color: white; font-weight: bold; background: dimgray"
   );
   window.__WSFC_SECTIONS_BUILD = WFC_BUILD;
+  // Exposed for the Weather Station Flex Card editor: it diffs edited configs
+  // against the resolved defaults so saved YAML stays minimal.
+  l5.__wfcResolve = wfcResolve;
+  l5.__wfcBuild = WFC_BUILD;
 })();

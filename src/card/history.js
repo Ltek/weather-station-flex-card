@@ -23,11 +23,22 @@ const toNum = (s) => {
  * ms and v a number or null (unavailable breaks the line instead of reading 0).
  */
 export function fetchHistory(hass, entityIds, hours) {
+  return fetchHistorySince(hass, entityIds, Date.now() - hours * 3600e3, `h${hours}`);
+}
+
+/** Today's history since local midnight (for daily min/max). */
+export function fetchToday(hass, entityIds) {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return fetchHistorySince(hass, entityIds, d.getTime(), `d${d.toDateString()}`);
+}
+
+function fetchHistorySince(hass, entityIds, startMs, cacheTag) {
   const ids = [...new Set(entityIds.filter(Boolean))].sort();
   if (!ids.length || !hass?.callWS) return Promise.resolve({});
   const end = new Date();
-  const start = new Date(end.getTime() - hours * 3600e3);
-  return cached(`h|${hours}|${ids.join(",")}`, async () => {
+  const start = new Date(startMs);
+  return cached(`h|${cacheTag}|${ids.join(",")}`, async () => {
     const res = await hass.callWS({
       type: "history/history_during_period",
       start_time: start.toISOString(),
@@ -64,7 +75,7 @@ export function fetchStatistics(hass, statisticIds, days, period) {
       end_time: end.toISOString(),
       statistic_ids: ids,
       period,
-      types: ["mean", "min", "max"],
+      types: ["mean", "min", "max", "change"],
     });
     const out = {};
     for (const id of ids) {
@@ -73,6 +84,7 @@ export function fetchStatistics(hass, statisticIds, days, period) {
         mean: p.mean ?? null,
         min: p.min ?? null,
         max: p.max ?? null,
+        change: p.change ?? null,
       }));
     }
     return out;
@@ -90,4 +102,37 @@ export function decimate(points, max = 300) {
     out.push({ t: bucket[Math.floor(bucket.length / 2)].t, v: vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null });
   }
   return out;
+}
+
+/**
+ * Bucket a cumulative counter (e.g. daily rain) into per-bucket increases.
+ * Counter resets (value drops) count from zero, so a midnight reset is not a
+ * negative bar.
+ */
+export function bucketIncrease(points, bucketMs) {
+  const out = new Map();
+  let prev = null;
+  for (const p of points) {
+    if (p.v == null) { prev = null; continue; }
+    if (prev != null) {
+      const inc = p.v >= prev ? p.v - prev : p.v;
+      const b = Math.floor(p.t / bucketMs) * bucketMs;
+      out.set(b, (out.get(b) || 0) + inc);
+    }
+    prev = p.v;
+  }
+  return [...out].map(([t, v]) => ({ t: t + bucketMs / 2, v: Math.round(v * 1000) / 1000 }));
+}
+
+/** Bucket a measurement into per-bucket means. */
+export function bucketMean(points, bucketMs) {
+  const sums = new Map();
+  for (const p of points) {
+    if (p.v == null) continue;
+    const b = Math.floor(p.t / bucketMs) * bucketMs;
+    const s = sums.get(b) || [0, 0];
+    s[0] += p.v; s[1]++;
+    sums.set(b, s);
+  }
+  return [...sums].map(([t, [sum, n]]) => ({ t: t + bucketMs / 2, v: sum / n }));
 }

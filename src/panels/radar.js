@@ -4,7 +4,7 @@
 // a radar panel is actually shown).
 import { LitElement, html, css, unsafeCSS } from "lit";
 import leafletCss from "inline-css:leaflet/dist/leaflet.css";
-import { panelStyles, seg } from "./shared.js";
+import { panelStyles, seg, head } from "./shared.js";
 
 const RAINVIEWER_INDEX = "https://api.rainviewer.com/public/weather-maps.json";
 // RainViewer's free tiles are served up to zoom 7; Leaflet upscales beyond.
@@ -16,11 +16,23 @@ const REFRESH_MS = 5 * 60e3;
 let L = null;
 const loadLeaflet = async () => (L ||= (await import("leaflet")).default);
 
-const OWM_LAYERS = {
+// Base maps (no API key needed). `base_map_url` overrides with any XYZ service.
+const ESRI = "https://server.arcgisonline.com/ArcGIS/rest/services";
+const ESRI_ATTR = "Tiles &copy; Esri &mdash; Esri, HERE, Garmin, &copy; OpenStreetMap contributors";
+export const BASE_MAPS = {
+  gray: (dark) => [`${ESRI}/Canvas/World_${dark ? "Dark" : "Light"}_Gray_Base/MapServer/tile/{z}/{y}/{x}`, ESRI_ATTR, 16],
+  streets: () => [`${ESRI}/World_Street_Map/MapServer/tile/{z}/{y}/{x}`, ESRI_ATTR, 19],
+  topo: () => [`${ESRI}/World_Topo_Map/MapServer/tile/{z}/{y}/{x}`, ESRI_ATTR, 19],
+  imagery: () => [`${ESRI}/World_Imagery/MapServer/tile/{z}/{y}/{x}`, "Tiles &copy; Esri &mdash; Esri, Maxar, Earthstar Geographics", 19],
+  osm: () => ["https://tile.openstreetmap.org/{z}/{x}/{y}.png", '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors', 19],
+};
+
+export const OWM_LAYERS = {
   wind_new: "Wind",
   precipitation_new: "Precip",
   clouds_new: "Clouds",
   temp_new: "Temp",
+  pressure_new: "Pressure",
 };
 
 class WsfcRadar extends LitElement {
@@ -55,27 +67,26 @@ class WsfcRadar extends LitElement {
     this._idx = 0;
   }
 
+  get _radarOn() {
+    return this.config?.radar !== false;
+  }
+
   render() {
     const key = this.config?.owm_api_key;
     const overlays = this.config?.owm_layers || ["wind_new"];
     const overlay = this._overlay ?? this.config?.owm_default ?? "none";
     return html`
-      <div class="head">
-        <ha-icon icon="mdi:radar"></ha-icon>
-        <span class="title">${this.config?.title || "Radar"}</span>
-        ${key
-          ? seg([{ value: "none", label: "Radar" }, ...overlays.map((l) => ({ value: l, label: `+ ${OWM_LAYERS[l] || l}` }))], overlay, (v) => this._setOverlay(v), "Map overlay")
-          : ""}
-      </div>
+      ${head(this.config, this._radarOn ? "mdi:radar" : "mdi:map", this._radarOn ? "Radar" : "Map",
+        key ? seg([{ value: "none", label: this._radarOn ? "Radar" : "Map" }, ...overlays.map((l) => ({ value: l, label: `${this._radarOn ? "+ " : ""}${OWM_LAYERS[l] || l}` }))], overlay, (v) => this._setOverlay(v), "Map overlay") : "")}
       <div class="map"><div id="map"></div></div>
-      <div class="bar">
+      ${this._radarOn ? html`<div class="bar">
         <button class="play" type="button" @click=${this._togglePlay} aria-label=${this._playing ? "Pause radar loop" : "Play radar loop"}>
           ${this._playing ? "❚❚ Pause" : "▶ Play"}
         </button>
         <span class="time" aria-live="off">${this._frameLabel || ""}</span>
         <span class="spacer"></span>
         ${this._error ? html`<span class="note">${this._error}</span>` : ""}
-      </div>
+      </div>` : ""}
     `;
   }
 
@@ -91,8 +102,10 @@ class WsfcRadar extends LitElement {
     L.circleMarker([lat, lon], { radius: 6, weight: 2, color: "#fff", fillColor: "#ff5252", fillOpacity: 1 }).addTo(this._map);
     this._ro = new ResizeObserver(() => this._map?.invalidateSize());
     this._ro.observe(el);
-    this._loadFrames();
-    this._refresh = setInterval(() => this._loadFrames(), REFRESH_MS);
+    if (this._radarOn) {
+      this._loadFrames();
+      this._refresh = setInterval(() => this._loadFrames(), REFRESH_MS);
+    }
     if (this.config?.owm_api_key && (this.config?.owm_default ?? "none") !== "none") this._setOverlay(this.config.owm_default);
   }
 
@@ -122,14 +135,11 @@ class WsfcRadar extends LitElement {
     if (!this._map) return;
     this._dark = !!this.hass?.themes?.darkMode;
     if (this._base) this._map.removeLayer(this._base);
-    // Default: Esri's gray canvas basemaps (no API key). Override with
-    // base_map_url / base_map_attribution for any XYZ tile service.
-    const url = this.config?.base_map_url ||
-      `https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_${this._dark ? "Dark" : "Light"}_Gray_Base/MapServer/tile/{z}/{y}/{x}`;
-    const attribution = this.config?.base_map_url
-      ? this.config?.base_map_attribution || ""
-      : "Tiles &copy; Esri &mdash; Esri, HERE, Garmin, &copy; OpenStreetMap contributors";
-    this._base = L.tileLayer(url, { maxZoom: 16, attribution }).addTo(this._map);
+    const c = this.config || {};
+    const [url, attribution, maxNativeZoom] = c.base_map_url
+      ? [c.base_map_url, c.base_map_attribution || "", 19]
+      : (BASE_MAPS[c.base_map] || BASE_MAPS.gray)(this._dark);
+    this._base = L.tileLayer(url, { maxNativeZoom, maxZoom: 19, attribution }).addTo(this._map);
     this._base.bringToBack();
   }
 

@@ -6,6 +6,7 @@ import * as mdi from "@mdi/js";
 import { MockHass } from "./mocks/hass.ts";
 import "./mocks/ha-state-icon.ts";
 import "./mocks/ha-attribute-icon.ts";
+import "./ha-editor-stubs.js";
 import "../src/card/weather-station-flex-card.js";
 
 // ---- Minimal HA element stubs ---------------------------------------------
@@ -62,8 +63,12 @@ function series(id, start, end, stepMs) {
     else if (id.endsWith("wind_speed")) v = windAt(t);
     else if (id.endsWith("wind_gust")) v = windAt(t) * (1.3 + rnd() * 0.5);
     else if (id.endsWith("wind_direction")) v = dirAt(t);
+    else if (id.endsWith("daily_rain")) { const h = hourOf(t); v = h > 13 && h < 17 ? (h - 13) * 0.04 : h >= 17 ? 0.16 : 0; }
+    else if (id.endsWith("relative_pressure")) v = 30.02 - 0.04 * Math.sin(t / 3.6e7);
+    else if (id.endsWith("uv_index")) v = Math.max(0, 6 * Math.sin(((hourOf(t) - 7) / 12) * Math.PI));
+    else if (id.endsWith("solar_radiation")) v = Math.max(0, 650 * Math.sin(((hourOf(t) - 7) / 12) * Math.PI));
     else v = 0;
-    out.push({ t, v: Math.round(v * 10) / 10 });
+    out.push({ t, v: Math.round(v * 100) / 100 });
   }
   return out;
 }
@@ -89,6 +94,7 @@ function stationStates() {
   const dew = Math.round(dewFrom(cur.temp, cur.hum) * 10) / 10;
   const w = Math.round(cur.wind * 100) / 100;
   return [
+    sensor(P + "hourly_rain", 0.01, "in", "precipitation", "GW2000B Hourly Rain"),
     sensor(P + "outdoor_temperature", t, "°F", "temperature", "GW2000B Outdoor Temperature"),
     sensor(P + "feels_like_temperature", t, "°F", "temperature", "GW2000B Feels Like Temperature"),
     sensor(P + "dewpoint", dew, "°F", "temperature", "GW2000B Dewpoint"),
@@ -167,18 +173,22 @@ function buildHass() {
 
 // ---- Page wiring ---------------------------------------------------------------
 const card = document.querySelector("weather-station-flex-card");
+const LEGACY_PANELS = [
+  { type: "temp_humidity" },
+  { type: "wind" },
+  { type: "radar" },
+  { type: "forecast" },
+  { type: "sun_moon" },
+];
 const config = () => ({
   type: "custom:weather-station-flex-card",
   entity: "weather.openweathermap",
+  title: params.get("title") ?? "Weather station",
+  subtitle: "Home · live local observations",
   metric_sources: { sources: [{ ref: `device:${DEVICE_ID}` }, { ref: "weather.openweathermap" }] },
-  layout: params.get("layout") || "fullscreen",
-  panels: [
-    { type: "temp_humidity" },
-    { type: "wind" },
-    { type: "radar", ...(params.get("owm") ? { owm_api_key: params.get("owm"), owm_layers: ["wind_new", "precipitation_new", "clouds_new"] } : {}) },
-    { type: "forecast" },
-    { type: "sun_moon" },
-  ],
+  layout: params.get("layout") || "auto",
+  remember: false,
+  ...(params.get("panels") === "legacy" ? { panels: LEGACY_PANELS } : {}),
 });
 
 document.documentElement.classList.toggle("light", !dark);
@@ -201,5 +211,22 @@ for (const sel of document.querySelectorAll("[data-param]")) {
     location.search = params.toString();
   });
 }
+// ?editor=1: render the visual editor next to the card; edits apply live.
+if (params.get("editor")) {
+  const ed = document.createElement("weather-station-flex-card-editor");
+  ed.hass = card.hass;
+  ed.setConfig(config());
+  ed.addEventListener("config-changed", (e) => {
+    const cfg = e.detail.config;
+    card.setConfig(cfg);
+    ed.setConfig(cfg);
+    document.getElementById("yaml").textContent = JSON.stringify(cfg, null, 2);
+  });
+  document.getElementById("side").append(ed);
+  document.body.classList.add("with-editor");
+  window.__editor = ed;
+}
+window.__card = card;
+
 const frame = document.getElementById("frame");
 frame.style.width = { phone: "390px", tablet: "1024px", full: "100%" }[params.get("width") || "full"];

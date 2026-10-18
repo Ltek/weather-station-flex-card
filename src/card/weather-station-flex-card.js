@@ -1,97 +1,38 @@
 // Weather Station Flex Card (Ltek)
-// A full-screen capable weather station dashboard: an animated hero built from
-// Weather Flex sections, a panel bar to switch panels on/off, and panels for
-// Temp & Humidity, Wind, Radar, Forecast and Sun & Moon.
+// A weather-station dashboard in one card: a 12-column grid of panels (hero,
+// bulletin, metric tiles, graphs, wind, radar/maps, forecasts, sun & moon,
+// any Weather Flex sections, any Home Assistant card). Panel buttons toggle
+// panels or open them as pop-ups. Scales from a normal card to a full-screen
+// dashboard.
 import { LitElement, html, css, nothing } from "lit";
-import { CARD_VERSION, CARD_TYPE, CARD_NAME, PANELS, PANEL_IDS } from "./constants.js";
-import { CoreSlot, deepMerge } from "./core.js";
-import "../panels/temp-humidity.js";
+import { CARD_VERSION, CARD_TYPE, CARD_NAME } from "./constants.js";
+import { chipStyles } from "../panels/shared.js";
+import { panelMeta, rowsOf, inBarOf, normalizePanels, layoutOf } from "./panels.js";
+import "../panels/flex.js";
+import "../panels/graph.js";
 import "../panels/wind.js";
 import "../panels/radar.js";
-import "../panels/forecast.js";
 import "../panels/sun-moon.js";
+import "../panels/metric.js";
+import "../panels/info.js";
+import "../editor/editor.js";
 
-const PANEL_TAG = {
-  temp_humidity: "wsfc-panel-temp-humidity",
-  wind: "wsfc-panel-wind",
-  radar: "wsfc-panel-radar",
-  forecast: "wsfc-panel-forecast",
-  sun_moon: "wsfc-panel-sun-moon",
-};
 const NARROW_PX = 720;
-
-// Hero defaults: Weather Flex sections tuned for a large header. Anything under
-// `hero:` in the card config (including a pasted Weather Flex `wfc:` block)
-// is deep-merged over this.
-const HERO_DEFAULTS = {
-  show_condition_effects: true,
-  show_moon_phase: true,
-  wfc: {
-    order: ["current", "details", "sun_position"],
-    current: {
-      show: true,
-      clock_show_time: true,
-      clock_show_date: true,
-      clock_placement: "right",
-      clock_font_size: 40,
-      clock_date_font_size: 14,
-      clock_contrast: "auto",
-      clock_date_contrast: "auto",
-    },
-    details: {
-      show: true,
-      chips: true,
-      chip_hide_when_off: true,
-      chip_show_name: true,
-      items: [
-        { key: "apparent_temperature", show: true },
-        { key: "humidity", show: true },
-        { key: "dew_point", show: true },
-        { key: "wind_speed", show: true },
-        { key: "pressure", show: true },
-        { key: "uv_index", show: true },
-      ],
-    },
-    sun_position: {
-      show: true,
-      height: 30,
-      timeframe_mode: "hours",
-      timeframe_hours: 24,
-      ss_markers_position: "overlay",
-      times_position: "below",
-      forecast_icons: "above",
-      forecast_temps: "above",
-      forecast_temp_with_icon: true,
-      forecast_every: 3,
-    },
-    hourly: { show: false },
-    daily: { show: false },
-    sun_arc: { show: false },
-  },
-};
-
-// Hero header sizes scale up in full-screen layout.
-const HERO_FULLSCREEN = {
-  wfc: { current: { header_temp_size: 72, header_state_size: 24, header_icon_size: 96, clock_font_size: 56, clock_date_font_size: 18 } },
-};
-
-// On narrow screens the clock moves above the conditions so it can't collide
-// with the headline temperature.
-const HERO_NARROW = {
-  wfc: { current: { clock_placement: "above-right", clock_font_size: 28, clock_date_font_size: 12, header_temp_size: 0, header_state_size: 0, header_icon_size: 0 } },
-};
-
-const DEFAULT_PANELS = PANEL_IDS.map((type) => ({ type }));
+const MEDIUM_PX = 1100;
 
 class WeatherStationFlexCard extends LitElement {
   static properties = {
     hass: { attribute: false },
     _config: { state: true },
-    _on: { state: true }, // Set of visible panel indexes (wide layout)
-    _tab: { state: true }, // active panel index (narrow layout)
-    _focus: { state: true }, // index of an expanded panel, or null
-    _narrow: { state: true },
+    _hidden: { state: true }, // Set of panel keys toggled off
+    _popup: { state: true }, // index of the open pop-up panel, or null
+    _focus: { state: true }, // index of an expanded grid panel, or null
+    _size: { state: true }, // "wide" | "medium" | "narrow"
   };
+
+  static getConfigElement() {
+    return document.createElement("weather-station-flex-card-editor");
+  }
 
   static getStubConfig(hass) {
     const weather = Object.keys(hass?.states || {}).find((e) => e.startsWith("weather."));
@@ -99,19 +40,54 @@ class WeatherStationFlexCard extends LitElement {
     const sources = [];
     if (dev) sources.push({ ref: `device:${dev.id}` });
     if (weather) sources.push({ ref: weather });
-    return { entity: weather || "weather.home", metric_sources: { sources }, layout: "auto" };
+    return { entity: weather || "weather.home", metric_sources: { sources } };
   }
 
   setConfig(config) {
     if (!config?.entity || !String(config.entity).startsWith("weather.")) {
       throw new Error("entity is required: the weather entity that supplies the forecast and condition (e.g. weather.openweathermap)");
     }
-    const panels = (Array.isArray(config.panels) && config.panels.length ? config.panels : DEFAULT_PANELS).filter((p) => p && PANELS[p.type]);
+    const panels = normalizePanels(config);
     this._config = { ...config, panels };
-    this._on = new Set(panels.map((p, i) => (p.show === false ? -1 : i)).filter((i) => i >= 0));
-    if (this._tab == null || this._tab >= panels.length) this._tab = Math.max(0, panels.findIndex((p) => p.show !== false));
+    this._popup = null;
     this._focus = null;
-    this._heroSlot ||= new CoreSlot();
+    this._hidden = this._loadHidden(panels);
+  }
+
+  // A panel's identity for remembering its toggle: explicit id, else type + position.
+  _key(p, i) {
+    return p.id || `${i}:${p.type}`;
+  }
+
+  _storageKey() {
+    const c = this._config;
+    return `wsfc:${c.storage_key || `${location.pathname}|${c.entity}|${c.title || ""}`}`;
+  }
+
+  _loadHidden(panels) {
+    const def = new Set(panels.map((p, i) => (p.show === false ? this._key(p, i) : null)).filter(Boolean));
+    if (this._config?.remember === false) return def;
+    try {
+      const saved = JSON.parse(localStorage.getItem(this._storageKey()) || "null");
+      if (saved && Array.isArray(saved.hidden) && saved.sig === this._sig(panels)) return new Set(saved.hidden);
+    } catch (_e) {
+      /* private mode etc. */
+    }
+    return def;
+  }
+
+  // Saved toggles only apply while the panel list is unchanged.
+  _sig(panels) {
+    return panels.map((p, i) => this._key(p, i)).join(",");
+  }
+
+  _saveHidden() {
+    if (this._config?.remember === false) return;
+    try {
+      localStorage.setItem(this._storageKey(), JSON.stringify({ sig: this._sig(this._config.panels), hidden: [...this._hidden] }));
+    } catch (_e) {
+      /* ignore */
+    }
   }
 
   getCardSize() {
@@ -125,11 +101,17 @@ class WeatherStationFlexCard extends LitElement {
   connectedCallback() {
     super.connectedCallback();
     this._ro = new ResizeObserver(([e]) => {
-      const narrow = e.contentRect.width < (this._config?.narrow_width || NARROW_PX);
-      if (narrow !== this._narrow) this._narrow = narrow;
+      const w = e.contentRect.width;
+      const c = this._config || {};
+      const size = w < (c.narrow_width || NARROW_PX) ? "narrow" : w < (c.medium_width || MEDIUM_PX) ? "medium" : "wide";
+      if (size !== this._size) this._size = size;
     });
     this._ro.observe(this);
-    this._onKey = (e) => e.key === "Escape" && this._focus != null && (this._focus = null);
+    this._onKey = (e) => {
+      if (e.key !== "Escape") return;
+      if (this._popup != null) this._popup = null;
+      else if (this._focus != null) this._focus = null;
+    };
     window.addEventListener("keydown", this._onKey);
   }
 
@@ -144,103 +126,139 @@ class WeatherStationFlexCard extends LitElement {
     return { entity: this._config.entity, metric_sources: this._config.metric_sources };
   }
 
-  _heroConfig() {
-    const full = this._config.layout === "fullscreen";
-    let cfg = deepMerge(HERO_DEFAULTS, full && !this._narrow ? HERO_FULLSCREEN : {});
-    if (this._narrow) cfg = deepMerge(cfg, HERO_NARROW);
-    cfg = deepMerge(cfg, this._config.hero || {});
-    return { ...cfg, entity: this._config.entity, metric_sources: this._config.metric_sources };
-  }
-
   render() {
     if (!this._config || !this.hass) return nothing;
     const c = this._config;
     const full = c.layout === "fullscreen";
-    const hero = c.hero === false ? null : this._heroSlot.update(this._heroConfig(), this.hass);
     const style = [
-      c.panel_min_width ? `--wsfc-panel-min:${c.panel_min_width}px` : "",
+      c.row_height ? `--wsfc-row:${c.row_height}px` : "",
+      c.gap != null ? `--wsfc-gap:${c.gap}px` : "",
     ].join(";");
+    const barInHeading = c.panels.some((p) => p.type === "heading" && p.show_bar);
     return html`
-      <ha-card class=${`wsfc ${full ? "full" : ""} ${this._narrow ? "narrow" : "wide"}`} style=${style}>
-        ${hero ? html`<div class="hero">${hero}</div>` : nothing}
-        ${c.panel_bar === false ? nothing : this._renderBar()}
-        <div class="panels">${this._renderPanels()}</div>
+      <ha-card class=${`wsfc ${full ? "full" : ""} ${this._size || "wide"}`} style=${style}>
+        ${c.title ? this._renderTitle() : nothing}
+        ${c.panel_bar === false || barInHeading ? nothing : html`<div class="topbar">${this._renderBar()}</div>`}
+        <div class="grid">${this._renderPanels()}</div>
+        ${this._popup != null ? this._renderPopup() : nothing}
       </ha-card>
     `;
   }
 
-  _renderBar() {
-    const panels = this._config.panels;
-    return html`<div class="bar" role=${this._narrow ? "tablist" : "toolbar"} aria-label="Panels">
-      ${panels.map((p, i) => {
-        const meta = PANELS[p.type];
-        const active = this._narrow ? this._tab === i : this._on.has(i);
-        return html`<button
-          type="button"
-          class="chip ${active ? "on" : ""}"
-          role=${this._narrow ? "tab" : nothing}
-          aria-selected=${this._narrow ? String(active) : nothing}
-          aria-pressed=${this._narrow ? nothing : String(active)}
-          @click=${() => this._toggle(i)}
-        >
-          <ha-icon icon=${p.icon || meta.icon}></ha-icon><span>${p.title || meta.label}</span>
-        </button>`;
-      })}
+  _renderTitle() {
+    const c = this._config;
+    return html`<div class="title-row">
+      <ha-icon icon=${c.icon || "mdi:weather-windy"}></ha-icon>
+      <span class="title">${c.title}</span>
+      ${c.subtitle ? html`<span class="subtitle">${c.subtitle}</span>` : nothing}
     </div>`;
   }
 
-  _toggle(i) {
-    this._focus = null;
-    if (this._narrow) {
-      this._tab = i;
+  _renderBar() {
+    const panels = this._config.panels;
+    const items = panels.map((p, i) => [p, i]).filter(([p]) => inBarOf(p));
+    if (!items.length) return nothing;
+    return items.map(([p, i]) => {
+      const meta = panelMeta(p);
+      const popup = p.display === "popup";
+      const active = popup ? this._popup === i : !this._hidden.has(this._key(p, i));
+      return html`<button
+        type="button"
+        class="chip ${active ? "on" : ""} ${popup ? "popup" : ""}"
+        aria-pressed=${popup ? nothing : String(active)}
+        aria-haspopup=${popup ? "dialog" : nothing}
+        @click=${() => this._toggle(p, i)}
+      >
+        <ha-icon icon=${p.icon || meta.icon}></ha-icon><span>${p.title || this._autoTitle(p)}</span>${popup ? html`<ha-icon class="open" icon="mdi:open-in-new"></ha-icon>` : nothing}
+      </button>`;
+    });
+  }
+
+  _autoTitle(p) {
+    if (p.type === "metric") return p.label || p.metric || "Metric";
+    if (p.type === "day") return Number(p.day_offset ?? 1) === 0 ? "Today" : Number(p.day_offset ?? 1) === 1 ? "Tomorrow" : `Day +${p.day_offset}`;
+    if (p.type === "radar" && p.radar === false) return "Map";
+    return panelMeta(p).label.replace(/ \(.*\)$/, "");
+  }
+
+  _toggle(p, i) {
+    if (p.display === "popup") {
+      this._popup = this._popup === i ? null : i;
       return;
     }
-    const on = new Set(this._on);
-    on.has(i) ? on.delete(i) : on.add(i);
-    this._on = on;
+    this._focus = null;
+    const h = new Set(this._hidden);
+    const k = this._key(p, i);
+    h.has(k) ? h.delete(k) : h.add(k);
+    this._hidden = h;
+    this._saveHidden();
   }
 
   _renderPanels() {
     const panels = this._config.panels;
-    let idx;
+    let idx = panels.map((p, i) => i).filter((i) => panels[i].display !== "popup" && !this._hidden.has(this._key(panels[i], i)));
     if (this._focus != null) idx = [this._focus];
-    else if (this._narrow) idx = [this._tab];
-    else idx = panels.map((_, i) => i).filter((i) => this._on.has(i));
-    if (!idx.length) return html`<div class="empty">All panels are hidden — tap a panel above to show it.</div>`;
+    if (!idx.length) return html`<div class="empty">All panels are hidden — use the panel buttons to show one.</div>`;
+    const size = this._size || "wide";
     return idx.map((i) => {
       const p = panels[i];
-      const span = this._focus == null && !this._narrow && p.span ? `grid-column: span ${p.span}` : "";
-      return html`<section class="tile ${p.type}" style=${span} data-type=${p.type}>
-        ${this._narrow
-          ? nothing
-          : html`<button class="expand" type="button" @click=${() => (this._focus = this._focus == null ? i : null)}
-              aria-label=${this._focus == null ? `Expand ${PANELS[p.type].label}` : "Back to all panels"}>
+      const meta = panelMeta(p);
+      const lay = layoutOf(p, size);
+      const span = this._focus != null ? 12 : lay.span;
+      const rows = this._focus != null ? Math.max(rowsOf(p), 5) : lay.rows;
+      // Tracks are content-sized; a panel spanning N rows gets the height of N row units.
+      const style = `grid-column: span ${span};${rows ? `grid-row: span ${rows};min-height:calc(${rows} * var(--wsfc-row) + ${rows - 1} * var(--wsfc-gap));` : ""}`;
+      const bare = meta.bare || p.type === "hero";
+      const expandable = !bare && p.type !== "metric" && size !== "narrow";
+      return html`<section class="tile ${p.type} ${meta.bare ? "bare" : ""} ${rows ? "" : "auto"}" style=${style}>
+        ${expandable
+          ? html`<button class="expand" type="button" @click=${() => (this._focus = this._focus == null ? i : null)}
+              aria-label=${this._focus == null ? `Expand ${p.title || this._autoTitle(p)}` : "Back to all panels"}>
               <ha-icon icon=${this._focus == null ? "mdi:arrow-expand" : "mdi:arrow-collapse"}></ha-icon>
-            </button>`}
+            </button>`
+          : nothing}
         ${this._panelEl(p, i)}
       </section>`;
     });
   }
 
-  // Keep panel elements alive across toggles so charts/maps are not rebuilt.
-  _panelEl(p, i) {
-    this._panelEls ||= new Map();
-    const key = `${i}:${p.type}`;
-    let el = this._panelEls.get(key);
+  _renderPopup() {
+    const i = this._popup;
+    const p = this._config.panels[i];
+    if (!p) return nothing;
+    const close = () => (this._popup = null);
+    return html`<div class="scrim" @click=${(e) => e.target === e.currentTarget && close()}>
+      <div class="dialog tile ${p.type}" role="dialog" aria-modal="true" aria-label=${p.title || this._autoTitle(p)}>
+        <button class="expand close" type="button" @click=${close} aria-label="Close"><ha-icon icon="mdi:close"></ha-icon></button>
+        ${this._panelEl(p, i, true)}
+      </div>
+    </div>`;
+  }
+
+  // Panel elements are cached by position + config, so toggling or a hass
+  // update never rebuilds charts/maps, while an edited panel is rebuilt.
+  _panelEl(p, i, popup = false) {
+    this._els ||= new Map();
+    const key = `${popup ? "pop" : "grid"}:${i}:${JSON.stringify(p)}`;
+    let el = this._els.get(key);
     if (!el) {
-      el = document.createElement(PANEL_TAG[p.type]);
-      this._panelEls.set(key, el);
+      el = document.createElement(panelMeta(p).tag);
+      this._els.set(key, el);
+      // Drop stale elements from earlier configs of this slot.
+      for (const k of this._els.keys()) if (k !== key && k.startsWith(`${popup ? "pop" : "grid"}:${i}:`)) this._els.delete(k);
     }
     el.config = p;
     el.station = this._station;
     el.hass = this.hass;
+    if (p.type === "heading") el.bar = p.show_bar && this._config.panel_bar !== false ? this._renderBar() : null;
     return el;
   }
 
-  static styles = css`
+  static styles = [chipStyles, css`
     :host {
       display: block;
       --wsfc-gap: 12px;
+      --wsfc-row: 110px;
       --wsfc-radius: var(--ha-card-border-radius, 16px);
       --wsfc-tile-bg: var(--wsfc-panel-background, rgba(127, 127, 127, 0.08));
     }
@@ -249,49 +267,32 @@ class WeatherStationFlexCard extends LitElement {
       flex-direction: column;
       gap: var(--wsfc-gap);
       padding: var(--wsfc-gap);
-      overflow: hidden;
       box-sizing: border-box;
+      position: relative;
     }
     ha-card.full {
-      /* Fill the view below the dashboard header. */
+      /* Fill the view below the dashboard header; the grid scrolls inside. */
       height: calc(100vh - var(--header-height, 56px) - 16px);
       height: calc(100dvh - var(--header-height, 56px) - 16px);
-      min-height: 560px;
+      min-height: 480px;
     }
-    .hero {
-      position: relative;
-      border-radius: var(--wsfc-radius);
-      overflow: hidden;
-      flex: 0 0 auto;
-    }
-    /* Weather Flex sizes its card to its sections (height:auto), so the hero
-       grows with its content and the panels take the remaining height. */
-    .hero > * { display: block; height: 100%; --ha-card-border-radius: var(--wsfc-radius); --ha-card-box-shadow: none; }
+    .full .grid { flex: 1; overflow: auto; min-height: 0; padding-bottom: 2px; }
 
-    .bar { display: flex; gap: 8px; flex-wrap: wrap; flex: 0 0 auto; }
-    .narrow .bar { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
-    .chip {
-      display: inline-flex; align-items: center; gap: 6px;
-      font: inherit; font-size: 13px; white-space: nowrap;
-      padding: 6px 12px; border-radius: 999px; cursor: pointer;
-      color: var(--secondary-text-color);
-      background: transparent;
-      border: 1px solid var(--divider-color, rgba(127, 127, 127, 0.35));
-      transition: background-color 0.15s, color 0.15s, border-color 0.15s;
-    }
-    .chip ha-icon { --mdc-icon-size: 18px; }
-    .chip.on { color: var(--text-primary-color, #fff); background: var(--primary-color); border-color: var(--primary-color); }
-    .chip:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 2px; }
+    .title-row { display: flex; align-items: center; gap: 10px; }
+    .title-row ha-icon { --mdc-icon-size: 30px; color: var(--primary-color); }
+    .title-row .title { font-size: 26px; font-weight: 700; }
+    .title-row .subtitle { font-size: 13px; color: var(--secondary-text-color); }
 
-    .panels {
+    .topbar { display: flex; gap: 8px; flex-wrap: wrap; flex: 0 0 auto; }
+    .narrow .topbar { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+
+    .grid {
       display: grid;
       gap: var(--wsfc-gap);
-      grid-template-columns: repeat(auto-fit, minmax(var(--wsfc-panel-min, 340px), 1fr));
-      grid-auto-rows: minmax(320px, auto);
-      min-height: 0;
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+      grid-auto-rows: auto;
+      align-content: start;
     }
-    .full .panels { flex: 1; overflow: auto; align-content: start; }
-    .narrow .panels { grid-template-columns: 1fr; }
     .tile {
       position: relative;
       background: var(--wsfc-tile-bg);
@@ -300,17 +301,36 @@ class WeatherStationFlexCard extends LitElement {
       min-width: 0;
       display: flex;
       flex-direction: column;
+      box-sizing: border-box;
+      overflow: hidden;
     }
+    .tile.auto { grid-row: auto; }
+    /* The hero's Weather Flex card draws its own background and sizes to its sections. */
+    .tile.hero { background: transparent; padding: 0; }
+    .tile.bare { background: transparent; padding: 4px 2px; overflow: visible; }
     .tile > :not(.expand) { flex: 1; min-height: 0; }
     .expand {
-      position: absolute; top: 8px; right: 8px; z-index: 2;
+      position: absolute; top: 8px; right: 8px; z-index: 3;
       border: 0; background: transparent; color: var(--secondary-text-color);
       cursor: pointer; padding: 4px; border-radius: 50%; line-height: 0;
     }
     .expand ha-icon { --mdc-icon-size: 18px; }
     .tile .expand ~ * { --wsfc-head-pad: 28px; }
     .empty { color: var(--secondary-text-color); padding: 24px; text-align: center; grid-column: 1 / -1; }
-  `;
+
+    .scrim {
+      position: fixed; inset: 0; z-index: 10;
+      background: rgba(0, 0, 0, 0.55);
+      display: flex; align-items: center; justify-content: center;
+      padding: 16px; box-sizing: border-box;
+    }
+    .dialog {
+      width: min(1100px, 100%);
+      height: min(760px, 100%);
+      background: var(--ha-card-background, var(--card-background-color, #1c1c1c));
+      box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5);
+    }
+  `];
 }
 
 if (!customElements.get(CARD_TYPE)) customElements.define(CARD_TYPE, WeatherStationFlexCard);
@@ -320,7 +340,7 @@ if (!window.customCards.some((c) => c.type === CARD_TYPE)) {
   window.customCards.push({
     type: CARD_TYPE,
     name: `${CARD_NAME} (Ltek)`,
-    description: "Full-screen weather station dashboard: animated hero, Temp & Humidity, Wind, Radar, Forecast and Sun & Moon panels.",
+    description: "Weather station dashboard: animated hero, metric tiles, graphs, wind, radar and maps, forecasts, sun & moon — in a resizable panel grid.",
     preview: false,
   });
 }

@@ -88,7 +88,9 @@ const patches = [
   // Don't claim to be Weather Flex in the console, and don't overwrite its global.
   ["`%cWEATHER-FLEX-CARD%c sections extension loaded (build ${WFC_BUILD})`",
    "`%cWEATHER-STATION-FLEX-CARD%c flex sections loaded (Weather Flex sections ${WFC_BUILD})`"],
-  ["window.__WFC_BUILD = WFC_BUILD;", "window.__WSFC_SECTIONS_BUILD = WFC_BUILD;"],
+  ["window.__WFC_BUILD = WFC_BUILD;", "window.__WSFC_SECTIONS_BUILD = WFC_BUILD;\n  // Exposed for the Weather Station Flex Card editor: it diffs edited configs\n  // against the resolved defaults so saved YAML stays minimal.\n  l5.__wfcResolve = wfcResolve;\n  l5.__wfcBuild = WFC_BUILD;"],
+  // The embedded editor sits inside this card's editor; name it accordingly.
+  ['const WFC_CARD_NAME = "Weather Flex Card";', 'const WFC_CARD_NAME = "Weather Flex sections";'],
 ];
 for (const [from, to] of patches) {
   if (!body.includes(from)) throw new Error(`Patch target missing: ${from}`);

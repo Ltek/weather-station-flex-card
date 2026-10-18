@@ -60,3 +60,44 @@ function weatherUnit(st, key) {
 export function pick(panelCfg, station, hass, key, cfgKey = key) {
   return panelCfg?.entities?.[cfgKey] || metricSensor(station, hass, key);
 }
+
+/** Entity ids belonging to the device sources (enabled ones, in priority order). */
+export function stationDeviceEntities(station, hass) {
+  const out = [];
+  const sources = station?.metric_sources?.sources || [];
+  for (const s of sources) {
+    if (s.disabled || typeof s.ref !== "string" || !s.ref.startsWith("device:")) continue;
+    const id = s.ref.slice(7);
+    for (const eid in hass?.entities || {}) if (hass.entities[eid]?.device_id === id) out.push(eid);
+  }
+  return out;
+}
+
+/**
+ * First station entity whose id or name matches `re` (outdoor preferred) — for
+ * values outside Weather Flex's metric catalog, e.g. today's rain total.
+ */
+export function findStationEntity(station, hass, re) {
+  const cands = stationDeviceEntities(station, hass).filter((eid) => {
+    const st = hass.states[eid];
+    return st && re.test(`${eid} ${st.attributes?.friendly_name || ""}`);
+  });
+  return cands.find((e) => !/indoor|inside/i.test(e)) || cands[0] || null;
+}
+
+/** Live numeric value + unit of an entity (null when unavailable). */
+export function entityValue(hass, eid) {
+  const st = eid && hass?.states?.[eid];
+  if (!st || ["unknown", "unavailable", ""].includes(st.state)) return null;
+  const n = Number(st.state);
+  return { value: isNaN(n) ? st.state : n, unit: st.attributes?.unit_of_measurement || "", entity: eid };
+}
+
+/** "online" | "partial" | "offline" | "unconfigured" for the core station metrics. */
+export function stationStatus(station, hass) {
+  const keys = ["temperature", "humidity", "wind_speed", "pressure"];
+  const ids = keys.map((k) => metricSensor(station, hass, k)).filter(Boolean);
+  if (!ids.length) return "unconfigured";
+  const ok = ids.filter((e) => entityValue(hass, e) != null).length;
+  return ok === ids.length ? "online" : ok ? "partial" : "offline";
+}

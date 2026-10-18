@@ -1,76 +1,109 @@
 # Weather Station Flex Card
 
-A full-screen capable Home Assistant Dashboard card for a home weather station (built around an Ecowitt WS90 / GW2000B, works with any station whose sensors are in Home Assistant). An animated hero shows current conditions; a panel bar switches panels on and off: **Temp & Humidity**, **Wind**, **Radar**, **Forecast** and **Sun & Moon**.
+A weather-station dashboard in one Home Assistant card. Panels sit in a 12-column grid — an animated hero, a generated bulletin, metric tiles with min/max and sparklines, graphs, wind compass and rose, radar and maps, forecasts, sun & moon, any [Weather Flex Card](https://github.com/Ltek/weather-flex-card) sections, and any Home Assistant card. Panel buttons show and hide panels or open them as pop-ups. It works as a normal card or as a full-screen dashboard.
 
-Current build: **v2026.10.18.1** · full history in [CHANGELOG.md](CHANGELOG.md)
+Built around an Ecowitt WS90 / GW2000B; works with any station whose sensors are in Home Assistant.
+
+Current build: **v2026.10.18.2** · full history in [CHANGELOG.md](CHANGELOG.md)
 
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Ltek&repository=weather-station-flex-card&category=plugin)
 
-> **Early build.** Configuration is YAML-only for now (no visual editor yet), and option names may still change.
-
 ---
-
-## What it shows
-
-- **Hero** — condition, headline temperature, metric chips, the Sky Bar and a clock over the animated weather background (sun, clouds, rain, snow, lightning, stars, moon). These are the sections from [Weather Flex Card](https://github.com/Ltek/weather-flex-card); a Weather Flex `wfc:` block can be pasted under `hero:`.
-- **Temp & Humidity** — current temperature, feels like, dew point and humidity, and **one** chart combining them: temperature and dew point on the left axis, humidity as a shaded area on the right. 24h from history; 7d and 30d from long-term statistics with a min–max band.
-- **Wind** — compass (speed, gust, direction) or a 24-hour **wind rose** from your station's own data, plus a combined speed/gust chart.
-- **Radar** — animated [RainViewer](https://www.rainviewer.com/api.html) radar loop over your home location, with optional [OpenWeatherMap](https://openweathermap.org/api/weathermaps) wind / precipitation / cloud layers.
-- **Forecast** — Weather Flex's hourly and daily sections.
-- **Sun & Moon** — Weather Flex's sun arc and Sky Bar, plus moon phase, illumination, moonrise/moonset and the next full moon.
-
-On wide screens the enabled panels sit in a grid and each can be expanded; on narrow screens the panel bar acts as tabs.
 
 ## Install
 
 HACS → ⋮ → **Custom repositories** → `https://github.com/Ltek/weather-station-flex-card`, category **Dashboard** → download **Weather Station Flex Card (Ltek)**. HACS adds the resource `/hacsfiles/weather-station-flex-card/weather-station-flex-card.js`.
 
-## Configure
+Add the card from the dashboard card picker and use the visual editor, or start from YAML:
 
 ```yaml
 type: custom:weather-station-flex-card
-entity: weather.openweathermap        # forecast + condition (required, a weather.* entity)
+entity: weather.openweathermap        # forecast + condition (a weather.* entity)
 metric_sources:                       # Weather Flex "Weather Sources": first source with a value wins
   sources:
     - ref: device:<your Ecowitt gateway device id>   # sensors are auto-mapped (outdoor preferred)
     - ref: weather.openweathermap
-layout: fullscreen                    # fullscreen | auto
-panels:
-  - type: temp_humidity
-  - type: wind
-  - type: radar
-    # owm_api_key: !secret owm_key    # optional; enables the OpenWeatherMap layers
-    # owm_layers: [wind_new, precipitation_new, clouds_new]
-  - type: forecast
-  - type: sun_moon
+title: Weather station
 ```
 
-For the full-screen layout, put the card in a **Panel** view (or a Sections view at full width).
+With no `panels:` you get the default dashboard: hero, bulletin, a "Local measurements" heading with the panel buttons, wind, six metric tiles (temperature, rain today, humidity, UV, solar radiation, pressure), forecast and tomorrow; Temp & Humidity and Sun & Moon start hidden, and the radar opens as a pop-up.
 
-| Option | Description |
+For a full-screen dashboard put the card in a **Panel** view and set `layout: fullscreen`.
+
+## The editor
+
+- **General** — weather entity, title, layout, panel buttons, row height and gap.
+- **Hero & Weather Sources** — Weather Flex Card's complete editor (card appearance, Weather Sources, section order, header, metrics/chips, hourly, daily, sun position, sky bar, clock, actions, advanced). Weather Sources apply to the whole card.
+- **Panels** — reorder, show/hide, duplicate, delete and add panels. Each panel has **Layout** (title, icon, width, height, grid or pop-up, panel button, shown on load) and its own options. Forecast, Sun & Moon and Weather Flex sections panels also embed Weather Flex Card's editor for their sections.
+
+Only what you change is saved, so the YAML stays short.
+
+## Panels
+
+| Type | What it shows |
 |---|---|
-| `entity` | Weather entity for forecast and condition. Required. |
-| `metric_sources` | Same as Weather Flex Card: an ordered list of sources (`device:<id>`, a `weather.*` entity or any sensor), each with optional per-metric `overrides`. |
-| `layout` | `fullscreen` fills the view below the header; `auto` sizes to content. |
-| `hero` | Weather Flex config deep-merged over the hero defaults, or `false` to hide the hero. |
-| `panel_bar` | `false` hides the panel buttons. |
-| `panel_min_width` | Minimum panel width in px for the grid (default 340). |
-| `panels[]` | `type` plus panel options. `show: false` starts a panel hidden; `title`, `icon` and `span` (grid columns) apply to every panel. |
+| `hero` | Weather Flex header, chips, Sky Bar and clock over the animated weather background. Larger text on wide tiles, compact on narrow ones. |
+| `bulletin` | Generated summary of current conditions, sun and moon times; optional text sensor and NWS Alerts sensor. |
+| `heading` | Section title with station status (online / partial / offline) and, with `show_bar`, the panel buttons. |
+| `metric` | One value: today's min/max, a 24h sparkline (line or hourly bars), UV level, pressure trend. `metric:` temperature, apparent_temperature, dew_point, humidity, pressure, wind_speed, wind_gust_speed, uv_index, solar_radiation, illuminance, rain_rate, rain_today, rain_24h, rain_event, vpd, indoor_temperature, indoor_humidity — or any `entity`. |
+| `graph` | Any series on two axes; 6h–48h from history, 7d–365d from long-term statistics with min–max bands. |
+| `temp_humidity` | Graph preset: temperature, dew point and humidity. |
+| `wind` | Compass or 24h wind rose, plus a speed/gust chart. |
+| `radar` | RainViewer radar loop on a choice of base maps (gray, streets, topo, satellite imagery, OSM or a custom URL), optional OpenWeatherMap layers. `radar: false` gives a plain map — add several with different zooms and layers. |
+| `forecast` | Weather Flex hourly + daily sections. |
+| `day` | One day's forecast (`day_offset`: 0 today, 1 tomorrow, …). |
+| `sun_moon` | Weather Flex sun arc and Sky Bar, moon phase, rise/set, next full and new moon. |
+| `flex` | Any Weather Flex Card configuration under `flex:` — every Weather Flex feature. |
+| `card` | Any Home Assistant card under `card:` (e.g. `statistics-graph`). |
 
-Panel options:
+Every panel takes `title`, `icon`, `span` (width in twelfths), `rows` (height in row units, 0 = fit content), `display` (`grid` or `popup`), `in_bar` (panel button), `show` (shown on load) and optional `span_medium`, `span_narrow`, `rows_compact` for tablet and phone widths. On tablets small tiles stay side by side and wide panels go full width; on phones tiles pair up and everything else is full width.
 
-- `temp_humidity` — `range` (`24h`/`7d`/`30d`), `entities: { temperature, dew_point, humidity }` to override the resolved sensors.
-- `wind` — `view` (`compass`/`rose`), `rose_bins` (speed thresholds, in the sensor's unit), `entities: { wind_speed, wind_gust_speed, wind_bearing }`.
-- `radar` — `zoom`, `latitude`/`longitude` (default: home), `radar_opacity`, `owm_api_key`, `owm_layers`, `owm_default`, `owm_opacity`, `base_map_url`, `base_map_attribution`.
-- `forecast`, `sun_moon` — `flex:` takes any Weather Flex config to override the panel's sections. `sun_moon` also takes `show_moon: false`.
+```yaml
+panels:
+  - type: hero
+    span: 8
+    flex:                     # any Weather Flex config; merged over the hero defaults
+      wfc: { current: { clock_font_size: 48 } }
+  - type: bulletin
+    alerts_entity: sensor.nws_alerts
+  - type: heading
+    title: Local measurements
+    show_status: true
+    show_bar: true
+  - type: metric
+    metric: rain_today
+  - type: graph
+    title: Pressure & wind
+    series:
+      - { metric: pressure }
+      - { metric: wind_speed, axis: right, style: area }
+    ranges: [24h, 7d, 30d]
+  - type: radar
+    radar: false
+    base_map: imagery
+    zoom: 5
+    owm_api_key: !secret owm_key
+    owm_layers: [wind_new, clouds_new]
+    owm_default: wind_new
+    display: popup
+    title: Wind map
+  - type: card
+    span: 6
+    card:
+      type: statistics-graph
+      entities: [sensor.gw2000b_outdoor_temperature]
+      period: month
+```
 
-> The OpenWeatherMap API key is part of the card configuration, so anyone who can view the dashboard can read it.
+> An OpenWeatherMap API key is part of the card configuration, so anyone who can view the dashboard can read it.
 
-The 7d/30d charts need long-term statistics, which Home Assistant keeps for sensors with a `state_class` (Ecowitt sensors have one).
+The 7d+ graph ranges need long-term statistics, which Home Assistant keeps for sensors with a `state_class` (Ecowitt sensors have one). Toggled panels are remembered per browser (`remember: false` turns that off).
+
+Configs from v2026.10.18.1 keep working: the implied hero becomes a hero panel, and a top-level `hero:` block becomes its `flex:`.
 
 ## Works alongside Weather Flex Card
 
-Both cards can be on the same dashboard. This card registers its own element names (`wsfc-*`), so neither card affects the other.
+Both cards can be on the same dashboard. This card registers its own element names (`wsfc-*`).
 
 ## Building from source
 
@@ -78,14 +111,15 @@ Both cards can be on the same dashboard. This card registers its own element nam
 npm ci
 npm run port      # re-extract the Weather Flex sections from weather-flex-card.js
 npm run build     # -> dist/weather-station-flex-card.js
-npm run preview   # local preview with a mock Home Assistant on :8765
+npm run preview   # local preview with a mock Home Assistant on :8765 (?editor=1 shows the editor)
 ```
 
 ## Credits
 
 - Base card and animations: [troinine/ha-weather-forecast-card](https://github.com/troinine/ha-weather-forecast-card) v1.1.0 (MIT), vendored in `vendor/`.
-- Radar: [RainViewer](https://www.rainviewer.com). Base map: Esri, HERE, Garmin, © OpenStreetMap contributors. Optional layers: [OpenWeatherMap](https://openweathermap.org).
-- Charts: [Chart.js](https://www.chartjs.org). Map: [Leaflet](https://leafletjs.com).
+- Layout inspired by [Station Météo](https://github.com/RenaudSub/Station-Meteo) (no code or assets used).
+- Radar: [RainViewer](https://www.rainviewer.com). Base maps: Esri, HERE, Garmin, Maxar, © OpenStreetMap contributors. Optional layers: [OpenWeatherMap](https://openweathermap.org).
+- Charts: [Chart.js](https://www.chartjs.org). Maps: [Leaflet](https://leafletjs.com).
 
 ## License
 

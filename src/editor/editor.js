@@ -1,0 +1,405 @@
+// Visual editor for Weather Station Flex Card.
+//
+//   General            entity, title, layout, panel buttons, grid sizing
+//   Hero & Weather Sources   Weather Flex Card's full editor, bound to the hero
+//   Panels             ordered list: reorder, show/hide, duplicate, delete, add;
+//                      each opens Layout + its type's options, and flex-based
+//                      panels (hero, forecast, sun & moon, Weather Flex sections)
+//                      embed Weather Flex Card's editor for their sections.
+//
+// Weather Flex's editor emits a full resolved config; flexOverride() diffs it
+// against the panel's base so only the user's changes are saved under `flex:`.
+// Its entity/metric_sources edits are global and go to the card's top level.
+import { LitElement, html, css, nothing } from "lit";
+import { CARD_VERSION, CARD_NAME } from "../card/constants.js";
+import { PANEL_TYPES, COMMON_SCHEMA, panelMeta, spanOf, rowsOf, inBarOf, normalizePanels } from "../card/panels.js";
+import { CORE_EDITOR_TAG, FLEX_SECTIONS_BUILD, flexOverride, deepMerge } from "../card/core.js";
+import { flexBase } from "../panels/flex.js";
+import { prune, clone } from "../card/config.js";
+import { METRICS } from "../card/metrics.js";
+
+const GENERAL_SCHEMA = [
+  { name: "entity", required: true, selector: { entity: { domain: "weather" } }, helper: "Supplies the forecast and condition. Also set by Weather Sources." },
+  { name: "title", selector: { text: {} }, helper: "Optional title row above the panels." },
+  { name: "subtitle", selector: { text: {} } },
+  { name: "icon", selector: { icon: {} } },
+  { name: "layout", selector: { select: { options: [{ value: "auto", label: "Size to content" }, { value: "fullscreen", label: "Full screen (fills the view; panels scroll)" }] } } },
+  { name: "panel_bar", selector: { boolean: {} }, default: true, helper: "Panel buttons that show/hide panels or open pop-ups." },
+  { name: "remember", selector: { boolean: {} }, default: true, helper: "Remember which panels were toggled, per browser." },
+  { name: "row_height", selector: { number: { min: 40, max: 300, mode: "box", unit_of_measurement: "px" } }, helper: "Height of one row unit (default 110)." },
+  { name: "gap", selector: { number: { min: 0, max: 32, mode: "box", unit_of_measurement: "px" } }, helper: "Space between panels (default 12)." },
+];
+const GENERAL_DEFAULTS = { layout: "auto", panel_bar: true, remember: true };
+
+const LABELS = {
+  entity: "Weather entity", title: "Title", subtitle: "Subtitle", icon: "Icon", layout: "Layout", panel_bar: "Panel buttons",
+  remember: "Remember toggles", row_height: "Row height", gap: "Gap", span: "Width", rows: "Height", display: "Display",
+  in_bar: "Panel button", show: "Shown", metric: "Metric", label: "Label", color: "Color", digits: "Decimals", chart: "Sparkline",
+  hours: "Sparkline hours", show_minmax: "Show today's min/max", series: "Series", ranges: "Range buttons", range: "Default range",
+  show_readings: "Show current readings", left_min: "Left axis min", left_max: "Left axis max", right_min: "Right axis min",
+  right_max: "Right axis max", "entities.temperature": "Temperature sensor", "entities.dew_point": "Dew point sensor",
+  "entities.humidity": "Humidity sensor", "entities.wind_speed": "Wind speed sensor", "entities.wind_gust_speed": "Gust sensor",
+  "entities.wind_bearing": "Wind direction sensor", view: "Default view", show_chart: "Show speed/gust chart", rose_bins: "Rose speed bins",
+  radar: "Radar loop", base_map: "Base map", zoom: "Zoom", latitude: "Latitude", longitude: "Longitude", radar_opacity: "Radar opacity",
+  owm_api_key: "OpenWeatherMap API key", owm_layers: "OpenWeatherMap layers", owm_default: "Layer shown first", owm_opacity: "Layer opacity",
+  base_map_url: "Custom tile URL", base_map_attribution: "Custom tile attribution", day_offset: "Day", icon_size: "Icon size",
+  show_moon: "Show moon", show_sun: "Show sun", attribute: "Text attribute", alerts_entity: "Alerts sensor", card: "Card configuration",
+  show_status: "Show station status", show_bar: "Panel buttons here",
+};
+
+const getPath = (o, path) => path.split(".").reduce((a, k) => (a == null ? a : a[k]), o);
+function setPath(o, path, v) {
+  const keys = path.split(".");
+  let cur = o;
+  keys.slice(0, -1).forEach((k) => (cur = cur[k] = cur[k] && typeof cur[k] === "object" ? { ...cur[k] } : {}));
+  const last = keys[keys.length - 1];
+  if (v === undefined || v === "" || v === null || (Array.isArray(v) && !v.length)) delete cur[last];
+  else cur[last] = v;
+}
+
+/** Form data for a schema: stored value, else the field's (or computed) default. */
+function formData(obj, schema, defaults = {}) {
+  const d = {};
+  for (const f of schema) {
+    const v = getPath(obj, f.name);
+    d[f.name] = v !== undefined ? v : defaults[f.name] !== undefined ? defaults[f.name] : f.default;
+  }
+  return d;
+}
+
+/** Write form values back; values equal to their default are not stored. */
+function applyForm(obj, schema, data, defaults = {}) {
+  const out = clone(obj);
+  for (const f of schema) {
+    let v = data[f.name];
+    const def = defaults[f.name] !== undefined ? defaults[f.name] : f.default;
+    if (def !== undefined && JSON.stringify(v) === JSON.stringify(def)) v = undefined;
+    setPath(out, f.name, v);
+  }
+  return prune(out);
+}
+
+function panelDefaults(p) {
+  const m = panelMeta(p);
+  return { span: m.span, rows: m.rows, display: "grid", in_bar: inBarOf({ ...p, in_bar: undefined }), show: true };
+}
+
+function panelName(p) {
+  const m = panelMeta(p);
+  if (p.title) return p.title;
+  if (p.type === "metric") return METRICS[p.metric]?.label || p.label || "Metric tile";
+  if (p.type === "day") return ["Today", "Tomorrow"][Number(p.day_offset ?? 1)] || `Day +${p.day_offset}`;
+  return m.label;
+}
+
+class WeatherStationFlexCardEditor extends LitElement {
+  static properties = {
+    hass: { attribute: false },
+    _config: { state: true },
+    _open: { state: true }, // open top-level section id
+    _openPanel: { state: true }, // index of the expanded panel row
+    _addType: { state: true },
+  };
+
+  constructor() {
+    super();
+    this._open = "panels";
+    this._openPanel = null;
+    this._addType = "metric";
+    this._flexEds = new Map();
+  }
+
+  setConfig(config) {
+    this._config = config;
+  }
+
+  get _panels() {
+    return normalizePanels(this._config);
+  }
+
+  get _station() {
+    return { entity: this._config.entity, metric_sources: this._config.metric_sources };
+  }
+
+  _emit(config) {
+    this._config = config;
+    this.dispatchEvent(new CustomEvent("config-changed", { detail: { config }, bubbles: true, composed: true }));
+  }
+
+  // Panels are materialized on the first panel edit; the legacy top-level
+  // `hero:` moves into the hero panel's `flex:` at that point.
+  _setPanels(panels) {
+    this._emit({ ...this._withoutLegacyHero(), panels });
+  }
+
+  // `hero: false` (no implied hero) must survive; a legacy `hero: {...}` has
+  // been moved into the hero panel by normalizePanels and is dropped.
+  _withoutLegacyHero() {
+    const { hero, ...rest } = this._config;
+    return hero === false ? { ...rest, hero } : rest;
+  }
+
+  render() {
+    if (!this.hass || !this._config) return nothing;
+    return html`
+      <div class="ed">
+        <div class="hdr"><span class="name">${CARD_NAME}</span><span class="ver">v${CARD_VERSION} · Weather Flex sections ${FLEX_SECTIONS_BUILD}</span></div>
+        ${this._section("general", "mdi:cog-outline", "General", () => this._general())}
+        ${this._section("hero", "mdi:weather-partly-cloudy", "Hero & Weather Sources", () => this._heroEditor())}
+        ${this._section("panels", "mdi:view-dashboard-outline", `Panels (${this._panels.length})`, () => this._panelList())}
+      </div>
+    `;
+  }
+
+  _section(id, icon, title, body) {
+    const open = this._open === id;
+    return html`<details class="panel" ?open=${open} @toggle=${(e) => {
+      if (e.target.open) this._open = id;
+      else if (this._open === id) this._open = null;
+    }}>
+      <summary><ha-icon icon=${icon}></ha-icon><span>${title}</span></summary>
+      ${open ? html`<div class="body">${body()}</div>` : nothing}
+    </details>`;
+  }
+
+  _form(data, schema, onChange) {
+    return html`<ha-form
+      .hass=${this.hass}
+      .data=${data}
+      .schema=${schema}
+      .computeLabel=${(f) => f.label || LABELS[f.name] || f.name}
+      .computeHelper=${(f) => f.helper}
+      @value-changed=${(e) => {
+        e.stopPropagation();
+        onChange(e.detail.value);
+      }}
+    ></ha-form>`;
+  }
+
+  _general() {
+    return this._form(formData(this._config, GENERAL_SCHEMA, GENERAL_DEFAULTS), GENERAL_SCHEMA, (v) => {
+      const { panels: _p, ...rest } = this._config;
+      const next = applyForm(rest, GENERAL_SCHEMA, v, GENERAL_DEFAULTS);
+      if (this._config.panels) next.panels = this._config.panels;
+      this._emit(next);
+    });
+  }
+
+  _heroEditor() {
+    const panels = this._panels;
+    const i = panels.findIndex((p) => p.type === "hero");
+    if (i < 0) {
+      return html`<p class="hint">There is no hero panel. Weather Sources are edited inside any Weather Flex-based panel (Forecast, Sun & Moon, Weather Flex sections), or add a Hero panel below.</p>
+        <button class="btn" @click=${() => this._setPanels([{ type: "hero" }, ...panels])}><ha-icon icon="mdi:plus"></ha-icon>Add hero panel</button>`;
+    }
+    return html`<p class="hint">Weather Flex Card's editor. <b>Weather Sources</b> apply to the whole card; everything else styles the hero.</p>
+      ${this._flexEditor(i, panels[i])}`;
+  }
+
+  // One embedded Weather Flex editor per panel slot.
+  _flexEditor(i, p) {
+    const key = `${i}:${p.type}`;
+    let ed = this._flexEds.get(key);
+    if (!ed) {
+      ed = document.createElement(CORE_EDITOR_TAG);
+      ed.addEventListener("config-changed", (e) => {
+        e.stopPropagation();
+        this._onFlexChanged(ed._wsfcIndex, e.detail.config);
+      });
+      this._flexEds.set(key, ed);
+    }
+    ed._wsfcIndex = i;
+    const base = flexBase(p.type, this._station);
+    const cfg = deepMerge(base, p.flex || {});
+    const json = JSON.stringify(cfg);
+    if (ed._wsfcJson !== json) {
+      ed._wsfcJson = json;
+      ed.setConfig(cfg);
+    }
+    ed.hass = this.hass;
+    return html`<div class="flexed">${ed}</div>`;
+  }
+
+  _onFlexChanged(i, emitted) {
+    const panels = this._panels.map(clone);
+    const p = panels[i];
+    if (!p) return;
+    const base = flexBase(p.type, this._station);
+    const override = flexOverride(emitted, base);
+    if (Object.keys(override).length) p.flex = override;
+    else delete p.flex;
+    const next = { ...this._withoutLegacyHero(), panels };
+    if (emitted.entity) next.entity = emitted.entity;
+    if (emitted.metric_sources && Object.keys(emitted.metric_sources).length) next.metric_sources = emitted.metric_sources;
+    else delete next.metric_sources;
+    this._emit(next);
+  }
+
+  _panelList() {
+    const panels = this._panels;
+    const types = Object.entries(PANEL_TYPES).filter(([k]) => k !== "map");
+    return html`
+      <p class="hint">Panels fill a 12-column grid left to right, in this order. Set each panel's width and height under Layout; on tablets and phones panels widen automatically.</p>
+      <div class="rows">
+        ${panels.map((p, i) => this._panelRow(p, i, panels))}
+      </div>
+      <div class="add">
+        <select class="sel" .value=${this._addType} @change=${(e) => (this._addType = e.target.value)} aria-label="Panel type to add">
+          ${types.map(([k, m]) => html`<option value=${k} ?selected=${k === this._addType}>${m.label}</option>`)}
+        </select>
+        <button class="btn" @click=${() => {
+          const p = { type: this._addType };
+          if (p.type === "metric") p.metric = "temperature";
+          this._setPanels([...panels, p]);
+          this._openPanel = panels.length;
+        }}><ha-icon icon="mdi:plus"></ha-icon>Add panel</button>
+      </div>
+    `;
+  }
+
+  _panelRow(p, i, panels) {
+    const m = panelMeta(p);
+    const open = this._openPanel === i;
+    const hidden = p.show === false;
+    const move = (d) => {
+      const list = panels.slice();
+      const j = i + d;
+      if (j < 0 || j >= list.length) return;
+      [list[i], list[j]] = [list[j], list[i]];
+      this._flexEds.clear();
+      this._openPanel = this._openPanel === i ? j : this._openPanel === j ? i : this._openPanel;
+      this._setPanels(list);
+    };
+    const update = (np) => {
+      const list = panels.slice();
+      list[i] = np;
+      this._setPanels(list);
+    };
+    const size = `${spanOf(p)}/12${rowsOf(p) ? ` × ${rowsOf(p)}` : ""}${p.display === "popup" ? " · pop-up" : ""}`;
+    return html`<div class="row ${open ? "open" : ""} ${hidden ? "dim" : ""}">
+      <div class="line">
+        <ha-icon class="lead" icon=${p.icon || (p.type === "metric" && METRICS[p.metric]?.icon) || m.icon}></ha-icon>
+        <div class="txt"><div class="n">${panelName(p)}</div><div class="s">${m.label} · ${size}</div></div>
+        <button class="ib" title="Move up" ?disabled=${i === 0} @click=${() => move(-1)}><ha-icon icon="mdi:arrow-up"></ha-icon></button>
+        <button class="ib" title="Move down" ?disabled=${i === panels.length - 1} @click=${() => move(1)}><ha-icon icon="mdi:arrow-down"></ha-icon></button>
+        <button class="ib" title=${hidden ? "Show when the dashboard loads" : "Hide when the dashboard loads"} @click=${() => update(prune({ ...p, show: hidden ? undefined : false }))}>
+          <ha-icon icon=${hidden ? "mdi:eye-off" : "mdi:eye"}></ha-icon></button>
+        <button class="ib" title="Edit" @click=${() => (this._openPanel = open ? null : i)}><ha-icon icon=${open ? "mdi:chevron-up" : "mdi:pencil"}></ha-icon></button>
+        <button class="ib" title="Duplicate" @click=${() => {
+          const list = panels.slice();
+          list.splice(i + 1, 0, clone(p));
+          this._flexEds.clear();
+          this._setPanels(list);
+        }}><ha-icon icon="mdi:content-copy"></ha-icon></button>
+        <button class="ib del" title="Delete" @click=${() => {
+          const list = panels.slice();
+          list.splice(i, 1);
+          this._flexEds.clear();
+          this._openPanel = null;
+          this._setPanels(list);
+        }}><ha-icon icon="mdi:delete-outline"></ha-icon></button>
+      </div>
+      ${open ? this._panelBody(p, i, update) : nothing}
+    </div>`;
+  }
+
+  _panelBody(p, i, update) {
+    const m = panelMeta(p);
+    const defs = panelDefaults(p);
+    const common = p.type === "hero" ? COMMON_SCHEMA.filter((f) => !["icon", "display", "in_bar"].includes(f.name)) : COMMON_SCHEMA;
+    return html`<div class="pbody">
+      <div class="grp">Layout</div>
+      ${this._form(formData(p, common, defs), common, (v) => update({ type: p.type, ...applyForm(p, common, v, defs) }))}
+      ${m.schema.length
+        ? html`<div class="grp">${m.label} options</div>
+            ${this._form(formData(p, m.schema), m.schema, (v) => update({ type: p.type, ...applyForm(p, m.schema, v) }))}`
+        : nothing}
+      ${m.flex
+        ? html`<div class="grp">Weather Flex sections</div>
+            ${p.type === "hero" ? html`<p class="hint">Also under Hero & Weather Sources above.</p>` : this._flexEditor(i, p)}`
+        : nothing}
+    </div>`;
+  }
+
+  static styles = css`
+    :host {
+      display: block;
+      /* --ltek-* editor chrome tokens: copied verbatim from CARD_DESIGN_SYSTEM.md §1. */
+      --ltek-fs-panel-title: 16px;
+      --ltek-fs-header: 15px;
+      --ltek-fs-group: 14px;
+      --ltek-fs-label: 13px;
+      --ltek-fs-body: 12px;
+      --ltek-fs-small: 11px;
+      --ltek-fs-tiny: 10px;
+      --ltek-fw-normal: 400;
+      --ltek-fw-medium: 500;
+      --ltek-fw-semibold: 600;
+      --ltek-fw-bold: 700;
+      --ltek-c-text: var(--primary-text-color, #e1e1e1);
+      --ltek-c-label: #ccc;
+      --ltek-c-muted: #888;
+      --ltek-c-accent: var(--primary-color, #2196F3);
+      --ltek-c-accent-fade: rgba(var(--rgb-primary-color,33,150,243),0.12);
+      --ltek-c-accent-fade-soft: rgba(var(--rgb-primary-color,33,150,243),0.08);
+      --ltek-c-error-fade: rgba(244,67,54,0.15);
+      --ltek-c-error: var(--error-color, #f44336);
+      --ltek-c-success: var(--success-color, #4caf50);
+      --ltek-c-warning: var(--warning-color, #ffb300);
+      --ltek-c-info: var(--info-color, #2196F3);
+      --ltek-c-accent-lib: #7fd18a;
+      --ltek-c-on-accent: #fff;
+      --ltek-c-icon: #aaa;
+      --ltek-c-icon-hover: #fff;
+      --ltek-c-surface: rgba(255,255,255,0.015);
+      --ltek-c-surface-raised: rgba(255,255,255,0.02);
+      --ltek-c-panel-border: #3a3a3a;
+      --ltek-c-border: #444;
+      --ltek-c-border-soft: #333;
+      --ltek-r-panel: 12px;
+      --ltek-r-card: 10px;
+      --ltek-r-md: 8px;
+      --ltek-r-ctrl: 6px;
+      --ltek-sp-1: 4px;  --ltek-sp-2: 6px;  --ltek-sp-3: 8px;
+      --ltek-sp-4: 10px; --ltek-sp-5: 12px; --ltek-sp-6: 16px;
+      --ltek-ctrl-pad: 6px 10px;
+      --ltek-icon-sm: 16px;
+      --ltek-icon-lg: 20px;
+      --ltek-slider-val-w: 44px;
+    }
+    .ed { display: flex; flex-direction: column; gap: var(--ltek-sp-3); color: var(--ltek-c-text); font-size: var(--ltek-fs-body); }
+    .hdr { display: flex; align-items: baseline; gap: var(--ltek-sp-3); flex-wrap: wrap; padding: 0 var(--ltek-sp-1); }
+    .hdr .name { font-size: var(--ltek-fs-header); font-weight: var(--ltek-fw-bold); }
+    .hdr .ver { font-size: var(--ltek-fs-small); color: var(--ltek-c-muted); }
+    details.panel { border: 1px solid var(--ltek-c-panel-border); border-radius: var(--ltek-r-panel); background: var(--ltek-c-surface); }
+    details.panel[open] { border-color: var(--ltek-c-accent); }
+    summary { display: flex; align-items: center; gap: var(--ltek-sp-3); padding: var(--ltek-sp-5) var(--ltek-sp-6); cursor: pointer; font-size: var(--ltek-fs-panel-title); font-weight: var(--ltek-fw-semibold); list-style: none; }
+    summary::-webkit-details-marker { display: none; }
+    summary ha-icon { --mdc-icon-size: var(--ltek-icon-lg); color: var(--ltek-c-accent); }
+    .body { padding: 0 var(--ltek-sp-5) var(--ltek-sp-5); display: flex; flex-direction: column; gap: var(--ltek-sp-3); }
+    .hint { margin: 0; color: var(--ltek-c-muted); font-size: var(--ltek-fs-small); line-height: 1.4; }
+    .rows { display: flex; flex-direction: column; gap: var(--ltek-sp-2); }
+    .row { border: 1px solid var(--ltek-c-border-soft); border-radius: var(--ltek-r-card); background: var(--ltek-c-surface-raised); }
+    .row.open { border-color: var(--ltek-c-accent); }
+    .row.dim .txt, .row.dim .lead { opacity: 0.5; }
+    .line { display: flex; align-items: center; gap: var(--ltek-sp-1); padding: var(--ltek-sp-2) var(--ltek-sp-3); }
+    .lead { --mdc-icon-size: var(--ltek-icon-lg); color: var(--ltek-c-text); margin-right: var(--ltek-sp-2); }
+    .txt { flex: 1; min-width: 0; }
+    .txt .n { font-size: var(--ltek-fs-label); font-weight: var(--ltek-fw-medium); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .txt .s { font-size: var(--ltek-fs-small); color: var(--ltek-c-muted); }
+    .ib { border: 0; background: transparent; color: var(--ltek-c-icon); cursor: pointer; padding: var(--ltek-sp-1); border-radius: var(--ltek-r-ctrl); line-height: 0; }
+    .ib:hover:not([disabled]) { color: var(--ltek-c-icon-hover); background: var(--ltek-c-accent-fade-soft); }
+    .ib.del:hover { color: var(--ltek-c-error); background: var(--ltek-c-error-fade); }
+    .ib[disabled] { opacity: 0.3; cursor: default; }
+    .ib ha-icon { --mdc-icon-size: var(--ltek-icon-sm); }
+    .pbody { padding: 0 var(--ltek-sp-4) var(--ltek-sp-4); display: flex; flex-direction: column; gap: var(--ltek-sp-3); }
+    .grp { font-size: var(--ltek-fs-group); font-weight: var(--ltek-fw-semibold); margin-top: var(--ltek-sp-3); border-top: 1px solid var(--ltek-c-border-soft); padding-top: var(--ltek-sp-3); }
+    .add { display: flex; gap: var(--ltek-sp-3); align-items: center; }
+    .sel { flex: 1; font: inherit; font-size: var(--ltek-fs-label); padding: var(--ltek-ctrl-pad); border-radius: var(--ltek-r-ctrl); border: 1px solid var(--ltek-c-border); background: var(--card-background-color, #1c1c1c); color: var(--ltek-c-text); }
+    .btn { display: inline-flex; align-items: center; gap: var(--ltek-sp-2); font: inherit; font-size: var(--ltek-fs-label); padding: var(--ltek-ctrl-pad); border-radius: var(--ltek-r-ctrl); border: 0; background: var(--ltek-c-accent); color: var(--ltek-c-on-accent); cursor: pointer; }
+    .btn ha-icon { --mdc-icon-size: var(--ltek-icon-sm); }
+    .flexed { border-left: 2px solid var(--ltek-c-accent-fade); padding-left: var(--ltek-sp-3); }
+  `;
+}
+
+customElements.get("weather-station-flex-card-editor") || customElements.define("weather-station-flex-card-editor", WeatherStationFlexCardEditor);

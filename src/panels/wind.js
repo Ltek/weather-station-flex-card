@@ -3,12 +3,11 @@
 // speed/gust chart underneath.
 import { LitElement, html, svg, css } from "lit";
 import { Chart, baseOptions, withAlpha, INLINE_PLUGINS } from "./chart.js";
-import { panelStyles, seg, reading, fmt } from "./shared.js";
+import { panelStyles, seg, reading, fmt, head } from "./shared.js";
+import { cardinal } from "../card/metrics.js";
 import { pick, metricValue } from "../card/resolve.js";
 import { fetchHistory, decimate } from "../card/history.js";
 
-const CARDINALS = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"];
-const cardinal = (deg) => (deg == null || isNaN(deg) ? "—" : CARDINALS[Math.round((((deg % 360) + 360) % 360) / 22.5) % 16]);
 
 // Speed bins for the rose, in the sensor's own unit. Defaults suit mph; for
 // km/h or m/s the config can override `rose_bins`.
@@ -58,11 +57,7 @@ class WsfcWind extends LitElement {
     const di = metricValue(s, h, "wind_bearing");
     const unit = sp?.unit || gu?.unit || "";
     return html`
-      <div class="head">
-        <ha-icon icon="mdi:weather-windy"></ha-icon>
-        <span class="title">${this.config?.title || "Wind"}</span>
-        ${seg([{ value: "compass", label: "Compass" }, { value: "rose", label: "Rose 24h" }], view, (v) => (this._view = v), "Wind view")}
-      </div>
+      ${head(this.config, "mdi:weather-windy", "Wind", seg([{ value: "compass", label: "Compass" }, { value: "rose", label: "Rose 24h" }], view, (v) => (this._view = v), "Wind view"))}
       <div class="top">
         <div class="dial">${view === "rose" ? this._roseSvg(unit) : this._compassSvg(sp?.value, unit, di?.value)}</div>
         <div class="side">
@@ -74,7 +69,7 @@ class WsfcWind extends LitElement {
           ${view === "rose" ? this._roseLegend(unit) : ""}
         </div>
       </div>
-      <div class="body"><canvas aria-label="Wind speed and gust history"></canvas></div>
+      ${this.config?.show_chart === false ? "" : html`<div class="body"><canvas aria-label="Wind speed and gust history"></canvas></div>`}
       ${this._error ? html`<div class="note">${this._error}</div>` : ""}
     `;
   }

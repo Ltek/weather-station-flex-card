@@ -6,6 +6,8 @@ import {
   LineElement,
   PointElement,
   LinearScale,
+  BarController,
+  BarElement,
   Filler,
   Tooltip,
 } from "chart.js";
@@ -15,7 +17,7 @@ import {
 // a globally registered Tooltip/Legend would also appear on the vendored
 // forecast chart, and that chart registers chartjs-plugin-datalabels globally,
 // which baseOptions() switches off for our charts.
-Chart.register(LineController, LineElement, PointElement, LinearScale);
+Chart.register(LineController, LineElement, PointElement, LinearScale, BarController, BarElement);
 export const INLINE_PLUGINS = [Filler, Tooltip];
 
 export { Chart };

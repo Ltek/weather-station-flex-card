@@ -47,12 +47,16 @@
       select { font: inherit; }
       main { padding: 8px; }
       #frame { margin: 0 auto; }
+      #side { display: none; }
+      .with-editor main { display: grid; grid-template-columns: 1fr 460px; gap: 12px; align-items: start; }
+      .with-editor #side { display: flex; flex-direction: column-reverse; gap: 8px; background: #1c1c1c; padding: 12px; border-radius: 12px; }
+      #yaml { font-size: 10px; color: #8a8; white-space: pre-wrap; max-height: 300px; overflow: auto; margin: 0; }
     </style>
   </head>
   <body>
     <header>
       <b>Weather Station Flex Card — mockup</b>
-      <label>Layout <select data-param="layout"><option value="fullscreen">Full screen</option><option value="auto">Auto (normal card)</option></select></label>
+      <label>Layout <select data-param="layout"><option value="auto">Auto (normal card)</option><option value="fullscreen">Full screen</option></select></label>
       <label>Width <select data-param="width"><option value="full">Desktop</option><option value="tablet">Tablet</option><option value="phone">Phone</option></select></label>
       <label>Condition <select data-param="condition">
         <option>partlycloudy</option><option>sunny</option><option>clear-night</option><option>cloudy</option>
@@ -60,7 +64,8 @@
       </select></label>
       <label>Theme <select data-param="theme"><option value="dark">Dark</option><option value="light">Light</option></select></label>
     </header>
-    <main><div id="frame"><weather-station-flex-card></weather-station-flex-card></div></main>
+    <main><div id="frame"><weather-station-flex-card></weather-station-flex-card></div>
+      <aside id="side"><pre id="yaml"></pre></aside></main>
     <script type="module" src="./build/main.js"></script>
   </body>
 </html>
