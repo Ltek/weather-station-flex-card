@@ -9,6 +9,11 @@ import { CoreSlot, deepMerge } from "../card/core.js";
 // changes what existing configs look like — treat them like defaults.
 export const FLEX_BASES = {
   hero: {
+    // Weather Flex shows the weather entity's name (e.g. "OpenWeatherMap")
+    // under the condition. In a station dashboard the readings come from the
+    // station, so that label misleads; a blank name hides it (Weather Flex's
+    // documented way). Set a Name in the hero editor to show one.
+    name: " ",
     show_condition_effects: true,
     show_moon_phase: true,
     wfc: {

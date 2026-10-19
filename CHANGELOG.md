@@ -1,5 +1,9 @@
 # Changelog
 
+## v2026.10.19.6
+
+- **Hero:** no longer shows the weather entity's name (e.g. "OpenWeatherMap") under the condition — the readings come from your station, so the label was misleading. Set a *Name* in the Hero editor (Weather Flex's name field) to show your own label.
+
 ## v2026.10.19.5
 
 - **Sky Bar fixed:** its forecast temperatures, condition icons, extra metrics and cloud shading were missing whenever the Hourly and Daily sections were hidden (as in the hero), because the hourly forecast was never subscribed. It is now subscribed whenever the Sky Bar needs it. (Weather Flex Card has the same bug.)
