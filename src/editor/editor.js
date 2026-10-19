@@ -12,28 +12,37 @@
 // Its entity/metric_sources edits are global and go to the card's top level.
 import { LitElement, html, css, nothing } from "lit";
 import { CARD_VERSION, CARD_NAME } from "../card/constants.js";
-import { PANEL_TYPES, COMMON_SCHEMA, panelMeta, spanOf, rowsOf, inBarOf, normalizePanels } from "../card/panels.js";
+import { PANEL_TYPES, COMMON_SCHEMA, STACK_CHILD_SCHEMA, panelMeta, spanOf, rowsOf, inBarOf, normalizePanels } from "../card/panels.js";
 import { CORE_EDITOR_TAG, FLEX_SECTIONS_BUILD, flexOverride, deepMerge } from "../card/core.js";
 import { flexBase } from "../panels/flex.js";
 import { prune, clone } from "../card/config.js";
 import { METRICS } from "../card/metrics.js";
+import { metricSensor, entityValue } from "../card/resolve.js";
+
+const STATION_SCHEMA = [
+  { name: "station_device", selector: { device: {} }, helper: "Your weather station's gateway (e.g. the Ecowitt GW2000B). Its sensors are mapped automatically, outdoor first." },
+  { name: "entity", required: true, selector: { entity: { domain: "weather" } }, helper: "Weather entity for the forecast and condition (e.g. OpenWeatherMap). Fills any value the station doesn't have." },
+];
+const MAP_KEYS = ["temperature", "apparent_temperature", "dew_point", "humidity", "pressure", "wind_speed", "wind_gust_speed", "wind_bearing", "uv_index", "solar_radiation", "illuminance", "precipitation"];
+const MAP_LABELS = { wind_bearing: "Wind direction", precipitation: "Rain rate" };
 
 const GENERAL_SCHEMA = [
-  { name: "entity", required: true, selector: { entity: { domain: "weather" } }, helper: "Supplies the forecast and condition. Also set by Weather Sources." },
   { name: "title", selector: { text: {} }, helper: "Optional title row above the panels." },
   { name: "subtitle", selector: { text: {} } },
   { name: "icon", selector: { icon: {} } },
-  { name: "layout", selector: { select: { options: [{ value: "auto", label: "Size to content" }, { value: "fullscreen", label: "Full screen (fills the view; panels scroll)" }] } } },
+  { name: "layout", selector: { select: { options: [{ value: "auto", label: "Size to content" }, { value: "fullscreen", label: "Full screen (fills the view below the header)" }] } } },
+  { name: "fit_height", selector: { boolean: {} }, default: true, helper: "Full screen: panels with a height share the screen height (row height is calculated)." },
+  { name: "layout_size", selector: { select: { options: [{ value: "auto", label: "Automatic (from the card's width)" }, { value: "wide", label: "Wide — desktop layout" }, { value: "medium", label: "Medium — tablet layout" }, { value: "narrow", label: "Narrow — phone layout (stacked)" }] } }, helper: "In a Sections view the card is only as wide as its section; widen the section or use a Panel view for the desktop layout." },
   { name: "panel_bar", selector: { boolean: {} }, default: true, helper: "Panel buttons that show/hide panels or open pop-ups." },
   { name: "remember", selector: { boolean: {} }, default: true, helper: "Remember which panels were toggled, per browser." },
   { name: "row_height", selector: { number: { min: 40, max: 300, mode: "box", unit_of_measurement: "px" } }, helper: "Height of one row unit (default 110)." },
   { name: "gap", selector: { number: { min: 0, max: 32, mode: "box", unit_of_measurement: "px" } }, helper: "Space between panels (default 12)." },
 ];
-const GENERAL_DEFAULTS = { layout: "auto", panel_bar: true, remember: true };
+const GENERAL_DEFAULTS = { layout: "auto", panel_bar: true, remember: true, fit_height: true, layout_size: "auto" };
 
 const LABELS = {
   entity: "Weather entity", title: "Title", subtitle: "Subtitle", icon: "Icon", layout: "Layout", panel_bar: "Panel buttons",
-  remember: "Remember toggles", row_height: "Row height", gap: "Gap", span: "Width", rows: "Height", display: "Display",
+  remember: "Remember toggles", station_device: "Weather station device", layout_size: "Layout size", fit_height: "Fit panels to the screen height", row_height: "Row height", gap: "Gap", span: "Width", rows: "Height", display: "Display",
   in_bar: "Panel button", show: "Shown", metric: "Metric", label: "Label", color: "Color", digits: "Decimals", chart: "Sparkline",
   hours: "Sparkline hours", show_minmax: "Show today's min/max", series: "Series", ranges: "Range buttons", range: "Default range",
   show_readings: "Show current readings", left_min: "Left axis min", left_max: "Left axis max", right_min: "Right axis min",
@@ -44,7 +53,7 @@ const LABELS = {
   owm_api_key: "OpenWeatherMap API key", owm_layers: "OpenWeatherMap layers", owm_default: "Layer shown first", owm_opacity: "Layer opacity",
   base_map_url: "Custom tile URL", base_map_attribution: "Custom tile attribution", day_offset: "Day", icon_size: "Icon size",
   show_moon: "Show moon", show_sun: "Show sun", attribute: "Text attribute", alerts_entity: "Alerts sensor", card: "Card configuration",
-  show_status: "Show station status", show_bar: "Panel buttons here",
+  show_status: "Show station status", direction: "Direction", min_width: "Minimum width", grow: "Grow", show_bar: "Panel buttons here",
 };
 
 const getPath = (o, path) => path.split(".").reduce((a, k) => (a == null ? a : a[k]), o);
@@ -103,7 +112,7 @@ class WeatherStationFlexCardEditor extends LitElement {
 
   constructor() {
     super();
-    this._open = "panels";
+    this._open = "station";
     this._openPanel = null;
     this._addType = "metric";
     this._flexEds = new Map();
@@ -128,8 +137,13 @@ class WeatherStationFlexCardEditor extends LitElement {
 
   // Panels are materialized on the first panel edit; the legacy top-level
   // `hero:` moves into the hero panel's `flex:` at that point.
-  _setPanels(panels) {
-    this._emit({ ...this._withoutLegacyHero(), panels });
+  _setPanels(panels, extra) {
+    const next = { ...this._withoutLegacyHero(), panels };
+    for (const [k, v] of Object.entries(extra || {})) {
+      if (v === undefined) delete next[k];
+      else next[k] = v;
+    }
+    this._emit(next);
   }
 
   // `hero: false` (no implied hero) must survive; a legacy `hero: {...}` has
@@ -144,6 +158,7 @@ class WeatherStationFlexCardEditor extends LitElement {
     return html`
       <div class="ed">
         <div class="hdr"><span class="name">${CARD_NAME}</span><span class="ver">v${CARD_VERSION} · Weather Flex sections ${FLEX_SECTIONS_BUILD}</span></div>
+        ${this._section("station", "mdi:weather-cloudy-clock", "Weather station", () => this._stationEditor())}
         ${this._section("general", "mdi:cog-outline", "General", () => this._general())}
         ${this._section("hero", "mdi:weather-partly-cloudy", "Hero & Weather Sources", () => this._heroEditor())}
         ${this._section("panels", "mdi:view-dashboard-outline", `Panels (${this._panels.length})`, () => this._panelList())}
@@ -185,32 +200,96 @@ class WeatherStationFlexCardEditor extends LitElement {
     });
   }
 
+  _stationDevice() {
+    const src = (this._config.metric_sources?.sources || []).find((s) => !s.disabled && String(s.ref).startsWith("device:"));
+    return src ? src.ref.slice(7) : undefined;
+  }
+
+  // Device: replaces the previous station device in Weather Sources (first
+  // place if new). Weather entity: replaces the previous one in the list, or
+  // is appended last so it fills values the station doesn't have.
+  _setStation(old, v) {
+    let list = (this._config.metric_sources?.sources || []).map((x) => ({ ...x }));
+    const oldDev = old.station_device && `device:${old.station_device}`;
+    const newDev = v.station_device && `device:${v.station_device}`;
+    if (oldDev !== newDev) {
+      const i = oldDev ? list.findIndex((x) => x.ref === oldDev) : -1;
+      if (i >= 0) list.splice(i, 1);
+      if (newDev && !list.some((x) => x.ref === newDev)) list.splice(i >= 0 ? i : 0, 0, { ref: newDev });
+    }
+    if (v.entity && v.entity !== old.entity) {
+      const i = old.entity ? list.findIndex((x) => x.ref === old.entity) : -1;
+      if (list.some((x) => x.ref === v.entity)) { if (i >= 0) list.splice(i, 1); }
+      else if (i >= 0) list[i] = { ...list[i], ref: v.entity };
+      else list.push({ ref: v.entity });
+    } else if (v.entity && !list.some((x) => x.ref === v.entity)) list.push({ ref: v.entity });
+    const cfg = { ...this._config, entity: v.entity || this._config.entity };
+    const ms = { ...(this._config.metric_sources || {}) };
+    if (list.length) ms.sources = list;
+    else delete ms.sources;
+    if (Object.keys(ms).length) cfg.metric_sources = ms;
+    else delete cfg.metric_sources;
+    this._emit(cfg);
+  }
+
+  _stationEditor() {
+    const data = { station_device: this._stationDevice(), entity: this._config.entity };
+    const station = this._station;
+    return html`
+      ${this._form(data, STATION_SCHEMA, (v) => this._setStation(data, v))}
+      <div class="grp">Values used</div>
+      <div class="map">
+        ${MAP_KEYS.map((k) => {
+          const e = metricSensor(station, this.hass, k) || (this.hass.states[station.entity]?.attributes?.[k] != null ? station.entity : null);
+          const v = e && !e.startsWith("weather.") ? entityValue(this.hass, e) : null;
+          const label = MAP_LABELS[k] || METRICS[k]?.label || k.replace(/_/g, " ");
+          return html`<span class="k">${label}</span><span class="e ${e ? "" : "none"}" title=${e || ""}>${e || "not found"}</span><span class="v">${v ? `${v.value} ${v.unit}` : ""}</span>`;
+        })}
+      </div>
+      <p class="hint">More sources, priority order and per-value overrides: <b>Hero & Weather Sources → Weather Sources</b>.</p>
+    `;
+  }
+
   _heroEditor() {
     const panels = this._panels;
     const i = panels.findIndex((p) => p.type === "hero");
     if (i < 0) {
-      return html`<p class="hint">There is no hero panel. Weather Sources are edited inside any Weather Flex-based panel (Forecast, Sun & Moon, Weather Flex sections), or add a Hero panel below.</p>
+      return html`<p class="hint">There is no hero panel. Add one here, or set the station under <b>Weather station</b>.</p>
         <button class="btn" @click=${() => this._setPanels([{ type: "hero" }, ...panels])}><ha-icon icon="mdi:plus"></ha-icon>Add hero panel</button>`;
     }
+    const update = (np, extra) => {
+      const list = panels.slice();
+      list[i] = np;
+      this._setPanels(list, extra);
+    };
     return html`<p class="hint">Weather Flex Card's editor. <b>Weather Sources</b> apply to the whole card; everything else styles the hero.</p>
-      ${this._flexEditor(i, panels[i])}`;
+      ${this._flexEditor(`${i}`, panels[i], update)}`;
   }
 
-  // One embedded Weather Flex editor per panel slot.
-  _flexEditor(i, p) {
-    const key = `${i}:${p.type}`;
-    let ed = this._flexEds.get(key);
+  // One embedded Weather Flex editor per panel slot (key = path, e.g. "3" or "5.1").
+  _flexEditor(key, p, update) {
+    const k = `${key}:${p.type}`;
+    let ed = this._flexEds.get(k);
     if (!ed) {
       ed = document.createElement(CORE_EDITOR_TAG);
       ed.addEventListener("config-changed", (e) => {
         e.stopPropagation();
-        this._onFlexChanged(ed._wsfcIndex, e.detail.config);
+        ed._wsfcOnChange?.(e.detail.config);
       });
-      this._flexEds.set(key, ed);
+      this._flexEds.set(k, ed);
     }
-    ed._wsfcIndex = i;
-    const base = flexBase(p.type, this._station);
-    const cfg = deepMerge(base, p.flex || {});
+    ed._wsfcOnChange = (emitted) => {
+      const np = clone(p);
+      const override = flexOverride(emitted, flexBase(p.type, this._station));
+      if (Object.keys(override).length) np.flex = override;
+      else delete np.flex;
+      // Weather Sources edits are global.
+      const extra = {};
+      if (emitted.entity) extra.entity = emitted.entity;
+      extra.metric_sources = emitted.metric_sources && Object.keys(emitted.metric_sources).length ? emitted.metric_sources : undefined;
+      update(np, extra);
+    };
+    const cfg = deepMerge(flexBase(p.type, this._station), p.flex || {});
     const json = JSON.stringify(cfg);
     if (ed._wsfcJson !== json) {
       ed._wsfcJson = json;
@@ -220,93 +299,93 @@ class WeatherStationFlexCardEditor extends LitElement {
     return html`<div class="flexed">${ed}</div>`;
   }
 
-  _onFlexChanged(i, emitted) {
-    const panels = this._panels.map(clone);
-    const p = panels[i];
-    if (!p) return;
-    const base = flexBase(p.type, this._station);
-    const override = flexOverride(emitted, base);
-    if (Object.keys(override).length) p.flex = override;
-    else delete p.flex;
-    const next = { ...this._withoutLegacyHero(), panels };
-    if (emitted.entity) next.entity = emitted.entity;
-    if (emitted.metric_sources && Object.keys(emitted.metric_sources).length) next.metric_sources = emitted.metric_sources;
-    else delete next.metric_sources;
-    this._emit(next);
+  _panelList() {
+    return html`
+      <p class="hint">Panels fill a 12-column grid left to right, in this order. Set each panel's width and height under Layout; on tablets and phones panels widen automatically. To keep panels side by side on every screen, put them in a <b>Stack</b>.</p>
+      ${this._list(this._panels, (list, extra) => this._setPanels(list, extra), "")}
+    `;
   }
 
-  _panelList() {
-    const panels = this._panels;
-    const types = Object.entries(PANEL_TYPES).filter(([k]) => k !== "map");
+  /** A reorderable panel list (top level, or a stack's children). */
+  _list(panels, setList, prefix) {
+    const nested = !!prefix;
+    const types = Object.entries(PANEL_TYPES).filter(([k]) => k !== "map" && !(nested && k === "hero"));
+    const addKey = prefix || "top";
+    const addType = (this._addTypes ||= {})[addKey] || (nested ? "metric" : this._addType);
     return html`
-      <p class="hint">Panels fill a 12-column grid left to right, in this order. Set each panel's width and height under Layout; on tablets and phones panels widen automatically.</p>
-      <div class="rows">
-        ${panels.map((p, i) => this._panelRow(p, i, panels))}
-      </div>
+      <div class="rows">${panels.map((p, i) => this._panelRow(p, i, panels, setList, prefix ? `${prefix}.${i}` : `${i}`, nested))}</div>
       <div class="add">
-        <select class="sel" .value=${this._addType} @change=${(e) => (this._addType = e.target.value)} aria-label="Panel type to add">
-          ${types.map(([k, m]) => html`<option value=${k} ?selected=${k === this._addType}>${m.label}</option>`)}
+        <select class="sel" @change=${(e) => { this._addTypes[addKey] = e.target.value; this.requestUpdate(); }} aria-label="Panel type to add">
+          ${types.map(([k, m]) => html`<option value=${k} ?selected=${k === addType}>${m.label}</option>`)}
         </select>
         <button class="btn" @click=${() => {
-          const p = { type: this._addType };
+          const p = { type: addType };
           if (p.type === "metric") p.metric = "temperature";
-          this._setPanels([...panels, p]);
-          this._openPanel = panels.length;
-        }}><ha-icon icon="mdi:plus"></ha-icon>Add panel</button>
+          if (p.type === "stack") p.panels = [{ type: "metric", metric: "temperature" }, { type: "metric", metric: "humidity" }];
+          setList([...panels, p]);
+          this._openPanel = prefix ? `${prefix}.${panels.length}` : `${panels.length}`;
+        }}><ha-icon icon="mdi:plus"></ha-icon>${nested ? "Add to stack" : "Add panel"}</button>
       </div>
     `;
   }
 
-  _panelRow(p, i, panels) {
+  _panelRow(p, i, panels, setList, key, nested) {
     const m = panelMeta(p);
-    const open = this._openPanel === i;
+    const open = this._openPanel === key || String(this._openPanel || "").startsWith(`${key}.`);
     const hidden = p.show === false;
+    const reset = () => this._flexEds.clear();
     const move = (d) => {
       const list = panels.slice();
       const j = i + d;
       if (j < 0 || j >= list.length) return;
       [list[i], list[j]] = [list[j], list[i]];
-      this._flexEds.clear();
-      this._openPanel = this._openPanel === i ? j : this._openPanel === j ? i : this._openPanel;
-      this._setPanels(list);
+      reset();
+      this._openPanel = null;
+      setList(list);
     };
-    const update = (np) => {
+    const update = (np, extra) => {
       const list = panels.slice();
       list[i] = np;
-      this._setPanels(list);
+      setList(list, extra);
     };
-    const size = `${spanOf(p)}/12${rowsOf(p) ? ` × ${rowsOf(p)}` : ""}${p.display === "popup" ? " · pop-up" : ""}`;
+    const size = nested
+      ? `${p.grow != null ? `grow ${p.grow}` : ""}${p.rows ? ` · ${p.rows} rows` : ""}`
+      : `${spanOf(p)}/12${rowsOf(p) ? ` × ${rowsOf(p)}` : ""}${p.display === "popup" ? " · pop-up" : ""}`;
+    const sub = p.type === "stack" ? `${p.direction === "vertical" ? "Vertical" : "Horizontal"} stack · ${(p.panels || []).length} panels` : m.label;
     return html`<div class="row ${open ? "open" : ""} ${hidden ? "dim" : ""}">
       <div class="line">
-        <ha-icon class="lead" icon=${p.icon || (p.type === "metric" && METRICS[p.metric]?.icon) || m.icon}></ha-icon>
-        <div class="txt"><div class="n">${panelName(p)}</div><div class="s">${m.label} · ${size}</div></div>
+        <ha-icon class="lead" icon=${p.icon || (p.type === "metric" && METRICS[p.metric]?.icon) || (p.type === "stack" && p.direction === "vertical" ? "mdi:view-agenda-outline" : m.icon)}></ha-icon>
+        <div class="txt"><div class="n">${panelName(p)}</div><div class="s">${sub}${size ? ` · ${size}` : ""}</div></div>
         <button class="ib" title="Move up" ?disabled=${i === 0} @click=${() => move(-1)}><ha-icon icon="mdi:arrow-up"></ha-icon></button>
         <button class="ib" title="Move down" ?disabled=${i === panels.length - 1} @click=${() => move(1)}><ha-icon icon="mdi:arrow-down"></ha-icon></button>
-        <button class="ib" title=${hidden ? "Show when the dashboard loads" : "Hide when the dashboard loads"} @click=${() => update(prune({ ...p, show: hidden ? undefined : false }))}>
-          <ha-icon icon=${hidden ? "mdi:eye-off" : "mdi:eye"}></ha-icon></button>
-        <button class="ib" title="Edit" @click=${() => (this._openPanel = open ? null : i)}><ha-icon icon=${open ? "mdi:chevron-up" : "mdi:pencil"}></ha-icon></button>
+        ${nested
+          ? nothing
+          : html`<button class="ib" title=${hidden ? "Show when the dashboard loads" : "Hide when the dashboard loads"} @click=${() => update(prune({ ...p, show: hidden ? undefined : false }))}>
+              <ha-icon icon=${hidden ? "mdi:eye-off" : "mdi:eye"}></ha-icon></button>`}
+        <button class="ib" title="Edit" @click=${() => (this._openPanel = this._openPanel === key ? null : key)}><ha-icon icon=${open ? "mdi:chevron-up" : "mdi:pencil"}></ha-icon></button>
         <button class="ib" title="Duplicate" @click=${() => {
           const list = panels.slice();
           list.splice(i + 1, 0, clone(p));
-          this._flexEds.clear();
-          this._setPanels(list);
+          reset();
+          setList(list);
         }}><ha-icon icon="mdi:content-copy"></ha-icon></button>
         <button class="ib del" title="Delete" @click=${() => {
           const list = panels.slice();
           list.splice(i, 1);
-          this._flexEds.clear();
+          reset();
           this._openPanel = null;
-          this._setPanels(list);
+          setList(list);
         }}><ha-icon icon="mdi:delete-outline"></ha-icon></button>
       </div>
-      ${open ? this._panelBody(p, i, update) : nothing}
+      ${open ? this._panelBody(p, key, update, nested) : nothing}
     </div>`;
   }
 
-  _panelBody(p, i, update) {
+  _panelBody(p, key, update, nested) {
     const m = panelMeta(p);
-    const defs = panelDefaults(p);
-    const common = p.type === "hero" ? COMMON_SCHEMA.filter((f) => !["icon", "display", "in_bar"].includes(f.name)) : COMMON_SCHEMA;
+    const defs = nested ? {} : panelDefaults(p);
+    let common = nested ? STACK_CHILD_SCHEMA : COMMON_SCHEMA;
+    if (p.type === "hero") common = common.filter((f) => !["icon", "display", "in_bar"].includes(f.name));
     return html`<div class="pbody">
       <div class="grp">Layout</div>
       ${this._form(formData(p, common, defs), common, (v) => update({ type: p.type, ...applyForm(p, common, v, defs) }))}
@@ -314,9 +393,13 @@ class WeatherStationFlexCardEditor extends LitElement {
         ? html`<div class="grp">${m.label} options</div>
             ${this._form(formData(p, m.schema), m.schema, (v) => update({ type: p.type, ...applyForm(p, m.schema, v) }))}`
         : nothing}
+      ${p.type === "stack"
+        ? html`<div class="grp">Panels in this stack</div>
+            <div class="nest">${this._list(p.panels || [], (list, extra) => update({ ...p, panels: list }, extra), key)}</div>`
+        : nothing}
       ${m.flex
         ? html`<div class="grp">Weather Flex sections</div>
-            ${p.type === "hero" ? html`<p class="hint">Also under Hero & Weather Sources above.</p>` : this._flexEditor(i, p)}`
+            ${p.type === "hero" && !nested ? html`<p class="hint">Also under Hero & Weather Sources above.</p>` : this._flexEditor(key, p, update)}`
         : nothing}
     </div>`;
   }
@@ -398,6 +481,12 @@ class WeatherStationFlexCardEditor extends LitElement {
     .sel { flex: 1; font: inherit; font-size: var(--ltek-fs-label); padding: var(--ltek-ctrl-pad); border-radius: var(--ltek-r-ctrl); border: 1px solid var(--ltek-c-border); background: var(--card-background-color, #1c1c1c); color: var(--ltek-c-text); }
     .btn { display: inline-flex; align-items: center; gap: var(--ltek-sp-2); font: inherit; font-size: var(--ltek-fs-label); padding: var(--ltek-ctrl-pad); border-radius: var(--ltek-r-ctrl); border: 0; background: var(--ltek-c-accent); color: var(--ltek-c-on-accent); cursor: pointer; }
     .btn ha-icon { --mdc-icon-size: var(--ltek-icon-sm); }
+    .map { display: grid; grid-template-columns: auto 1fr auto; gap: 2px var(--ltek-sp-4); font-size: var(--ltek-fs-small); align-items: baseline; }
+    .map .k { color: var(--ltek-c-label); }
+    .map .e { font-family: monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .map .e.none { color: var(--ltek-c-muted); font-family: inherit; font-style: italic; }
+    .map .v { color: var(--ltek-c-muted); white-space: nowrap; }
+    .nest { border-left: 2px solid var(--ltek-c-border); padding-left: var(--ltek-sp-3); display: flex; flex-direction: column; gap: var(--ltek-sp-3); }
     .flexed { border-left: 2px solid var(--ltek-c-accent-fade); padding-left: var(--ltek-sp-3); }
   `;
 }

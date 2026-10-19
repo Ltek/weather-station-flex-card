@@ -5,8 +5,6 @@ export const panelStyles = css`
   :host {
     display: flex;
     flex-direction: column;
-    min-height: 0;
-    height: 100%;
     color: var(--primary-text-color);
     --wsfc-muted: var(--secondary-text-color);
     --wsfc-temp: var(--wsfc-temp-color, #ff9800);
@@ -57,6 +55,30 @@ export const panelStyles = css`
   .reading .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
   .body { position: relative; flex: 1; min-height: 160px; }
   .note { color: var(--wsfc-muted); font-size: 13px; padding: 8px 0; }
+`;
+
+/** Panel tile look (card grid, stacks, pop-ups). */
+export const tileStyles = css`
+    .tile {
+      position: relative;
+      background: var(--wsfc-tile-bg, rgba(127, 127, 127, 0.08));
+      border-radius: var(--wsfc-radius, 16px);
+      padding: 12px 14px;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      box-sizing: border-box;
+      /* visible: a non-visible overflow would let the grid shrink a tile below
+         its content (its automatic minimum height becomes 0). Panels clip
+         their own content. */
+      overflow: visible;
+    }
+    /* The hero's Weather Flex card draws its own background and sizes to its sections. */
+    .tile.hero { background: transparent; padding: 0; }
+    .tile.bare { background: transparent; padding: 4px 2px; overflow: visible; }
+    .tile.stack { background: transparent; padding: 0; overflow: visible; }
+    /* Children fill the tile but never shrink below their content. */
+    .tile > :not(.expand) { flex: 1 0 auto; }
 `;
 
 /** Panel-button chips (card top bar and heading panels). */

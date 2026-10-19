@@ -85,9 +85,26 @@ export const FLEX_BASES = {
 const HERO_LARGE = {
   wfc: { current: { header_temp_size: 72, header_state_size: 24, header_icon_size: 96, clock_font_size: 56, clock_date_font_size: 18 } },
 };
+// Narrow: the clock moves under the conditions so the condition, icon and
+// temperature keep the top-left corner.
 const HERO_NARROW = {
-  wfc: { current: { clock_placement: "above-right", clock_font_size: 28, clock_date_font_size: 12 } },
+  wfc: { current: { clock_placement: "below-right", clock_font_size: 26, clock_date_font_size: 12 } },
 };
+
+// Weather Flex sizes its ha-card to its sections (height:auto !important).
+// In a hero tile the card should fill the tile so its animated background
+// does too. Adopted sheets come after the card's own <style> in cascade order.
+let fillSheet;
+function fillTile(core) {
+  const root = core?.shadowRoot;
+  if (!root || root.__wsfcFill) return;
+  if (!fillSheet) {
+    fillSheet = new CSSStyleSheet();
+    fillSheet.replaceSync("ha-card { min-height: 100% !important; box-sizing: border-box; }");
+  }
+  root.adoptedStyleSheets = [...root.adoptedStyleSheets, fillSheet];
+  root.__wsfcFill = true;
+}
 
 /** Base config (with the station's entity/sources) for a flex-based panel. */
 export function flexBase(type, station) {
@@ -95,7 +112,7 @@ export function flexBase(type, station) {
 }
 
 const coreStyles = css`
-  .core { margin: 0 -4px; flex: 1; min-height: 0; }
+  .core { margin: 0 -4px; flex: 1 0 auto; }
   .core > * { --ha-card-background: transparent; --card-padding: 4px; --ha-card-box-shadow: none; --ha-card-border-width: 0; }
   .err { color: var(--error-color, #db4437); font-size: 12px; }
 `;
@@ -164,6 +181,10 @@ class WsfcHeroPanel extends WsfcFlexPanel {
     if (this._size === "large") cfg = deepMerge(cfg, HERO_LARGE);
     if (this._size === "narrow") cfg = deepMerge(cfg, HERO_NARROW);
     return deepMerge(cfg, this.config?.flex || {});
+  }
+
+  updated() {
+    fillTile(this._slot.el);
   }
 
   render() {

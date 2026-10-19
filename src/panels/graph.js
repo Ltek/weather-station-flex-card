@@ -137,6 +137,9 @@ export class WsfcGraph extends LitElement {
         ticks: { color: opts._text, maxTicksLimit: 6, callback: (v) => `${+v.toFixed(2)}${s?.unit && s.unit.length <= 3 ? s.unit : ""}` },
       };
       if (pct) Object.assign(a, { min: 0, max: 100 });
+      // Non-negative quantities (UV, irradiance, lux, rain, wind) start at zero.
+      const nonNeg = series.filter((x) => x.axis === pos).every((x) => /uv_index|solar_radiation|illuminance|rain|wind|humidity/.test(x.metric || ""));
+      if (nonNeg && series.some((x) => x.axis === pos)) a.min = a.min ?? 0;
       if (series.some((x) => x.axis === (pos === "left" ? "left" : "right") && x.style === "bar")) a.beginAtZero = true;
       const c = this.config || {};
       const mn = c[`${pos}_min`], mx = c[`${pos}_max`];
@@ -187,5 +190,21 @@ class WsfcTempHumidity extends WsfcGraph {
   }
 }
 
+class WsfcUvSolar extends WsfcGraph {
+  get defaultSeries() {
+    return [
+      { metric: "uv_index", style: "area", color: "#ffa726" },
+      { metric: "solar_radiation", axis: "right", color: "#ffd54f" },
+    ];
+  }
+  get defaultTitle() {
+    return "UV & Solar radiation";
+  }
+  get defaultIcon() {
+    return "mdi:weather-sunny-alert";
+  }
+}
+
 customElements.get("wsfc-panel-graph") || customElements.define("wsfc-panel-graph", WsfcGraph);
 customElements.get("wsfc-panel-temp-humidity") || customElements.define("wsfc-panel-temp-humidity", WsfcTempHumidity);
+customElements.get("wsfc-panel-uv-solar") || customElements.define("wsfc-panel-uv-solar", WsfcUvSolar);

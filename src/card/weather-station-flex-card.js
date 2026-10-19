@@ -6,7 +6,7 @@
 // dashboard.
 import { LitElement, html, css, nothing } from "lit";
 import { CARD_VERSION, CARD_TYPE, CARD_NAME } from "./constants.js";
-import { chipStyles } from "../panels/shared.js";
+import { chipStyles, tileStyles } from "../panels/shared.js";
 import { panelMeta, rowsOf, inBarOf, normalizePanels, layoutOf } from "./panels.js";
 import "../panels/flex.js";
 import "../panels/graph.js";
@@ -15,6 +15,7 @@ import "../panels/radar.js";
 import "../panels/sun-moon.js";
 import "../panels/metric.js";
 import "../panels/info.js";
+import "../panels/stack.js";
 import "../editor/editor.js";
 
 const NARROW_PX = 720;
@@ -105,6 +106,8 @@ class WeatherStationFlexCard extends LitElement {
       const c = this._config || {};
       const size = w < (c.narrow_width || NARROW_PX) ? "narrow" : w < (c.medium_width || MEDIUM_PX) ? "medium" : "wide";
       if (size !== this._size) this._size = size;
+      this._width = w;
+      this._scheduleFit();
     });
     this._ro.observe(this);
     this._onKey = (e) => {
@@ -121,6 +124,65 @@ class WeatherStationFlexCard extends LitElement {
     window.removeEventListener("keydown", this._onKey);
   }
 
+  /** Layout size: forced by `layout_size`, else from the card's width. */
+  get _layoutSize() {
+    const f = this._config?.layout_size;
+    return ["wide", "medium", "narrow"].includes(f) ? f : this._size || "wide";
+  }
+
+  // Full screen = the card fills the view below the header. Explicit-height
+  // panels share the height: the row unit is solved so the grid's content
+  // height matches the space available (content still scrolls if it can't fit).
+  get _full() {
+    return this._config?.layout === "fullscreen" && this._layoutSize !== "narrow";
+  }
+
+  updated() {
+    // Re-fit when the layout inputs change, and once more after panels have
+    // loaded their content (charts, forecasts).
+    const key = JSON.stringify([this._config?.panels, [...(this._hidden || [])], this._focus, this._layoutSize, this._config?.layout]);
+    if (key === this._fitKey) return;
+    this._fitKey = key;
+    this._scheduleFit();
+    clearTimeout(this._fitLate);
+    this._fitLate = setTimeout(() => this._scheduleFit(), 1500);
+  }
+
+  _scheduleFit() {
+    if (this._fitRaf) return;
+    this._fitRaf = requestAnimationFrame(() => {
+      this._fitRaf = null;
+      this._fit();
+    });
+  }
+
+  _fit() {
+    const grid = this.renderRoot?.querySelector(".grid");
+    const scroller = this.renderRoot?.querySelector(".scroller");
+    if (!grid || !scroller) return;
+    const c = this._config;
+    if (!this._full || c.fit_height === false || this._focus != null) {
+      if (grid.style.getPropertyValue("--wsfc-row")) grid.style.removeProperty("--wsfc-row");
+      return;
+    }
+    const min = c.min_row_height || 60;
+    const max = c.max_row_height || 400;
+    const avail = scroller.clientHeight;
+    if (!avail) return;
+    // Explicit-height panels grow linearly with the row unit: measure the
+    // grid at two row heights to get the slope, then solve for a fit.
+    const at = (x) => {
+      grid.style.setProperty("--wsfc-row", `${x}px`);
+      return grid.getBoundingClientRect().height;
+    };
+    const x0 = min, x1 = min + 40;
+    const h0 = at(x0), h1 = at(x1);
+    const slope = (h1 - h0) / (x1 - x0);
+    let x = c.row_height || 110;
+    if (slope > 0.5) x = Math.max(min, Math.min(max, x0 + (avail - h0) / slope));
+    grid.style.setProperty("--wsfc-row", `${Math.floor(x)}px`);
+  }
+
   // Shared "station" config handed to every panel: entity + Weather Sources.
   get _station() {
     return { entity: this._config.entity, metric_sources: this._config.metric_sources };
@@ -129,17 +191,17 @@ class WeatherStationFlexCard extends LitElement {
   render() {
     if (!this._config || !this.hass) return nothing;
     const c = this._config;
-    const full = c.layout === "fullscreen";
+    const full = this._full;
     const style = [
       c.row_height ? `--wsfc-row:${c.row_height}px` : "",
       c.gap != null ? `--wsfc-gap:${c.gap}px` : "",
     ].join(";");
     const barInHeading = c.panels.some((p) => p.type === "heading" && p.show_bar);
     return html`
-      <ha-card class=${`wsfc ${full ? "full" : ""} ${this._size || "wide"}`} style=${style}>
+      <ha-card class=${`wsfc ${full ? "full" : ""} ${this._layoutSize}`} style=${style}>
         ${c.title ? this._renderTitle() : nothing}
         ${c.panel_bar === false || barInHeading ? nothing : html`<div class="topbar">${this._renderBar()}</div>`}
-        <div class="grid">${this._renderPanels()}</div>
+        <div class="scroller"><div class="grid">${this._renderPanels()}</div></div>
         ${this._popup != null ? this._renderPopup() : nothing}
       </ha-card>
     `;
@@ -199,7 +261,7 @@ class WeatherStationFlexCard extends LitElement {
     let idx = panels.map((p, i) => i).filter((i) => panels[i].display !== "popup" && !this._hidden.has(this._key(panels[i], i)));
     if (this._focus != null) idx = [this._focus];
     if (!idx.length) return html`<div class="empty">All panels are hidden — use the panel buttons to show one.</div>`;
-    const size = this._size || "wide";
+    const size = this._layoutSize;
     return idx.map((i) => {
       const p = panels[i];
       const meta = panelMeta(p);
@@ -209,7 +271,7 @@ class WeatherStationFlexCard extends LitElement {
       // Tracks are content-sized; a panel spanning N rows gets the height of N row units.
       const style = `grid-column: span ${span};${rows ? `grid-row: span ${rows};min-height:calc(${rows} * var(--wsfc-row) + ${rows - 1} * var(--wsfc-gap));` : ""}`;
       const bare = meta.bare || p.type === "hero";
-      const expandable = !bare && p.type !== "metric" && size !== "narrow";
+      const expandable = !bare && !["metric", "stack"].includes(p.type) && size !== "narrow";
       return html`<section class="tile ${p.type} ${meta.bare ? "bare" : ""} ${rows ? "" : "auto"}" style=${style}>
         ${expandable
           ? html`<button class="expand" type="button" @click=${() => (this._focus = this._focus == null ? i : null)}
@@ -254,7 +316,7 @@ class WeatherStationFlexCard extends LitElement {
     return el;
   }
 
-  static styles = [chipStyles, css`
+  static styles = [chipStyles, tileStyles, css`
     :host {
       display: block;
       --wsfc-gap: 12px;
@@ -276,7 +338,11 @@ class WeatherStationFlexCard extends LitElement {
       height: calc(100dvh - var(--header-height, 56px) - 16px);
       min-height: 480px;
     }
-    .full .grid { flex: 1; overflow: auto; min-height: 0; padding-bottom: 2px; }
+    /* The grid keeps its natural height (a definite-height grid would let
+       Chrome shrink multi-row tiles below their content); the scroller fills
+       the card and scrolls. */
+    .scroller { min-height: 0; }
+    .full .scroller { flex: 1; overflow: auto; }
 
     .title-row { display: flex; align-items: center; gap: 10px; }
     .title-row ha-icon { --mdc-icon-size: 30px; color: var(--primary-color); }
@@ -293,22 +359,6 @@ class WeatherStationFlexCard extends LitElement {
       grid-auto-rows: auto;
       align-content: start;
     }
-    .tile {
-      position: relative;
-      background: var(--wsfc-tile-bg);
-      border-radius: var(--wsfc-radius);
-      padding: 12px 14px;
-      min-width: 0;
-      display: flex;
-      flex-direction: column;
-      box-sizing: border-box;
-      overflow: hidden;
-    }
-    .tile.auto { grid-row: auto; }
-    /* The hero's Weather Flex card draws its own background and sizes to its sections. */
-    .tile.hero { background: transparent; padding: 0; }
-    .tile.bare { background: transparent; padding: 4px 2px; overflow: visible; }
-    .tile > :not(.expand) { flex: 1; min-height: 0; }
     .expand {
       position: absolute; top: 8px; right: 8px; z-index: 3;
       border: 0; background: transparent; color: var(--secondary-text-color);

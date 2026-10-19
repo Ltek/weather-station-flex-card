@@ -4,7 +4,7 @@ A weather-station dashboard in one Home Assistant card. Panels sit in a 12-colum
 
 Built around an Ecowitt WS90 / GW2000B; works with any station whose sensors are in Home Assistant.
 
-Current build: **v2026.10.18.2** · full history in [CHANGELOG.md](CHANGELOG.md)
+Current build: **v2026.10.19.3** · full history in [CHANGELOG.md](CHANGELOG.md)
 
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Ltek&repository=weather-station-flex-card&category=plugin)
 
@@ -28,11 +28,14 @@ title: Weather station
 
 With no `panels:` you get the default dashboard: hero, bulletin, a "Local measurements" heading with the panel buttons, wind, six metric tiles (temperature, rain today, humidity, UV, solar radiation, pressure), forecast and tomorrow; Temp & Humidity and Sun & Moon start hidden, and the radar opens as a pop-up.
 
-For a full-screen dashboard put the card in a **Panel** view and set `layout: fullscreen`.
+**Desktop layout needs width.** The layout follows the card's own width: under 720 px it stacks panels (phone layout), under 1100 px it uses the tablet layout. In a **Sections** view a card is only as wide as its section — use a **Panel** view, or make the section span the full width. `layout_size: wide` forces the desktop layout.
+
+For a full-screen dashboard put the card in a **Panel** view and set `layout: fullscreen`. Panels with a height share the screen height (`fit_height: false` turns that off); anything that still doesn't fit scrolls inside the card.
 
 ## The editor
 
-- **General** — weather entity, title, layout, panel buttons, row height and gap.
+- **Weather station** — pick your station device (e.g. the Ecowitt GW2000B) and the forecast weather entity, and see which sensor is used for each value.
+- **General** — title, layout, layout size, full-screen fit, panel buttons, row height and gap.
 - **Hero & Weather Sources** — Weather Flex Card's complete editor (card appearance, Weather Sources, section order, header, metrics/chips, hourly, daily, sun position, sky bar, clock, actions, advanced). Weather Sources apply to the whole card.
 - **Panels** — reorder, show/hide, duplicate, delete and add panels. Each panel has **Layout** (title, icon, width, height, grid or pop-up, panel button, shown on load) and its own options. Forecast, Sun & Moon and Weather Flex sections panels also embed Weather Flex Card's editor for their sections.
 
@@ -48,6 +51,8 @@ Only what you change is saved, so the YAML stays short.
 | `metric` | One value: today's min/max, a 24h sparkline (line or hourly bars), UV level, pressure trend. `metric:` temperature, apparent_temperature, dew_point, humidity, pressure, wind_speed, wind_gust_speed, uv_index, solar_radiation, illuminance, rain_rate, rain_today, rain_24h, rain_event, vpd, indoor_temperature, indoor_humidity — or any `entity`. |
 | `graph` | Any series on two axes; 6h–48h from history, 7d–365d from long-term statistics with min–max bands. |
 | `temp_humidity` | Graph preset: temperature, dew point and humidity. |
+| `uv_solar` | Graph preset: UV index (left axis, shaded) and solar radiation (right axis). |
+| `stack` | Child panels side by side (`direction: horizontal`, wraps only below `min_width`) or one above another (`vertical`). Children take `grow` (relative width), `min_width` and `rows`. |
 | `wind` | Compass or 24h wind rose, plus a speed/gust chart. |
 | `radar` | RainViewer radar loop on a choice of base maps (gray, streets, topo, satellite imagery, OSM or a custom URL), optional OpenWeatherMap layers. `radar: false` gives a plain map — add several with different zooms and layers. |
 | `forecast` | Weather Flex hourly + daily sections. |
@@ -70,8 +75,12 @@ panels:
     title: Local measurements
     show_status: true
     show_bar: true
-  - type: metric
-    metric: rain_today
+  - type: stack               # always side by side when there is room
+    direction: horizontal
+    panels:
+      - { type: metric, metric: rain_today }
+      - { type: metric, metric: uv_index }
+      - { type: uv_solar, grow: 2 }
   - type: graph
     title: Pressure & wind
     series:

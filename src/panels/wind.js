@@ -27,12 +27,12 @@ class WsfcWind extends LitElement {
     panelStyles,
     css`
       .top { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
-      .dial { flex: 0 0 auto; width: min(200px, 46%); aspect-ratio: 1; }
+      .dial { flex: 0 0 auto; width: min(180px, 42%); aspect-ratio: 1; }
       .dial svg { width: 100%; height: 100%; overflow: visible; }
       .side { flex: 1; min-width: 140px; display: flex; flex-direction: column; gap: 10px; }
       .legend { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 11px; color: var(--wsfc-muted); }
       .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
-      .body { min-height: 120px; margin-top: 8px; }
+      .body { min-height: 100px; margin-top: 8px; }
       .ring { fill: none; stroke: var(--divider-color, rgba(127,127,127,.35)); }
       .tick { stroke: var(--secondary-text-color); opacity: .5; }
       .lbl { fill: var(--secondary-text-color); font-size: 11px; text-anchor: middle; dominant-baseline: central; }

@@ -69,6 +69,22 @@ export const PANEL_TYPES = {
       { name: "show_readings", selector: { boolean: {} }, default: true },
     ],
   },
+  uv_solar: {
+    tag: "wsfc-panel-uv-solar", label: "UV & Solar", icon: "mdi:weather-sunny-alert", span: 6, rows: 3,
+    schema: [
+      { name: "range", selector: { select: { options: RANGES.map((r) => ({ value: r, label: r })) } } },
+      { name: "entities.uv_index", label: "UV index sensor", selector: ent("sensor") },
+      { name: "entities.solar_radiation", label: "Solar radiation sensor", selector: ent("sensor") },
+      { name: "show_readings", selector: { boolean: {} }, default: true },
+    ],
+  },
+  stack: {
+    tag: "wsfc-panel-stack", label: "Stack (side by side / stacked)", icon: "mdi:view-column-outline", span: 12, rows: 0, inBar: false,
+    schema: [
+      { name: "direction", selector: { select: { options: opt([["horizontal", "Horizontal — side by side"], ["vertical", "Vertical — one above another"]]) } }, default: "horizontal" },
+      { name: "min_width", selector: { number: { min: 80, max: 800, mode: "box", unit_of_measurement: "px" } }, helper: "Horizontal: children wrap to a new line only below this width (default 180)." },
+    ],
+  },
   wind: {
     tag: "wsfc-panel-wind", label: "Wind", icon: "mdi:weather-windy", span: 6, rows: 4,
     schema: [
@@ -136,6 +152,15 @@ export const COMMON_SCHEMA = [
   { name: "show", selector: { boolean: {} }, default: true, helper: "Visible when the dashboard loads." },
 ];
 
+/** Layout fields for a panel inside a stack (it has no grid position). */
+export const STACK_CHILD_SCHEMA = [
+  { name: "title", selector: { text: {} } },
+  { name: "icon", selector: { icon: {} } },
+  { name: "grow", selector: { number: { min: 0, max: 12, step: 0.5, mode: "box" } }, helper: "Horizontal: relative width (default 1). Vertical: 1 = share leftover height." },
+  { name: "min_width", selector: { number: { min: 80, max: 800, mode: "box", unit_of_measurement: "px" } }, helper: "Horizontal: narrowest this panel gets before wrapping." },
+  { name: "rows", selector: { number: { min: 0, max: 10, mode: "slider" } }, helper: "Vertical: minimum height in row units." },
+];
+
 export const panelMeta = (p) => PANEL_TYPES[p?.type] || null;
 export const spanOf = (p) => Math.max(1, Math.min(12, Number(p.span ?? panelMeta(p)?.span ?? 6)));
 /**
@@ -169,9 +194,11 @@ export const DEFAULT_PANELS = [
   { type: "metric", metric: "uv_index" },
   { type: "metric", metric: "solar_radiation" },
   { type: "metric", metric: "pressure" },
-  { type: "forecast" },
+  { type: "forecast", title: "Hourly forecast", icon: "mdi:clock-outline", flex: { wfc: { daily: { show: false } } } },
   { type: "day" },
+  { type: "forecast", title: "Daily forecast", show: false, flex: { wfc: { hourly: { show: false } } } },
   { type: "temp_humidity", show: false },
+  { type: "uv_solar", show: false },
   { type: "sun_moon", show: false },
   { type: "radar", display: "popup" },
 ];
