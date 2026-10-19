@@ -188,6 +188,17 @@ const config = () => ({
   metric_sources: { sources: [{ ref: `device:${DEVICE_ID}` }, { ref: "weather.openweathermap" }] },
   layout: params.get("layout") || "auto",
   remember: false,
+  ...(params.get("bg") ? { background: "animated", panel_opacity: Number(params.get("op") || 0.55) } : {}),
+  ...(params.get("panels") === "user" ? { panels: [
+    { type: "hero", span: 8, sky_bar: false }, { type: "bulletin" },
+    { type: "sky_bar" },
+    { type: "heading", title: "Local measurements", show_status: true, show_bar: true },
+    { type: "hourly" }, { type: "day" },
+    { type: "metric", metric: "temperature" }, { type: "metric", metric: "rain_today" }, { type: "metric", metric: "humidity" },
+    { type: "metric", metric: "uv_index" }, { type: "metric", metric: "solar_radiation" }, { type: "metric", metric: "pressure" },
+    { type: "temp_humidity" }, { type: "wind", span: 4, rows: 3 }, { type: "sun" }, { type: "moon" }, { type: "daily" },
+    { type: "radar", display: "tile_popup", span: 4, rows: 3 },
+  ] } : {}),
   ...(params.get("panels") === "legacy" ? { panels: LEGACY_PANELS } : {}),
 });
 

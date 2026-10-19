@@ -13,7 +13,7 @@ const ent = (domain) => ({ entity: domain ? { domain } : {} });
 export const PANEL_TYPES = {
   hero: {
     tag: "wsfc-panel-hero", label: "Hero (current conditions)", icon: "mdi:weather-partly-cloudy", span: 12, rows: 3, rowsCompact: 0, flex: true, inBar: false,
-    schema: [],
+    schema: [{ name: "sky_bar", selector: { boolean: {} }, default: true, helper: "Show the Sky Bar in the hero. Turn off to use a separate Sky Bar panel instead." }],
   },
   bulletin: {
     tag: "wsfc-panel-bulletin", label: "Bulletin", icon: "mdi:text-box-outline", span: 4, rows: 3, spanMedium: 12, rowsCompact: 0,
@@ -114,8 +114,28 @@ export const PANEL_TYPES = {
     ],
   },
   forecast: {
-    tag: "wsfc-panel-forecast", label: "Forecast", icon: "mdi:calendar-week", span: 8, rows: 4, flex: true,
+    tag: "wsfc-panel-forecast", label: "Forecast (hourly + daily)", icon: "mdi:calendar-week", span: 8, rows: 4, flex: true,
     schema: [],
+  },
+  hourly: {
+    tag: "wsfc-panel-hourly", label: "Hourly forecast", icon: "mdi:clock-outline", span: 8, rows: 3, flex: true,
+    schema: [],
+  },
+  daily: {
+    tag: "wsfc-panel-daily", label: "Daily forecast", icon: "mdi:calendar-week", span: 8, rows: 3, flex: true,
+    schema: [],
+  },
+  sky_bar: {
+    tag: "wsfc-panel-sky-bar", label: "Sky Bar", icon: "mdi:theme-light-dark", span: 12, rows: 0, flex: true,
+    schema: [],
+  },
+  sun: {
+    tag: "wsfc-panel-sun", label: "Sun", icon: "mdi:white-balance-sunny", span: 4, rows: 3, rowsCompact: 0, flex: true,
+    schema: [{ name: "show_facts", selector: { boolean: {} }, default: true, helper: "Dawn, sunrise, solar noon, sunset, dusk and daylight." }],
+  },
+  moon: {
+    tag: "wsfc-panel-moon", label: "Moon", icon: "mdi:moon-waning-crescent", span: 4, rows: 2, rowsCompact: 0,
+    schema: [{ name: "moon_size", selector: { number: { min: 40, max: 240, mode: "box", unit_of_measurement: "px" } } }],
   },
   day: {
     tag: "wsfc-panel-day", label: "Day forecast", icon: "mdi:calendar-today", span: 4, rows: 4, spanMedium: 12, rowsCompact: 0,
@@ -126,7 +146,7 @@ export const PANEL_TYPES = {
     ],
   },
   sun_moon: {
-    tag: "wsfc-panel-sun-moon", label: "Sun & Moon", icon: "mdi:weather-sunset", span: 4, rows: 4, rowsCompact: 0, flex: true,
+    tag: "wsfc-panel-sun-moon", label: "Sun & Moon (combined)", icon: "mdi:weather-sunset", span: 4, rows: 4, rowsCompact: 0, flex: true,
     schema: [{ name: "show_moon", selector: { boolean: {} }, default: true }],
   },
   flex: {
@@ -147,7 +167,7 @@ export const COMMON_SCHEMA = [
   { name: "icon", selector: { icon: {} } },
   { name: "span", selector: { number: { min: 1, max: 12, mode: "slider" } }, helper: "Width in twelfths of the card." },
   { name: "rows", selector: { number: { min: 0, max: 10, mode: "slider" } }, helper: "Height in row units (0 = fit content)." },
-  { name: "display", selector: { select: { options: opt([["grid", "In the grid"], ["popup", "Pop-up from its panel button"]]) } } },
+  { name: "display", selector: { select: { options: opt([["grid", "In the grid"], ["tile_popup", "In the grid — tap it to open larger"], ["popup", "Pop-up only (from its panel button)"]]) } } },
   { name: "in_bar", selector: { boolean: {} }, helper: "Show a panel button for it." },
   { name: "show", selector: { boolean: {} }, default: true, helper: "Visible when the dashboard loads." },
 ];
@@ -181,6 +201,8 @@ export function layoutOf(p, size) {
 
 export const rowsOf = (p) => Math.max(0, Number(p.rows ?? panelMeta(p)?.rows ?? 0));
 export const inBarOf = (p) => p.in_bar ?? (p.display === "popup" ? true : panelMeta(p)?.inBar ?? true);
+/** Panels that open in a pop-up from their button / tile. */
+export const opensPopup = (p) => p.display === "popup" || p.display === "tile_popup";
 
 /** Default dashboard, modeled on Station Météo's overview. */
 export const DEFAULT_PANELS = [
@@ -194,12 +216,13 @@ export const DEFAULT_PANELS = [
   { type: "metric", metric: "uv_index" },
   { type: "metric", metric: "solar_radiation" },
   { type: "metric", metric: "pressure" },
-  { type: "forecast", title: "Hourly forecast", icon: "mdi:clock-outline", flex: { wfc: { daily: { show: false } } } },
+  { type: "hourly" },
   { type: "day" },
-  { type: "forecast", title: "Daily forecast", show: false, flex: { wfc: { hourly: { show: false } } } },
+  { type: "daily", show: false },
   { type: "temp_humidity", show: false },
   { type: "uv_solar", show: false },
-  { type: "sun_moon", show: false },
+  { type: "sun", show: false },
+  { type: "moon", show: false },
   { type: "radar", display: "popup" },
 ];
 

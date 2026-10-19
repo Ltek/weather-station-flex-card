@@ -30,12 +30,15 @@ const GENERAL_SCHEMA = [
   { name: "layout", selector: { select: { options: [{ value: "auto", label: "Size to content" }, { value: "fullscreen", label: "Full screen (fills the view below the header)" }] } } },
   { name: "fit_height", selector: { boolean: {} }, default: true, helper: "Full screen: panels with a height share the screen height (row height is calculated)." },
   { name: "layout_size", selector: { select: { options: [{ value: "auto", label: "Automatic (from the card's width)" }, { value: "wide", label: "Wide — desktop layout" }, { value: "medium", label: "Medium — tablet layout" }, { value: "narrow", label: "Narrow — phone layout (stacked)" }] } }, helper: "In a Sections view the card is only as wide as its section; widen the section or use a Panel view for the desktop layout." },
+  { name: "background", selector: { select: { options: [{ value: "none", label: "None (theme)" }, { value: "animated", label: "Animated weather — the hero's animation behind the whole card" }] } }, helper: "With the animated background, panels become semi-transparent and the hero stops drawing its own." },
+  { name: "panel_opacity", selector: { number: { min: 0, max: 1, step: 0.05, mode: "slider" } }, helper: "Animated background: panel opacity (0 = fully transparent, 1 = solid). Default 0.55." },
+  { name: "panel_blur", selector: { number: { min: 0, max: 30, step: 1, mode: "slider", unit_of_measurement: "px" } }, helper: "Animated background: blur behind panels. Default 6." },
   { name: "panel_bar", selector: { boolean: {} }, default: true, helper: "Panel buttons that show/hide panels or open pop-ups." },
   { name: "remember", selector: { boolean: {} }, default: true, helper: "Remember which panels were toggled, per browser." },
   { name: "row_height", selector: { number: { min: 40, max: 300, mode: "box", unit_of_measurement: "px" } }, helper: "Height of one row unit (default 110)." },
   { name: "gap", selector: { number: { min: 0, max: 32, mode: "box", unit_of_measurement: "px" } }, helper: "Space between panels (default 12)." },
 ];
-const GENERAL_DEFAULTS = { layout: "auto", panel_bar: true, remember: true, fit_height: true, layout_size: "auto" };
+const GENERAL_DEFAULTS = { layout: "auto", panel_bar: true, remember: true, fit_height: true, layout_size: "auto", background: "none", panel_opacity: 0.55, panel_blur: 6 };
 
 const LABELS = {
   entity: "Weather entity", title: "Title", subtitle: "Subtitle", icon: "Icon", layout: "Layout", panel_bar: "Panel buttons",
@@ -50,7 +53,7 @@ const LABELS = {
   owm_api_key: "OpenWeatherMap API key", owm_layers: "OpenWeatherMap layers", owm_default: "Layer shown first", owm_opacity: "Layer opacity",
   base_map_url: "Custom tile URL", base_map_attribution: "Custom tile attribution", day_offset: "Day", icon_size: "Icon size",
   show_moon: "Show moon", show_sun: "Show sun", attribute: "Text attribute", alerts_entity: "Alerts sensor", card: "Card configuration",
-  show_status: "Show station status", direction: "Direction", min_width: "Minimum width", grow: "Grow", show_bar: "Panel buttons here",
+  show_status: "Show station status", background: "Card background", panel_opacity: "Panel opacity", panel_blur: "Panel blur", sky_bar: "Sky Bar in the hero", show_facts: "Show sun times", moon_size: "Moon size", direction: "Direction", min_width: "Minimum width", grow: "Grow", show_bar: "Panel buttons here",
 };
 
 const getPath = (o, path) => path.split(".").reduce((a, k) => (a == null ? a : a[k]), o);

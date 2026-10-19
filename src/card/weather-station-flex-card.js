@@ -7,7 +7,9 @@
 import { LitElement, html, css, nothing } from "lit";
 import { CARD_VERSION, CARD_TYPE, CARD_NAME } from "./constants.js";
 import { chipStyles, tileStyles } from "../panels/shared.js";
-import { panelMeta, rowsOf, inBarOf, normalizePanels, layoutOf } from "./panels.js";
+import { panelMeta, rowsOf, inBarOf, normalizePanels, layoutOf, opensPopup } from "./panels.js";
+import { watchForecast } from "./forecast.js";
+import "../../vendor/weather-forecast-card/src/components/animation/wfc-animation-provider";
 import "../panels/flex.js";
 import "../panels/graph.js";
 import "../panels/wind.js";
@@ -120,6 +122,9 @@ class WeatherStationFlexCard extends LitElement {
 
   disconnectedCallback() {
     super.disconnectedCallback();
+    this._unwatchHourly?.();
+    this._unwatchHourly = null;
+    this._hourlyFor = null;
     this._ro?.disconnect();
     window.removeEventListener("keydown", this._onKey);
   }
@@ -192,19 +197,54 @@ class WeatherStationFlexCard extends LitElement {
     if (!this._config || !this.hass) return nothing;
     const c = this._config;
     const full = this._full;
+    const bg = this._animatedBg;
     const style = [
       c.row_height ? `--wsfc-row:${c.row_height}px` : "",
       c.gap != null ? `--wsfc-gap:${c.gap}px` : "",
+      bg ? `--wsfc-panel-opacity:${c.panel_opacity ?? 0.55}` : "",
+      bg ? `--wsfc-panel-blur:${c.panel_blur ?? 6}px` : "",
     ].join(";");
     const barInHeading = c.panels.some((p) => p.type === "heading" && p.show_bar);
     return html`
-      <ha-card class=${`wsfc ${full ? "full" : ""} ${this._layoutSize}`} style=${style}>
+      <ha-card class=${`wsfc ${full ? "full" : ""} ${this._layoutSize} ${bg ? "animated" : ""}`} style=${style}>
+        ${bg ? this._renderBackground() : nothing}
         ${c.title ? this._renderTitle() : nothing}
         ${c.panel_bar === false || barInHeading ? nothing : html`<div class="topbar">${this._renderBar()}</div>`}
         <div class="scroller"><div class="grid">${this._renderPanels()}</div></div>
         ${this._popup != null ? this._renderPopup() : nothing}
       </ha-card>
     `;
+  }
+
+  // Card-wide animated background (the hero's weather animation, behind every panel).
+  get _animatedBg() {
+    return this._config?.background === "animated";
+  }
+
+  _renderBackground() {
+    const c = this._config;
+    const stateObj = this.hass.states[c.entity];
+    if (!stateObj) return nothing;
+    this._watchHourly();
+    const fx = c.background_effects ?? true;
+    return html`<wsfc-animation-provider class="bg"
+      .hass=${this.hass}
+      .weatherEntity=${stateObj}
+      .config=${{ entity: c.entity, show_condition_effects: fx, show_moon_phase: c.background_moon_phase ?? true }}
+      .currentForecast=${this._hourlyNow}
+    ></wsfc-animation-provider>`;
+  }
+
+  // Rain/snow intensity and wind drift come from the current hourly forecast.
+  _watchHourly() {
+    const eid = this._config.entity;
+    if (this._hourlyFor === eid) return;
+    this._unwatchHourly?.();
+    this._hourlyFor = eid;
+    this._unwatchHourly = watchForecast(this.hass, eid, "hourly", (f) => {
+      this._hourlyNow = f?.[0];
+      this.requestUpdate();
+    });
   }
 
   _renderTitle() {
@@ -224,6 +264,7 @@ class WeatherStationFlexCard extends LitElement {
       const meta = panelMeta(p);
       const popup = p.display === "popup";
       const active = popup ? this._popup === i : !this._hidden.has(this._key(p, i));
+      // tile_popup panels toggle like grid panels; their tile opens the pop-up.
       return html`<button
         type="button"
         class="chip ${active ? "on" : ""} ${popup ? "popup" : ""}"
@@ -271,8 +312,13 @@ class WeatherStationFlexCard extends LitElement {
       // Tracks are content-sized; a panel spanning N rows gets the height of N row units.
       const style = `grid-column: span ${span};${rows ? `grid-row: span ${rows};min-height:calc(${rows} * var(--wsfc-row) + ${rows - 1} * var(--wsfc-gap));` : ""}`;
       const bare = meta.bare || p.type === "hero";
-      const expandable = !bare && !["metric", "stack"].includes(p.type) && size !== "narrow";
-      return html`<section class="tile ${p.type} ${meta.bare ? "bare" : ""} ${rows ? "" : "auto"}" style=${style}>
+      const tapToOpen = p.display === "tile_popup";
+      const expandable = !bare && !tapToOpen && !["metric", "stack"].includes(p.type) && size !== "narrow";
+      return html`<section class="tile ${p.type} ${meta.bare ? "bare" : ""} ${rows ? "" : "auto"} ${tapToOpen ? "tap" : ""}" style=${style}>
+        ${tapToOpen
+          ? html`<button class="tap-open" type="button" aria-haspopup="dialog" aria-label=${`Open ${p.title || this._autoTitle(p)}`}
+              @click=${() => (this._popup = i)}><span><ha-icon icon="mdi:arrow-expand"></ha-icon>Open</span></button>`
+          : nothing}
         ${expandable
           ? html`<button class="expand" type="button" @click=${() => (this._focus = this._focus == null ? i : null)}
               aria-label=${this._focus == null ? `Expand ${p.title || this._autoTitle(p)}` : "Back to all panels"}>
@@ -311,6 +357,7 @@ class WeatherStationFlexCard extends LitElement {
     }
     el.config = p;
     el.station = this._station;
+    el.cardBg = this._animatedBg;
     el.hass = this.hass;
     if (p.type === "heading") el.bar = p.show_bar && this._config.panel_bar !== false ? this._renderBar() : null;
     return el;
@@ -343,6 +390,32 @@ class WeatherStationFlexCard extends LitElement {
        the card and scrolls. */
     .scroller { min-height: 0; }
     .full .scroller { flex: 1; overflow: auto; }
+
+    /* Animated card background: panels float over it, semi-transparent. */
+    ha-card.animated { overflow: hidden; isolation: isolate; }
+    ha-card.animated > :not(.bg) { position: relative; z-index: 1; }
+    ha-card.animated { --wsfc-tile-bg: rgba(var(--rgb-card-background-color, 28, 28, 28), var(--wsfc-panel-opacity, 0.55)); }
+    ha-card.animated .tile:not(.bare):not(.hero):not(.stack) { backdrop-filter: blur(var(--wsfc-panel-blur, 6px)); -webkit-backdrop-filter: blur(var(--wsfc-panel-blur, 6px)); }
+    ha-card.animated .dialog { --wsfc-tile-bg: var(--ha-card-background, var(--card-background-color, #1c1c1c)); }
+    .bg { z-index: 0; border-radius: inherit; }
+
+    /* "Tap to open larger": the tile is a live preview; one tap opens the pop-up. */
+    .tile.tap { cursor: pointer; }
+    /* The live preview never takes the pointer (a map would swallow taps), and
+       its own stacking (Leaflet panes) stays under the open button. */
+    .tile.tap > :not(.tap-open) { pointer-events: none; position: relative; z-index: 0; }
+    .tap-open {
+      position: absolute; inset: 0; z-index: 4;
+      border: 0; padding: 0; margin: 0; background: transparent; cursor: pointer;
+      border-radius: inherit; display: flex; align-items: flex-start; justify-content: flex-end;
+    }
+    .tap-open span {
+      display: inline-flex; align-items: center; gap: 4px; margin: 8px;
+      font: inherit; font-size: 12px; padding: 4px 10px; border-radius: 999px;
+      color: var(--text-primary-color, #fff); background: rgba(0, 0, 0, 0.45);
+    }
+    .tap-open ha-icon { --mdc-icon-size: 14px; }
+    .tap-open:focus-visible { outline: 2px solid var(--primary-color); outline-offset: -2px; }
 
     .title-row { display: flex; align-items: center; gap: 10px; }
     .title-row ha-icon { --mdc-icon-size: 30px; color: var(--primary-color); }

@@ -4,7 +4,7 @@ A weather-station dashboard in one Home Assistant card. Panels sit in a 12-colum
 
 Built around an Ecowitt WS90 / GW2000B; works with any station whose sensors are in Home Assistant.
 
-Current build: **v2026.10.19.4** · full history in [CHANGELOG.md](CHANGELOG.md)
+Current build: **v2026.10.19.5** · full history in [CHANGELOG.md](CHANGELOG.md)
 
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Ltek&repository=weather-station-flex-card&category=plugin)
 
@@ -55,13 +55,18 @@ Only what you change is saved, so the YAML stays short.
 | `stack` | Child panels side by side (`direction: horizontal`, wraps only below `min_width`) or one above another (`vertical`). Children take `grow` (relative width), `min_width` and `rows`. |
 | `wind` | Compass or 24h wind rose, plus a speed/gust chart. |
 | `radar` | RainViewer radar loop on a choice of base maps (gray, streets, topo, satellite imagery, OSM or a custom URL), optional OpenWeatherMap layers. `radar: false` gives a plain map — add several with different zooms and layers. |
-| `forecast` | Weather Flex hourly + daily sections. |
+| `hourly` | Weather Flex hourly forecast. |
+| `daily` | Weather Flex daily forecast. |
+| `forecast` | Hourly + daily together. |
+| `sky_bar` | The Sky Bar on its own (sky gradient over the day with forecast temps and icons). Set `sky_bar: false` on the hero to move it out of the hero. |
 | `day` | One day's forecast (`day_offset`: 0 today, 1 tomorrow, …). |
-| `sun_moon` | Weather Flex sun arc and Sky Bar, moon phase, rise/set, next full and new moon. |
+| `sun` | Sun arc over the sky, plus dawn, sunrise, solar noon, sunset, dusk and daylight. |
+| `moon` | Moon phase, illumination, moonrise/moonset, next full and new moon. |
+| `sun_moon` | Sun arc, Sky Bar and moon together. |
 | `flex` | Any Weather Flex Card configuration under `flex:` — every Weather Flex feature. |
 | `card` | Any Home Assistant card under `card:` (e.g. `statistics-graph`). |
 
-Every panel takes `title`, `icon`, `span` (width in twelfths), `rows` (height in row units, 0 = fit content), `display` (`grid` or `popup`), `in_bar` (panel button), `show` (shown on load) and optional `span_medium`, `span_narrow`, `rows_compact` for tablet and phone widths. On tablets small tiles stay side by side and wide panels go full width; on phones tiles pair up and everything else is full width.
+Every panel takes `title`, `icon`, `span` (width in twelfths), `rows` (height in row units, 0 = fit content), `display` (`grid`, `tile_popup` = in the grid and tap to open larger, or `popup` = button only), `in_bar` (panel button), `show` (shown on load) and optional `span_medium`, `span_narrow`, `rows_compact` for tablet and phone widths. On tablets small tiles stay side by side and wide panels go full width; on phones tiles pair up and everything else is full width.
 
 ```yaml
 panels:
@@ -102,6 +107,14 @@ panels:
       type: statistics-graph
       entities: [sensor.gw2000b_outdoor_temperature]
       period: month
+```
+
+### Animated background
+
+```yaml
+background: animated     # the hero's weather animation behind the whole card
+panel_opacity: 0.45      # 0 = transparent panels … 1 = solid
+panel_blur: 8            # px of blur behind panels
 ```
 
 > An OpenWeatherMap API key is part of the card configuration, so anyone who can view the dashboard can read it.

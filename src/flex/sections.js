@@ -798,7 +798,12 @@ import { actionHandler as iq } from "../../vendor/weather-forecast-card/src/hass
   const ORIG_SET_CONFIG = cardProto.setConfig;
   cardProto.setConfig = function (config) {
     const wfc = wfcResolve(config);
-    const wantForecast = !!(wfc.hourly.show || wfc.daily.show);
+    const sp = wfc.sun_position || {};
+    const fx = sp.forecast_extra;
+    const skyNeedsHourly = !!(sp.show && (sp.weather_adjust !== false || [sp.forecast_temps, sp.forecast_icons].some((v) => v && v !== "hidden") || (Array.isArray(fx) ? fx.length : fx && fx !== "none")));
+    const wantHourly = !!(wfc.hourly.show || skyNeedsHourly);
+    const wantForecast = !!(wantHourly || wfc.daily.show);
+    const types = wantHourly && wfc.daily.show ? "both" : wantHourly ? "hourly" : "daily";
     // Derive the legacy flags up front. The original setConfig throws when both
     // are false, but our extension supports "only details / sun" layouts — so we
     // keep show_current truthy for validation and correct it afterwards.
@@ -807,12 +812,12 @@ import { actionHandler as iq } from "../../vendor/weather-forecast-card/src/hass
       show_current: wfc.current.show || (!wantForecast ? true : false),
       show_forecast: wantForecast,
     };
-    if (wfc.hourly.show && wfc.daily.show) patched.forecast_types = "both";
+    if (wantForecast && (types === "both" || !config.forecast_types || skyNeedsHourly)) patched.forecast_types = types;
     ORIG_SET_CONFIG.call(this, patched);
     // Reflect true intent for our own render (section list drives visibility).
     this.config.show_current = !!wfc.current.show;
     this.config.show_forecast = wantForecast;
-    if (wfc.hourly.show && wfc.daily.show) this.config.forecast_types = "both";
+    if (patched.forecast_types) this.config.forecast_types = patched.forecast_types;
     this.__wfcCfgSrc = undefined; // invalidate render cache
   };
 

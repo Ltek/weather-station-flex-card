@@ -91,6 +91,21 @@ const patches = [
   ["window.__WFC_BUILD = WFC_BUILD;", "window.__WSFC_SECTIONS_BUILD = WFC_BUILD;\n  // Exposed for the Weather Station Flex Card editor: it diffs edited configs\n  // against the resolved defaults so saved YAML stays minimal.\n  l5.__wfcResolve = wfcResolve;\n  l5.__wfcBuild = WFC_BUILD;"],
   // The embedded editor sits inside this card's editor; name it accordingly.
   ['const WFC_CARD_NAME = "Weather Flex Card";', 'const WFC_CARD_NAME = "Weather Flex sections";'],
+  // Fix: the Sky Bar's forecast temps/icons/extras and its cloud-cover shading
+  // need the hourly forecast, but the forecast was only subscribed when the
+  // Hourly or Daily section was shown — so a Sky Bar without them (e.g. in the
+  // hero) silently lost those features. (Same bug exists in Weather Flex Card.)
+  ["    const wantForecast = !!(wfc.hourly.show || wfc.daily.show);\n",
+   "    const sp = wfc.sun_position || {};\n" +
+   "    const fx = sp.forecast_extra;\n" +
+   "    const skyNeedsHourly = !!(sp.show && (sp.weather_adjust !== false || [sp.forecast_temps, sp.forecast_icons].some((v) => v && v !== \"hidden\") || (Array.isArray(fx) ? fx.length : fx && fx !== \"none\")));\n" +
+   "    const wantHourly = !!(wfc.hourly.show || skyNeedsHourly);\n" +
+   "    const wantForecast = !!(wantHourly || wfc.daily.show);\n" +
+   "    const types = wantHourly && wfc.daily.show ? \"both\" : wantHourly ? \"hourly\" : \"daily\";\n"],
+  ['    if (wfc.hourly.show && wfc.daily.show) patched.forecast_types = "both";\n',
+   '    if (wantForecast && (types === "both" || !config.forecast_types || skyNeedsHourly)) patched.forecast_types = types;\n'],
+  ['    if (wfc.hourly.show && wfc.daily.show) this.config.forecast_types = "both";\n',
+   '    if (patched.forecast_types) this.config.forecast_types = patched.forecast_types;\n'],
 ];
 for (const [from, to] of patches) {
   if (!body.includes(from)) throw new Error(`Patch target missing: ${from}`);

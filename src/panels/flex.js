@@ -77,6 +77,40 @@ export const FLEX_BASES = {
       sun_position: { show: true, height: 28, timeframe_mode: "day", ss_markers_position: "overlay", times_position: "below" },
     },
   },
+  hourly: {
+    forecast: { mode: "chart", show_sun_times: true, use_color_thresholds: true },
+    wfc: {
+      order: ["hourly"],
+      current: { show: false }, details: { show: false }, hourly: { show: true }, daily: { show: false },
+      sun_position: { show: false }, sun_arc: { show: false },
+    },
+  },
+  daily: {
+    forecast: { mode: "chart", use_color_thresholds: true },
+    wfc: {
+      order: ["daily"],
+      current: { show: false }, details: { show: false }, hourly: { show: false }, daily: { show: true },
+      sun_position: { show: false }, sun_arc: { show: false },
+    },
+  },
+  sky_bar: {
+    wfc: {
+      order: ["sun_position"],
+      current: { show: false }, details: { show: false }, hourly: { show: false }, daily: { show: false }, sun_arc: { show: false },
+      sun_position: {
+        show: true, height: 34, timeframe_mode: "hours", timeframe_hours: 24,
+        ss_markers_position: "overlay", times_position: "below",
+        forecast_icons: "above", forecast_temps: "above", forecast_temp_with_icon: true, forecast_every: 2,
+      },
+    },
+  },
+  sun: {
+    wfc: {
+      order: ["sun_arc"],
+      current: { show: false }, details: { show: false }, hourly: { show: false }, daily: { show: false }, sun_position: { show: false },
+      sun_arc: { show: true, night_moon: true, show_ss_icons: true, height: 110, baseline_mode: "sky" },
+    },
+  },
   // Generic: Weather Flex Card's own defaults (current header + daily forecast).
   flex: {},
 };
@@ -153,6 +187,7 @@ class WsfcFlexPanel extends LitElement {
 
 class WsfcHeroPanel extends WsfcFlexPanel {
   type = "hero";
+  static properties = { ...WsfcFlexPanel.properties, cardBg: { attribute: false } };
   static styles = [
     panelStyles,
     coreStyles,
@@ -180,7 +215,13 @@ class WsfcHeroPanel extends WsfcFlexPanel {
     let cfg = flexBase("hero", this.station);
     if (this._size === "large") cfg = deepMerge(cfg, HERO_LARGE);
     if (this._size === "narrow") cfg = deepMerge(cfg, HERO_NARROW);
-    return deepMerge(cfg, this.config?.flex || {});
+    cfg = deepMerge(cfg, this.config?.flex || {});
+    // Options on the panel itself win over its Weather Flex config.
+    if (this.config?.sky_bar === false) cfg = deepMerge(cfg, { wfc: { sun_position: { show: false } } });
+    // The card draws the animated background behind every panel: the hero
+    // becomes transparent and stops animating on its own.
+    if (this.cardBg) cfg = deepMerge(cfg, { show_condition_effects: false, wfc: { card: { bg_color: "transparent" } } });
+    return cfg;
   }
 
   updated() {
@@ -199,9 +240,34 @@ class WsfcForecastPanel extends WsfcFlexPanel {
   defaultTitle = "Forecast";
   defaultIcon = "mdi:calendar-week";
 }
+class WsfcHourlyPanel extends WsfcFlexPanel {
+  type = "hourly";
+  defaultTitle = "Hourly forecast";
+  defaultIcon = "mdi:clock-outline";
+}
+class WsfcDailyPanel extends WsfcFlexPanel {
+  type = "daily";
+  defaultTitle = "Daily forecast";
+  defaultIcon = "mdi:calendar-week";
+}
+class WsfcSkyBarPanel extends WsfcFlexPanel {
+  type = "sky_bar";
+  defaultTitle = "Sky";
+  defaultIcon = "mdi:theme-light-dark";
+  render() {
+    // A title only when one is set — the bar reads fine on its own.
+    if (!this.hass || !this.station?.entity) return nothing;
+    return html`${this.config?.title ? head(this.config, this.defaultIcon, "") : nothing}
+      <div class="core">${this._slot.update(this._coreConfig(), this.hass)}</div>
+      ${this._slot.error ? html`<div class="err">${this._slot.error}</div>` : nothing}`;
+  }
+}
 
 customElements.get("wsfc-panel-flex") || customElements.define("wsfc-panel-flex", WsfcFlexPanel);
 customElements.get("wsfc-panel-hero") || customElements.define("wsfc-panel-hero", WsfcHeroPanel);
 customElements.get("wsfc-panel-forecast") || customElements.define("wsfc-panel-forecast", WsfcForecastPanel);
+customElements.get("wsfc-panel-hourly") || customElements.define("wsfc-panel-hourly", WsfcHourlyPanel);
+customElements.get("wsfc-panel-daily") || customElements.define("wsfc-panel-daily", WsfcDailyPanel);
+customElements.get("wsfc-panel-sky-bar") || customElements.define("wsfc-panel-sky-bar", WsfcSkyBarPanel);
 
 export { WsfcFlexPanel };
