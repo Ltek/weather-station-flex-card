@@ -1,8 +1,9 @@
 // Hosts a Weather Flex "core" (troinine base + ported Weather Flex sections)
 // inside this card. Used by the hero, flex, forecast and sun_moon panels.
 // The core is a normal Lovelace card element: it takes setConfig() + hass.
+import { html } from "lit";
 import { WeatherForecastCard } from "../../vendor/weather-forecast-card/src/weather-forecast-card";
-import "../../vendor/weather-forecast-card/src/editor/weather-forecast-card-editor";
+import { WeatherForecastCardEditor } from "../../vendor/weather-forecast-card/src/editor/weather-forecast-card-editor";
 import "../flex/sections.js";
 import { deepMerge, deepDiff } from "./config.js";
 
@@ -10,6 +11,37 @@ export { deepMerge };
 export const CORE_TAG = "wsfc-flex-core";
 export const CORE_EDITOR_TAG = "wsfc-flex-core-editor";
 if (!customElements.get(CORE_TAG)) customElements.define(CORE_TAG, WeatherForecastCard);
+
+// Embedded Weather Flex editors come in two modes (set `wsfcMode` on the element):
+//   "sections" — everything except Weather Sources (those are card-wide and
+//                are edited once, in the card editor's Weather station section)
+//   "sources"  — only the Weather Sources panel, opened
+// Only this card's editor class (wsfc-flex-core-editor) is patched; Weather
+// Flex Card's own editor is a different class and is untouched.
+{
+  const P = WeatherForecastCardEditor.prototype;
+  const sourcesPanel = P._wfcWeatherSourcesPanel;
+  const render = P.render;
+  const updated = P.updated;
+  P._wfcWeatherSourcesPanel = function () {
+    return this.wsfcMode === "sections" ? "" : sourcesPanel.call(this);
+  };
+  P.render = function () {
+    if (this.wsfcMode !== "sources") return render.call(this);
+    if (!this.hass || !this._config) return "";
+    return html`${this._wfcEditorStyle()}${sourcesPanel.call(this)}`;
+  };
+  P.updated = function (changed) {
+    updated?.call(this, changed);
+    if (this.wsfcMode === "sources" && !this.__wsfcOpened) {
+      const d = this.renderRoot?.querySelector("details.wfc-panel");
+      if (d) {
+        d.open = true;
+        this.__wsfcOpened = true;
+      }
+    }
+  };
+}
 
 /** Weather Flex sections build these sections were ported from. */
 export const FLEX_SECTIONS_BUILD = WeatherForecastCard.__wfcBuild;

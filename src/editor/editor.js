@@ -17,12 +17,9 @@ import { CORE_EDITOR_TAG, FLEX_SECTIONS_BUILD, flexOverride, deepMerge } from ".
 import { flexBase } from "../panels/flex.js";
 import { prune, clone } from "../card/config.js";
 import { METRICS } from "../card/metrics.js";
+import "./layout-map.js";
 import { metricSensor, entityValue } from "../card/resolve.js";
 
-const STATION_SCHEMA = [
-  { name: "station_device", selector: { device: {} }, helper: "Your weather station's gateway (e.g. the Ecowitt GW2000B). Its sensors are mapped automatically, outdoor first." },
-  { name: "entity", required: true, selector: { entity: { domain: "weather" } }, helper: "Weather entity for the forecast and condition (e.g. OpenWeatherMap). Fills any value the station doesn't have." },
-];
 const MAP_KEYS = ["temperature", "apparent_temperature", "dew_point", "humidity", "pressure", "wind_speed", "wind_gust_speed", "wind_bearing", "uv_index", "solar_radiation", "illuminance", "precipitation"];
 const MAP_LABELS = { wind_bearing: "Wind direction", precipitation: "Rain rate" };
 
@@ -160,7 +157,7 @@ class WeatherStationFlexCardEditor extends LitElement {
         <div class="hdr"><span class="name">${CARD_NAME}</span><span class="ver">v${CARD_VERSION} · Weather Flex sections ${FLEX_SECTIONS_BUILD}</span></div>
         ${this._section("station", "mdi:weather-cloudy-clock", "Weather station", () => this._stationEditor())}
         ${this._section("general", "mdi:cog-outline", "General", () => this._general())}
-        ${this._section("hero", "mdi:weather-partly-cloudy", "Hero & Weather Sources", () => this._heroEditor())}
+        ${this._section("hero", "mdi:weather-partly-cloudy", "Hero", () => this._heroEditor())}
         ${this._section("panels", "mdi:view-dashboard-outline", `Panels (${this._panels.length})`, () => this._panelList())}
       </div>
     `;
@@ -205,38 +202,38 @@ class WeatherStationFlexCardEditor extends LitElement {
     return src ? src.ref.slice(7) : undefined;
   }
 
-  // Device: replaces the previous station device in Weather Sources (first
-  // place if new). Weather entity: replaces the previous one in the list, or
-  // is appended last so it fills values the station doesn't have.
-  _setStation(old, v) {
-    let list = (this._config.metric_sources?.sources || []).map((x) => ({ ...x }));
-    const oldDev = old.station_device && `device:${old.station_device}`;
-    const newDev = v.station_device && `device:${v.station_device}`;
-    if (oldDev !== newDev) {
-      const i = oldDev ? list.findIndex((x) => x.ref === oldDev) : -1;
-      if (i >= 0) list.splice(i, 1);
-      if (newDev && !list.some((x) => x.ref === newDev)) list.splice(i >= 0 ? i : 0, 0, { ref: newDev });
+  // The card-wide Weather Sources list (Weather Flex's own editor, sources
+  // panel only). Its edits set the top-level entity and metric_sources.
+  _sourcesEditor() {
+    let ed = this._sourcesEd;
+    if (!ed) {
+      ed = this._sourcesEd = document.createElement(CORE_EDITOR_TAG);
+      ed.wsfcMode = "sources";
+      ed.addEventListener("config-changed", (e) => {
+        e.stopPropagation();
+        const c = e.detail.config;
+        const next = { ...this._config };
+        if (c.entity) next.entity = c.entity;
+        if (c.metric_sources && Object.keys(c.metric_sources).length) next.metric_sources = c.metric_sources;
+        else delete next.metric_sources;
+        this._emit(next);
+      });
     }
-    if (v.entity && v.entity !== old.entity) {
-      const i = old.entity ? list.findIndex((x) => x.ref === old.entity) : -1;
-      if (list.some((x) => x.ref === v.entity)) { if (i >= 0) list.splice(i, 1); }
-      else if (i >= 0) list[i] = { ...list[i], ref: v.entity };
-      else list.push({ ref: v.entity });
-    } else if (v.entity && !list.some((x) => x.ref === v.entity)) list.push({ ref: v.entity });
-    const cfg = { ...this._config, entity: v.entity || this._config.entity };
-    const ms = { ...(this._config.metric_sources || {}) };
-    if (list.length) ms.sources = list;
-    else delete ms.sources;
-    if (Object.keys(ms).length) cfg.metric_sources = ms;
-    else delete cfg.metric_sources;
-    this._emit(cfg);
+    const cfg = { entity: this._config.entity, ...(this._config.metric_sources ? { metric_sources: this._config.metric_sources } : {}) };
+    const json = JSON.stringify(cfg);
+    if (ed._wsfcJson !== json) {
+      ed._wsfcJson = json;
+      ed.setConfig(cfg);
+    }
+    ed.hass = this.hass;
+    return ed;
   }
 
   _stationEditor() {
-    const data = { station_device: this._stationDevice(), entity: this._config.entity };
     const station = this._station;
     return html`
-      ${this._form(data, STATION_SCHEMA, (v) => this._setStation(data, v))}
+      <p class="hint">Add your station's <b>device</b> (e.g. the Ecowitt GW2000B — its sensors are mapped automatically, outdoor first) and a <b>weather entity</b> for the forecast and condition. The top source wins for each value. These sources apply to every panel.</p>
+      <div class="flexed">${this._sourcesEditor()}</div>
       <div class="grp">Values used</div>
       <div class="map">
         ${MAP_KEYS.map((k) => {
@@ -246,7 +243,6 @@ class WeatherStationFlexCardEditor extends LitElement {
           return html`<span class="k">${label}</span><span class="e ${e ? "" : "none"}" title=${e || ""}>${e || "not found"}</span><span class="v">${v ? `${v.value} ${v.unit}` : ""}</span>`;
         })}
       </div>
-      <p class="hint">More sources, priority order and per-value overrides: <b>Hero & Weather Sources → Weather Sources</b>.</p>
     `;
   }
 
@@ -262,7 +258,7 @@ class WeatherStationFlexCardEditor extends LitElement {
       list[i] = np;
       this._setPanels(list, extra);
     };
-    return html`<p class="hint">Weather Flex Card's editor. <b>Weather Sources</b> apply to the whole card; everything else styles the hero.</p>
+    return html`<p class="hint">Weather Flex Card's editor for the hero's sections. Weather Sources are under <b>Weather station</b>.</p>
       ${this._flexEditor(`${i}`, panels[i], update)}`;
   }
 
@@ -272,6 +268,7 @@ class WeatherStationFlexCardEditor extends LitElement {
     let ed = this._flexEds.get(k);
     if (!ed) {
       ed = document.createElement(CORE_EDITOR_TAG);
+      ed.wsfcMode = "sections";
       ed.addEventListener("config-changed", (e) => {
         e.stopPropagation();
         ed._wsfcOnChange?.(e.detail.config);
@@ -283,11 +280,7 @@ class WeatherStationFlexCardEditor extends LitElement {
       const override = flexOverride(emitted, flexBase(p.type, this._station));
       if (Object.keys(override).length) np.flex = override;
       else delete np.flex;
-      // Weather Sources edits are global.
-      const extra = {};
-      if (emitted.entity) extra.entity = emitted.entity;
-      extra.metric_sources = emitted.metric_sources && Object.keys(emitted.metric_sources).length ? emitted.metric_sources : undefined;
-      update(np, extra);
+      update(np);
     };
     const cfg = deepMerge(flexBase(p.type, this._station), p.flex || {});
     const json = JSON.stringify(cfg);
@@ -301,7 +294,15 @@ class WeatherStationFlexCardEditor extends LitElement {
 
   _panelList() {
     return html`
-      <p class="hint">Panels fill a 12-column grid left to right, in this order. Set each panel's width and height under Layout; on tablets and phones panels widen automatically. To keep panels side by side on every screen, put them in a <b>Stack</b>.</p>
+      <div class="grp first">Layout</div>
+      <p class="hint"><b>Drag</b> a panel to move it; drag its <b>right or bottom edge</b> (or the corner) to resize. Keyboard: arrows move, Shift+arrows resize. This is the desktop layout — tablets and phones adapt automatically. Dashed = hidden on load.</p>
+      <wsfc-layout-map .panels=${this._panels} @layout-changed=${(e) => {
+        this._flexEds.clear();
+        this._openPanel = null;
+        this._setPanels(e.detail.panels);
+      }}></wsfc-layout-map>
+      <div class="grp">Panels</div>
+      <p class="hint">Panels fill a 12-column grid left to right, in this order. To keep panels side by side on every screen, put them in a <b>Stack</b>.</p>
       ${this._list(this._panels, (list, extra) => this._setPanels(list, extra), "")}
     `;
   }
@@ -399,7 +400,7 @@ class WeatherStationFlexCardEditor extends LitElement {
         : nothing}
       ${m.flex
         ? html`<div class="grp">Weather Flex sections</div>
-            ${p.type === "hero" && !nested ? html`<p class="hint">Also under Hero & Weather Sources above.</p>` : this._flexEditor(key, p, update)}`
+            ${p.type === "hero" && !nested ? html`<p class="hint">Also under Hero above.</p>` : this._flexEditor(key, p, update)}`
         : nothing}
     </div>`;
   }
@@ -476,6 +477,7 @@ class WeatherStationFlexCardEditor extends LitElement {
     .ib[disabled] { opacity: 0.3; cursor: default; }
     .ib ha-icon { --mdc-icon-size: var(--ltek-icon-sm); }
     .pbody { padding: 0 var(--ltek-sp-4) var(--ltek-sp-4); display: flex; flex-direction: column; gap: var(--ltek-sp-3); }
+    .grp.first { margin-top: 0; border-top: 0; padding-top: 0; }
     .grp { font-size: var(--ltek-fs-group); font-weight: var(--ltek-fw-semibold); margin-top: var(--ltek-sp-3); border-top: 1px solid var(--ltek-c-border-soft); padding-top: var(--ltek-sp-3); }
     .add { display: flex; gap: var(--ltek-sp-3); align-items: center; }
     .sel { flex: 1; font: inherit; font-size: var(--ltek-fs-label); padding: var(--ltek-ctrl-pad); border-radius: var(--ltek-r-ctrl); border: 1px solid var(--ltek-c-border); background: var(--card-background-color, #1c1c1c); color: var(--ltek-c-text); }

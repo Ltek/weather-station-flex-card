@@ -4,7 +4,7 @@ A weather-station dashboard in one Home Assistant card. Panels sit in a 12-colum
 
 Built around an Ecowitt WS90 / GW2000B; works with any station whose sensors are in Home Assistant.
 
-Current build: **v2026.10.19.3** · full history in [CHANGELOG.md](CHANGELOG.md)
+Current build: **v2026.10.19.4** · full history in [CHANGELOG.md](CHANGELOG.md)
 
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Ltek&repository=weather-station-flex-card&category=plugin)
 
@@ -34,10 +34,10 @@ For a full-screen dashboard put the card in a **Panel** view and set `layout: fu
 
 ## The editor
 
-- **Weather station** — pick your station device (e.g. the Ecowitt GW2000B) and the forecast weather entity, and see which sensor is used for each value.
+- **Weather station** — the Weather Sources list: add your station device (e.g. the Ecowitt GW2000B) and a weather entity for the forecast, set their priority and per-value overrides, and see which sensor is used for each value. Applies to every panel.
 - **General** — title, layout, layout size, full-screen fit, panel buttons, row height and gap.
-- **Hero & Weather Sources** — Weather Flex Card's complete editor (card appearance, Weather Sources, section order, header, metrics/chips, hourly, daily, sun position, sky bar, clock, actions, advanced). Weather Sources apply to the whole card.
-- **Panels** — reorder, show/hide, duplicate, delete and add panels. Each panel has **Layout** (title, icon, width, height, grid or pop-up, panel button, shown on load) and its own options. Forecast, Sun & Moon and Weather Flex sections panels also embed Weather Flex Card's editor for their sections.
+- **Hero** — Weather Flex Card's editor for the hero's sections (card appearance, section order, header, metrics/chips, hourly, daily, sun position, sky bar, clock, actions, advanced).
+- **Panels** — a **layout map** of the grid: drag panels to move them and drag their edges to resize (arrow keys work too). Below it, the panel list: show/hide, duplicate, delete and add panels. Each panel has **Layout** (title, icon, width, height, grid or pop-up, panel button, shown on load) and its own options. Forecast, Sun & Moon and Weather Flex sections panels also embed Weather Flex Card's editor for their sections.
 
 Only what you change is saved, so the YAML stays short.
 
