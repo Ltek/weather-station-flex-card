@@ -42,7 +42,8 @@ export class WsfcGraph extends LitElement {
         ...s,
         entity,
         label: s.label || m.label || st?.attributes?.friendly_name || entity || "—",
-        color: s.color || this.config?.colors?.[s.metric] || m.color || PALETTE[i % PALETTE.length],
+        // Panel colors (set in the Series list) win over the preset's own colors.
+        color: this.config?.colors?.[s.metric] || s.color || m.color || PALETTE[i % PALETTE.length],
         axis: s.axis === "right" ? "right" : "left",
         style: s.style || (m.chart === "bar" ? "bar" : "line"),
         cumulative: s.cumulative ?? m.cumulative ?? false,

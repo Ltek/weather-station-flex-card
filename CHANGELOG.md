@@ -3,6 +3,7 @@
 ## v2026.10.20.12
 
 - **Faster editor:** Home Assistant hands the editor new data on every state change; the editor re-rendered all of its open forms (entity pickers and the embedded Weather Flex editors) each time. It now re-renders for that only when the entity/device registry, theme or language changed, and refreshes live values every 15 s. An update to an open editor went from ~1–5 ms of our own work plus Home Assistant's form rebuilds to ~0.2 ms.
+- **Fix: graph line colors.** In Temp & Humidity and UV & Solar, a color set in the Series list was ignored for lines whose preset has its own color (UV index, humidity). The Series color now always wins.
 - Station graph: when the config changes twice quickly (e.g. a color), the graph can no longer end up built from the older one.
 
 ## v2026.10.20.11
