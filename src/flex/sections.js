@@ -1437,14 +1437,21 @@ import { actionHandler as iq } from "../../vendor/weather-forecast-card/src/hass
   ];
 
   // All entity ids registered to a device (via the frontend entity registry).
+  const WFC_DEV_INDEX = new WeakMap();
   function wfcDeviceEntities(hass, deviceId) {
     if (!hass || !deviceId || !hass.entities) return [];
-    const out = [];
-    for (const eid in hass.entities) {
-      const e = hass.entities[eid];
-      if (e && e.device_id === deviceId) out.push(eid);
+    let idx = WFC_DEV_INDEX.get(hass.entities);
+    if (!idx) {
+      idx = new Map();
+      for (const eid in hass.entities) {
+        const d = hass.entities[eid] && hass.entities[eid].device_id;
+        if (!d) continue;
+        if (!idx.has(d)) idx.set(d, []);
+        idx.get(d).push(eid);
+      }
+      WFC_DEV_INDEX.set(hass.entities, idx);
     }
-    return out;
+    return idx.get(deviceId) || [];
   }
 
   // Classify a single device entity to a metric key, with a penalty used to
@@ -1494,14 +1501,36 @@ import { actionHandler as iq } from "../../vendor/weather-forecast-card/src/hass
 
   // Auto-map a device to { metricKey: entity_id }, choosing the lowest-penalty
   // candidate per metric.
+  const WFC_SIB_CACHE = new WeakMap();
   function wfcSiblingDevices(hass, deviceId) {
     const devs = (hass && hass.devices) || {};
+    let c = WFC_SIB_CACHE.get(devs);
+    if (!c) { c = new Map(); WFC_SIB_CACHE.set(devs, c); }
+    if (!c.has(deviceId)) c.set(deviceId, wfcSiblingDevicesRaw(devs, deviceId));
+    return c.get(deviceId);
+  }
+  function wfcSiblingDevicesRaw(devs, deviceId) {
     const me = devs[deviceId];
     const entries = (me && me.config_entries) || [];
     if (!entries.length) return [];
     return Object.keys(devs).filter((id) => id !== deviceId && (devs[id].config_entries || []).some((e) => entries.includes(e)));
   }
+  const WFC_MAP_CACHE = new WeakMap();
   function wfcAutoMapDevice(hass, deviceId) {
+    if (!hass || !hass.entities) return wfcAutoMapDeviceRaw(hass, deviceId);
+    let byReg = WFC_MAP_CACHE.get(hass.entities);
+    if (!byReg) { byReg = new Map(); WFC_MAP_CACHE.set(hass.entities, byReg); }
+    const ids = [deviceId, ...wfcSiblingDevices(hass, deviceId)];
+    let sig = "";
+    for (const d of ids) for (const eid of wfcDeviceEntities(hass, d)) if (hass.states[eid]) sig += eid.length + ",";
+    const key = deviceId + "|" + ids.length + "|" + sig;
+    const hit = byReg.get(deviceId);
+    if (hit && hit.key === key && hit.devices === hass.devices) return hit.map;
+    const map = wfcAutoMapDeviceRaw(hass, deviceId);
+    byReg.set(deviceId, { key, devices: hass.devices, map });
+    return map;
+  }
+  function wfcAutoMapDeviceRaw(hass, deviceId) {
     const map = {}, best = {};
     const own = wfcDeviceEntities(hass, deviceId).map((eid) => [eid, 0]);
     const sib = wfcSiblingDevices(hass, deviceId).flatMap((d) => wfcDeviceEntities(hass, d).map((eid) => [eid, 15]));

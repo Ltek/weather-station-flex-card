@@ -65,7 +65,16 @@ export function pick(panelCfg, station, hass, key, cfgKey = key) {
  * Station devices: each enabled device source, then its sibling devices (same
  * integration entry — e.g. Ecowitt Local's gateway next to its WS90 device).
  */
+const SD_CACHE = new WeakMap();
 export function stationDevices(station, hass) {
+  const devsObj = hass?.devices || {};
+  const key = JSON.stringify(station?.metric_sources?.sources || []);
+  let c = SD_CACHE.get(devsObj);
+  if (!c) { c = new Map(); SD_CACHE.set(devsObj, c); }
+  if (!c.has(key)) c.set(key, stationDevicesRaw(station, hass));
+  return c.get(key);
+}
+function stationDevicesRaw(station, hass) {
   const out = [];
   const devs = hass?.devices || {};
   for (const s of station?.metric_sources?.sources || []) {
@@ -80,13 +89,29 @@ export function stationDevices(station, hass) {
   return out;
 }
 
+// device -> entity ids, built once per entity-registry object (Home Assistant
+// replaces hass.entities only when the registry changes, not on state changes).
+const DEV_INDEX = new WeakMap();
+export function deviceEntities(hass, deviceId) {
+  const reg = hass?.entities;
+  if (!reg) return [];
+  let idx = DEV_INDEX.get(reg);
+  if (!idx) {
+    idx = new Map();
+    for (const eid in reg) {
+      const d = reg[eid]?.device_id;
+      if (!d) continue;
+      if (!idx.has(d)) idx.set(d, []);
+      idx.get(d).push(eid);
+    }
+    DEV_INDEX.set(reg, idx);
+  }
+  return idx.get(deviceId) || [];
+}
+
 /** Entity ids on the station devices, in device priority order. */
 export function stationDeviceEntities(station, hass) {
-  const out = [];
-  for (const id of stationDevices(station, hass)) {
-    for (const eid in hass?.entities || {}) if (hass.entities[eid]?.device_id === id) out.push(eid);
-  }
-  return out;
+  return stationDevices(station, hass).flatMap((id) => deviceEntities(hass, id));
 }
 
 /**

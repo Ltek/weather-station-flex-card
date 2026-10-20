@@ -130,8 +130,15 @@ const patches = [
   // A device's sibling devices (same integration entry — e.g. Ecowitt Local's
   // gateway next to its WS90 device) fill values the device itself lacks.
   ["  function wfcAutoMapDevice(hass, deviceId) {\n    const map = {}, best = {};\n    for (const eid of wfcDeviceEntities(hass, deviceId)) {\n      const c = wfcClassifyWeatherEntity(hass, eid);\n      if (!c) continue;\n",
+   "  const WFC_SIB_CACHE = new WeakMap();\n" +
    "  function wfcSiblingDevices(hass, deviceId) {\n" +
    "    const devs = (hass && hass.devices) || {};\n" +
+   "    let c = WFC_SIB_CACHE.get(devs);\n" +
+   "    if (!c) { c = new Map(); WFC_SIB_CACHE.set(devs, c); }\n" +
+   "    if (!c.has(deviceId)) c.set(deviceId, wfcSiblingDevicesRaw(devs, deviceId));\n" +
+   "    return c.get(deviceId);\n" +
+   "  }\n" +
+   "  function wfcSiblingDevicesRaw(devs, deviceId) {\n" +
    "    const me = devs[deviceId];\n" +
    "    const entries = (me && me.config_entries) || [];\n" +
    "    if (!entries.length) return [];\n" +
@@ -141,6 +148,46 @@ const patches = [
    "    const own = wfcDeviceEntities(hass, deviceId).map((eid) => [eid, 0]);\n" +
    "    const sib = wfcSiblingDevices(hass, deviceId).flatMap((d) => wfcDeviceEntities(hass, d).map((eid) => [eid, 15]));\n" +
    "    for (const [eid, extra] of [...own, ...sib]) {\n      const c0 = wfcClassifyWeatherEntity(hass, eid);\n      if (!c0) continue;\n      const c = { key: c0.key, penalty: c0.penalty + extra };\n"],
+  // ---- Performance: Home Assistant replaces hass.states on every state change,
+  // but hass.entities / hass.devices only when the registry changes. Index
+  // device -> entities once per registry object instead of scanning every
+  // entity on every render (this scan was ~90% of render time with ~3000
+  // entities), and memoize each device's auto-map per registry + the set of
+  // its entities that currently have a state.
+  ["  function wfcDeviceEntities(hass, deviceId) {\n    if (!hass || !deviceId || !hass.entities) return [];\n    const out = [];\n    for (const eid in hass.entities) {\n      const e = hass.entities[eid];\n      if (e && e.device_id === deviceId) out.push(eid);\n    }\n    return out;\n  }\n",
+   "  const WFC_DEV_INDEX = new WeakMap();\n" +
+   "  function wfcDeviceEntities(hass, deviceId) {\n" +
+   "    if (!hass || !deviceId || !hass.entities) return [];\n" +
+   "    let idx = WFC_DEV_INDEX.get(hass.entities);\n" +
+   "    if (!idx) {\n" +
+   "      idx = new Map();\n" +
+   "      for (const eid in hass.entities) {\n" +
+   "        const d = hass.entities[eid] && hass.entities[eid].device_id;\n" +
+   "        if (!d) continue;\n" +
+   "        if (!idx.has(d)) idx.set(d, []);\n" +
+   "        idx.get(d).push(eid);\n" +
+   "      }\n" +
+   "      WFC_DEV_INDEX.set(hass.entities, idx);\n" +
+   "    }\n" +
+   "    return idx.get(deviceId) || [];\n" +
+   "  }\n"],
+  ["  function wfcAutoMapDevice(hass, deviceId) {\n    const map = {}, best = {};\n",
+   "  const WFC_MAP_CACHE = new WeakMap();\n" +
+   "  function wfcAutoMapDevice(hass, deviceId) {\n" +
+   "    if (!hass || !hass.entities) return wfcAutoMapDeviceRaw(hass, deviceId);\n" +
+   "    let byReg = WFC_MAP_CACHE.get(hass.entities);\n" +
+   "    if (!byReg) { byReg = new Map(); WFC_MAP_CACHE.set(hass.entities, byReg); }\n" +
+   "    const ids = [deviceId, ...wfcSiblingDevices(hass, deviceId)];\n" +
+   "    let sig = \"\";\n" +
+   "    for (const d of ids) for (const eid of wfcDeviceEntities(hass, d)) if (hass.states[eid]) sig += eid.length + \",\";\n" +
+   "    const key = deviceId + \"|\" + ids.length + \"|\" + sig;\n" +
+   "    const hit = byReg.get(deviceId);\n" +
+   "    if (hit && hit.key === key && hit.devices === hass.devices) return hit.map;\n" +
+   "    const map = wfcAutoMapDeviceRaw(hass, deviceId);\n" +
+   "    byReg.set(deviceId, { key, devices: hass.devices, map });\n" +
+   "    return map;\n" +
+   "  }\n" +
+   "  function wfcAutoMapDeviceRaw(hass, deviceId) {\n    const map = {}, best = {};\n"],
   // Moon marker drawn in the current phase: moon_icon "phase" (Sky Tracker).
   ["      if (!isDay && cfg.night_moon) {\n        const moon = cfg.moon_icon || \"mdi:weather-night\";",
    "      if (!isDay && cfg.night_moon && cfg.moon_icon === \"phase\") {\n" +

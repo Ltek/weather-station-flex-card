@@ -4,7 +4,7 @@
 // (metric_sources.sources[] = { ref, overrides?, disabled? }).
 // Fires `sources-changed` with { entity, metric_sources }.
 import { LitElement, html, css, nothing } from "lit";
-import { sourceDefault, integrationOf, entityValue } from "../card/resolve.js";
+import { sourceDefault, integrationOf, entityValue, deviceEntities } from "../card/resolve.js";
 import "./entity-select.js";
 
 export const SOURCE_METRICS = [
@@ -55,7 +55,7 @@ class WsfcSourcesEditor extends LitElement {
     const h = this.hass;
     if (isDev(ref)) {
       const d = h?.devices?.[ref.slice(7)];
-      const eid = Object.keys(h?.entities || {}).find((e) => h.entities[e].device_id === ref.slice(7));
+      const eid = deviceEntities(h, ref.slice(7))[0];
       return { icon: "mdi:access-point", name: d?.name_by_user || d?.name || ref.slice(7), kind: "Station device", sub: [d?.manufacturer, d?.model].filter(Boolean).join(" "), integ: integrationOf(h, eid) };
     }
     const st = h?.states?.[ref];
@@ -72,7 +72,7 @@ class WsfcSourcesEditor extends LitElement {
     const id = ref.slice(7);
     const entries = h.devices?.[id]?.config_entries || [];
     const devs = new Set([id, ...Object.entries(h.devices || {}).filter(([, d]) => (d.config_entries || []).some((e) => entries.includes(e))).map(([k]) => k)]);
-    return Object.keys(h.entities || {}).filter((e) => e.startsWith("sensor.") && devs.has(h.entities[e].device_id) && h.states[e]?.attributes?.unit_of_measurement && (!unit || h.states[e].attributes.unit_of_measurement === unit)).sort();
+    return [...devs].flatMap((d) => deviceEntities(h, d)).filter((e) => e.startsWith("sensor.") && h.states[e]?.attributes?.unit_of_measurement && (!unit || h.states[e].attributes.unit_of_measurement === unit)).sort();
   }
 
   render() {

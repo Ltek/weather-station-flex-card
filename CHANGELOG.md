@@ -1,5 +1,9 @@
 # Changelog
 
+## v2026.10.20.11
+
+- **Much faster:** every state change in Home Assistant re-rendered the card's panels, and each one re-scanned every entity in Home Assistant to find the station's sensors. The station's sensors are now indexed once per registry change. With ~3000 entities, an update went from ~66 ms to ~5 ms (default dashboard, measured headless). Bigger installs gain more.
+
 ## v2026.10.20.10
 
 - **Weather station editor:** every editor section starts collapsed. Weather Sources rebuilt: each source is its own collapsible section with its priority number, type, integration and how many values it supplies; open one to see each value, its current reading, and a drop-down that shows **Default** (the sensor picked automatically) or another sensor — with a *Default* button to go back. Priority arrows, skip and remove on each source; *Add source* takes a device or an entity.

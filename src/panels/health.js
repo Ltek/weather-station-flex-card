@@ -3,7 +3,7 @@
 // core integration for readings plus Ecowitt Local for battery and signal).
 import { LitElement, html, css, nothing } from "lit";
 import { panelStyles, head, moreInfo } from "./shared.js";
-import { stationDevices, metricSensor } from "../card/resolve.js";
+import { stationDevices, metricSensor, deviceEntities } from "../card/resolve.js";
 
 const KIND = [
   ["online", (h, dc) => dc === "connectivity" || /\bonline\b/.test(h)],
@@ -43,8 +43,8 @@ export function healthRows(station, hass) {
   for (const did of stationDevices(station, hass)) {
     const dev = hass.devices?.[did];
     const rows = [];
-    for (const [eid, reg] of Object.entries(hass.entities || {})) {
-      if (reg.device_id !== did) continue;
+    for (const eid of deviceEntities(hass, did)) {
+      const reg = hass.entities[eid];
       const st = hass.states[eid];
       if (!st) continue;
       const h = `${eid} ${st.attributes?.friendly_name || ""} ${st.attributes?.unit_of_measurement || ""}`.toLowerCase();
