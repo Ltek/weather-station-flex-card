@@ -1,5 +1,11 @@
 # Changelog
 
+## v2026.10.20.8
+
+- **Astronomy panel** (`astronomy`), after Weather Underground's: sun and moon altitude over today with their current positions; a rise/set table for the sun, civil, nautical and astronomical twilight and the moon; length of day (with the change since yesterday), length of visible light, solar noon and the moon phase.
+- **Wind map panel** (`wind_map`): Windy's animated map centred on home — wind, gusts, rain, temperature, clouds, pressure, radar or satellite layer; zoom, forecast model, altitude, units, location pin. Default: opens as a pop-up from its panel button; use `display: tile_popup` for a tile that opens larger.
+- **Station graphs** (`statistics`): Home Assistant's built-in Statistics graph card with your station's sensors filled in through Weather Sources. Presets match crookster.org's dashboard: `temps` (temperature, feels like, dew point), `wind` (speed, gust), `pressure_humidity`, `solar_uv`, `rain` (rate, today) and `temperature_range` (30 days). `days_to_show`, `period`, `chart_type`, `stat_types`, and any other card option under `card:`.
+
 ## v2026.10.20.7
 
 - **Sky Tracker** (`sky_tracker`) replaces the Sky Bar, Sun and Sun & Moon panels: the sun arc drawn over the sky gradient (daylight and cloud cover) with the forecast row under it, and the moon on the arc at night — drawn in its current phase. Layers (`show_arc`, `show_sky`), one time window for both (`timeframe`, `hours`, `anchor`), `moon`, `moon_phase` and `show_facts` (sun times). Use two trackers with one layer each to show the arc and the sky separately. Default size 4×2.

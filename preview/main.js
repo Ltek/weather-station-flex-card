@@ -198,6 +198,9 @@ const config = () => ({
     { type: "metric", metric: "uv_index" }, { type: "metric", metric: "solar_radiation" }, { type: "metric", metric: "pressure" },
     { type: "temp_humidity" }, { type: "wind", span: 4, rows: 3 }, { type: "moon" }, { type: "daily" },
     { type: "radar", display: "tile_popup", span: 4, rows: 3 },
+    { type: "astronomy" }, { type: "wind_map", display: "tile_popup" },
+    { type: "statistics", preset: "temps" }, { type: "statistics", preset: "wind" },
+    { type: "statistics", preset: "pressure_humidity" }, { type: "statistics", preset: "solar_uv" }, { type: "statistics", preset: "rain" },
   ] } : {}),
   ...(params.get("panels") === "legacy" ? { panels: LEGACY_PANELS } : {}),
 });
@@ -238,6 +241,17 @@ if (params.get("editor")) {
   window.__editor = ed;
 }
 window.__card = card;
+
+// Stand-in for Home Assistant's card helpers: shows the generated config.
+window.loadCardHelpers = async () => ({
+  createCardElement(cfg) {
+    const el = document.createElement("pre");
+    el.className = "stub-card";
+    el.style.cssText = "margin:0;font-size:10px;color:#8a8;white-space:pre-wrap;overflow:auto;max-height:240px";
+    el.textContent = `${cfg.type}\n` + JSON.stringify({ ...cfg, type: undefined }, null, 1);
+    return el;
+  },
+});
 
 const frame = document.getElementById("frame");
 frame.style.width = { phone: "390px", tablet: "1024px", full: "100%" }[params.get("width") || "full"];

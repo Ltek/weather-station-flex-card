@@ -4,7 +4,7 @@ A weather-station dashboard in one Home Assistant card. Panels sit in a 12-colum
 
 Built around an Ecowitt WS90 / GW2000B; works with any station whose sensors are in Home Assistant.
 
-Current build: **v2026.10.20.7** · full history in [CHANGELOG.md](CHANGELOG.md)
+Current build: **v2026.10.20.8** · full history in [CHANGELOG.md](CHANGELOG.md)
 
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Ltek&repository=weather-station-flex-card&category=plugin)
 
@@ -61,6 +61,9 @@ Only what you change is saved, so the YAML stays short.
 | `daily` | Weather Flex daily forecast. |
 | `forecast` | Hourly + daily together. |
 | `day` | One day's forecast (`day_offset`: 0 today, 1 tomorrow, …). |
+| `astronomy` | Sun and moon altitude over today, rise/set for the sun, civil/nautical/astronomical twilight and the moon, day length (and change since yesterday), visible light, moon phase. |
+| `wind_map` | Windy's animated wind map (or gusts, rain, temperature, clouds, pressure, radar, satellite) centred on home. `overlay`, `zoom`, `model`, `level`, `wind_unit`, `marker`. |
+| `statistics` | Home Assistant's Statistics graph card with your station's sensors filled in. `preset`: `temps`, `wind`, `pressure_humidity`, `solar_uv`, `rain`, `temperature_range`; `days_to_show`, `period`, `chart_type`, `stat_types`; anything else under `card:`. |
 | `moon` | Moon phase, illumination, moonrise/moonset, next full and new moon. |
 | `sky_tracker` | **Sky Tracker**: the sun arc over the sky gradient (daylight, cloud cover) with the forecast row under it, and the moon — in its current phase — on the arc at night. `show_arc`, `show_sky`, `timeframe` (`hours` / `day` / `sunrise_sunset`), `hours`, `anchor` (`now_center` / `now_left`), `moon`, `moon_phase`, `show_facts`; fine-tune under Arc & sky details. Two trackers with one layer each show them separately. |
 | `flex` | Any Weather Flex Card configuration under `flex:` — every Weather Flex feature. |

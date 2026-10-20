@@ -140,6 +140,34 @@ export const PANEL_TYPES = {
       { name: "show_facts", selector: { boolean: {} }, default: false, helper: "Dawn, sunrise, solar noon, sunset, dusk and daylight under the tracker." },
     ],
   },
+  astronomy: {
+    tag: "wsfc-panel-astronomy", label: "Astronomy", icon: "mdi:telescope", span: 6, rows: 3, rowsCompact: 0,
+    schema: [{ name: "show_chart", selector: { boolean: {} }, default: true, helper: "Sun and moon altitude over the day." }],
+  },
+  wind_map: {
+    tag: "wsfc-panel-wind-map", label: "Wind map (Windy)", icon: "mdi:map-marker-radius-outline", span: 6, rows: 3,
+    schema: [
+      { name: "overlay", selector: { select: { options: opt([["wind", "Wind"], ["gust", "Gusts"], ["rain", "Rain & thunder"], ["temp", "Temperature"], ["clouds", "Clouds"], ["pressure", "Pressure"], ["radar", "Radar"], ["satellite", "Satellite"]]) } }, default: "wind" },
+      { name: "zoom", selector: { number: { min: 3, max: 11, mode: "slider" } }, default: 6 },
+      { name: "model", selector: { select: { options: opt([["ecmwf", "ECMWF"], ["gfs", "GFS"], ["icon", "ICON"], ["namConus", "NAM (US)"]]) } }, default: "ecmwf" },
+      { name: "level", selector: { select: { options: opt([["surface", "Surface"], ["850h", "1500 m"], ["700h", "3000 m"], ["500h", "5500 m"], ["300h", "9000 m"]]) } }, default: "surface" },
+      { name: "wind_unit", selector: { select: { options: opt([["mph", "mph"], ["km/h", "km/h"], ["kt", "knots"], ["m/s", "m/s"], ["bft", "Beaufort"]]) } }, helper: "Default follows Home Assistant's unit system." },
+      { name: "marker", selector: { boolean: {} }, default: true, helper: "Pin at your location." },
+      { name: "latitude", selector: { number: { mode: "box", step: "any" } }, helper: "Map center (default: home)." },
+      { name: "longitude", selector: { number: { mode: "box", step: "any" } } },
+    ],
+  },
+  statistics: {
+    tag: "wsfc-panel-statistics", label: "Station graph (Statistics card)", icon: "mdi:chart-bell-curve-cumulative", span: 6, rows: 3,
+    schema: [
+      { name: "preset", selector: { select: { options: opt([["temps", "Temperatures (temp, feels like, dew point)"], ["wind", "Wind (speed, gust)"], ["pressure_humidity", "Pressure & humidity"], ["solar_uv", "Solar & UV"], ["rain", "Rain (rate, today)"], ["temperature_range", "Daily temperature range (30 days)"]]) } }, default: "temps" },
+      { name: "days_to_show", selector: { number: { min: 1, max: 365, mode: "box" } } },
+      { name: "period", selector: { select: { options: opt([["5minute", "5 minutes"], ["hour", "Hour"], ["day", "Day"], ["week", "Week"], ["month", "Month"]]) } } },
+      { name: "chart_type", selector: { select: { options: opt([["line", "Line"], ["bar", "Bar"]]) } } },
+      { name: "stat_types", selector: { select: { multiple: true, options: opt([["mean", "Mean"], ["min", "Min"], ["max", "Max"], ["state", "State"], ["change", "Change"]]) } } },
+      { name: "card", selector: { object: {} }, helper: "Extra Statistics graph card options (e.g. min_y_axis, hide_legend)." },
+    ],
+  },
   moon: {
     tag: "wsfc-panel-moon", label: "Moon", icon: "mdi:moon-waning-crescent", span: 4, rows: 2, rowsCompact: 0,
     schema: [{ name: "moon_size", selector: { number: { min: 40, max: 240, mode: "box", unit_of_measurement: "px" } } }],
@@ -226,7 +254,9 @@ export const DEFAULT_PANELS = [
   { type: "temp_humidity", show: false },
   { type: "uv_solar", show: false },
   { type: "moon", show: false },
+  { type: "astronomy", show: false },
   { type: "radar", display: "popup" },
+  { type: "wind_map", display: "popup" },
 ];
 
 /** Normalize a config: panels list (legacy hero/no-panels handled), ids. */
