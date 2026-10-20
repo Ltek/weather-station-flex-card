@@ -111,6 +111,36 @@ const patches = [
   // so it needs the hourly forecast too.
   ["    const sp = wfc.sun_position || {};\n    const fx = sp.forecast_extra;\n    const skyNeedsHourly = !!(sp.show && (",
    "    const sp = wfc.sun_position || {};\n    const fx = sp.forecast_extra;\n    const skyShown = !!(sp.show || (wfc.sun_arc && wfc.sun_arc.show && wfc.sun_arc.baseline_mode === \"sky\"));\n    const skyNeedsHourly = !!(skyShown && ("],
+  // ---- Device auto-mapping, checked against the entity sets the three Ecowitt
+  // integrations create (see _tests/fixtures/ecowitt-integrations.mjs):
+  // "Feel likes" (Ecowitt Official) is a feels-like temperature.
+  ["{ re: /feels[\\s_-]?like|apparent|wind[\\s_-]?chill|windchill/i, key: \"apparent_temperature\" },",
+   "{ re: /feels?[\\s_-]?likes?|apparent|wind[\\s_-]?chill|windchill|heat[\\s_-]?index/i, key: \"apparent_temperature\" },"],
+  // Indoor readings are never the outdoor value, even when a device has
+  // nothing else (Ecowitt Local's gateway device holds only indoor temp/humidity
+  // and pressure). "UV Radiation" (µW/cm²) is not the UV index. Heat index and
+  // wind chill rank below a real feels-like; channel/probe sensors below the
+  // outdoor array.
+  ["    if (/indoor|inside/.test(hay)) pen += 100;\n",
+   "    if (/indoor|inside/.test(hay)) return null;\n" +
+   "    if (key === \"uv_index\" && !/index|\\buvi\\b/.test(hay)) return null;\n" +
+   "    if (key === \"apparent_temperature\" && /chill|heat[\\s_-]?index/.test(hay)) pen += 10;\n" +
+   "    if (/globe|wbgt|soil|water|pool|probe|leaf|\\bch[\\s_-]?\\d|(temperature|humidity)[\\s_-]?\\d|_\\d+$/.test(hay.replace(/_2$/, \"\"))) pen += 40;\n" +
+   "    if (/outdoor/.test(hay)) pen -= 2;\n"],
+  // A device's sibling devices (same integration entry — e.g. Ecowitt Local's
+  // gateway next to its WS90 device) fill values the device itself lacks.
+  ["  function wfcAutoMapDevice(hass, deviceId) {\n    const map = {}, best = {};\n    for (const eid of wfcDeviceEntities(hass, deviceId)) {\n      const c = wfcClassifyWeatherEntity(hass, eid);\n      if (!c) continue;\n",
+   "  function wfcSiblingDevices(hass, deviceId) {\n" +
+   "    const devs = (hass && hass.devices) || {};\n" +
+   "    const me = devs[deviceId];\n" +
+   "    const entries = (me && me.config_entries) || [];\n" +
+   "    if (!entries.length) return [];\n" +
+   "    return Object.keys(devs).filter((id) => id !== deviceId && (devs[id].config_entries || []).some((e) => entries.includes(e)));\n" +
+   "  }\n" +
+   "  function wfcAutoMapDevice(hass, deviceId) {\n    const map = {}, best = {};\n" +
+   "    const own = wfcDeviceEntities(hass, deviceId).map((eid) => [eid, 0]);\n" +
+   "    const sib = wfcSiblingDevices(hass, deviceId).flatMap((d) => wfcDeviceEntities(hass, d).map((eid) => [eid, 15]));\n" +
+   "    for (const [eid, extra] of [...own, ...sib]) {\n      const c0 = wfcClassifyWeatherEntity(hass, eid);\n      if (!c0) continue;\n      const c = { key: c0.key, penalty: c0.penalty + extra };\n"],
   // Moon marker drawn in the current phase: moon_icon "phase" (Sky Tracker).
   ["      if (!isDay && cfg.night_moon) {\n        const moon = cfg.moon_icon || \"mdi:weather-night\";",
    "      if (!isDay && cfg.night_moon && cfg.moon_icon === \"phase\") {\n" +

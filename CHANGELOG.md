@@ -1,5 +1,13 @@
 # Changelog
 
+## v2026.10.20.9
+
+- **Works with all three Ecowitt integrations** — Home Assistant's Ecowitt, Ecowitt Local and the Ecowitt Official Integration — alone or together. See [docs/ECOWITT_INTEGRATIONS.md](docs/ECOWITT_INTEGRATIONS.md) for what each exposes.
+- **Auto-mapping fixes** found by testing each integration's entity names: Ecowitt Local's gateway device no longer supplies indoor temperature/humidity as the outdoor value; its "UV Radiation" (µW/cm²) is no longer taken as the UV index; the Official integration's "Feel likes" is recognised; heat index and wind chill rank below a real feels-like; channel/probe sensors rank below the outdoor array; daily rain is found for piezo gauges ("Daily piezo rainfall").
+- **Sibling devices:** with Ecowitt Local (one device per sensor plus the gateway), adding either device finds the other — e.g. pressure from the gateway.
+- **Station health panel** (`health`): battery (%, V or low/OK), capacitor, signal, RSSI and online state of every station device, colour-coded, plus the age of the last reading. Combine sources to fill gaps — e.g. the core integration for readings and Ecowitt Local for battery and signal.
+- New metrics for tiles and graphs: `battery`, `signal`, `rssi`. The Weather station editor lists them under "Values used" with today's rain.
+
 ## v2026.10.20.8
 
 - **Astronomy panel** (`astronomy`), after Weather Underground's: sun and moon altitude over today with their current positions; a rise/set table for the sun, civil, nautical and astronomical twilight and the moon; length of day (with the change since yesterday), length of visible light, solar noon and the moon phase.

@@ -1421,7 +1421,7 @@ import { actionHandler as iq } from "../../vendor/weather-forecast-card/src/hass
   // to device_class. Ordered so specific metrics (feels-like, dew point, gust,
   // direction) resolve before the generic temperature/wind_speed catch.
   const WFC_DEVICE_PATTERNS = [
-    { re: /feels[\s_-]?like|apparent|wind[\s_-]?chill|windchill/i, key: "apparent_temperature" },
+    { re: /feels?[\s_-]?likes?|apparent|wind[\s_-]?chill|windchill|heat[\s_-]?index/i, key: "apparent_temperature" },
     { re: /dew[\s_-]?point/i, key: "dew_point" },
     { re: /gust/i, key: "wind_gust_speed" },
     { re: /wind[\s_-]?(direction|dir|bearing|azimuth|heading)/i, key: "wind_bearing" },
@@ -1473,7 +1473,11 @@ import { actionHandler as iq } from "../../vendor/weather-forecast-card/src/hass
     }
     if (!key || WFC_DEVICE_METRIC_KEYS.indexOf(key) === -1) return null;
     let pen = 0;
-    if (/indoor|inside/.test(hay)) pen += 100;
+    if (/indoor|inside/.test(hay)) return null;
+    if (key === "uv_index" && !/index|\buvi\b/.test(hay)) return null;
+    if (key === "apparent_temperature" && /chill|heat[\s_-]?index/.test(hay)) pen += 10;
+    if (/globe|wbgt|soil|water|pool|probe|leaf|\bch[\s_-]?\d|(temperature|humidity)[\s_-]?\d|_\d+$/.test(hay.replace(/_2$/, ""))) pen += 40;
+    if (/outdoor/.test(hay)) pen -= 2;
     if (/avg|average|10m|max|daily|weekly|monthly|yearly|\bmin\b/.test(hay)) pen += 20;
     if (key === "pressure") {
       if (/deficit|vpd|vapou?r/.test(hay)) return null; // vapour-pressure-deficit ≠ barometric pressure
@@ -1490,11 +1494,21 @@ import { actionHandler as iq } from "../../vendor/weather-forecast-card/src/hass
 
   // Auto-map a device to { metricKey: entity_id }, choosing the lowest-penalty
   // candidate per metric.
+  function wfcSiblingDevices(hass, deviceId) {
+    const devs = (hass && hass.devices) || {};
+    const me = devs[deviceId];
+    const entries = (me && me.config_entries) || [];
+    if (!entries.length) return [];
+    return Object.keys(devs).filter((id) => id !== deviceId && (devs[id].config_entries || []).some((e) => entries.includes(e)));
+  }
   function wfcAutoMapDevice(hass, deviceId) {
     const map = {}, best = {};
-    for (const eid of wfcDeviceEntities(hass, deviceId)) {
-      const c = wfcClassifyWeatherEntity(hass, eid);
-      if (!c) continue;
+    const own = wfcDeviceEntities(hass, deviceId).map((eid) => [eid, 0]);
+    const sib = wfcSiblingDevices(hass, deviceId).flatMap((d) => wfcDeviceEntities(hass, d).map((eid) => [eid, 15]));
+    for (const [eid, extra] of [...own, ...sib]) {
+      const c0 = wfcClassifyWeatherEntity(hass, eid);
+      if (!c0) continue;
+      const c = { key: c0.key, penalty: c0.penalty + extra };
       if (best[c.key] == null || c.penalty < best[c.key]) { best[c.key] = c.penalty; map[c.key] = eid; }
     }
     return map;

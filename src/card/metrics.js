@@ -17,10 +17,14 @@ export const METRICS = {
   rain_rate: { label: "Rain rate", icon: "mdi:weather-pouring", color: "#1e88e5", digits: 2, key: "precipitation" },
   rain_today: {
     label: "Rain today", icon: "mdi:weather-rainy", color: "#1e88e5", digits: 2, chart: "bar", cumulative: true,
-    find: /(daily|today|day)[\s_-]?(rain|precip)|(rain|precipitation)[\s_-]?(daily|today)/i,
+    // core "Daily Rain Piezo", Ecowitt Local "Daily Rain", Ecowitt Official "Daily piezo rainfall"
+    find: /(daily|today|day)[\s_-]?(piezo[\s_-]?)?(rain|precip)|(rain|precipitation)[\s_-]?(daily|today)/i,
   },
-  rain_24h: { label: "Rain 24h", icon: "mdi:weather-rainy", color: "#1e88e5", digits: 2, find: /24h[\s_-]?rain|rain[\s_-]?24h/i },
-  rain_event: { label: "Rain event", icon: "mdi:weather-rainy", color: "#1e88e5", digits: 2, find: /event[\s_-]?rain|rain[\s_-]?event/i },
+  rain_24h: { label: "Rain 24h", icon: "mdi:weather-rainy", color: "#1e88e5", digits: 2, find: /24[\s_-]?h(ours?)?[\s_-]?(piezo[\s_-]?)?rain|rain(fall)?[\s_-]?24[\s_-]?h/i },
+  rain_event: { label: "Rain event", icon: "mdi:weather-rainy", color: "#1e88e5", digits: 2, find: /event[\s_-]?(piezo[\s_-]?)?rain|rain[\s_-]?event/i },
+  battery: { label: "Station battery", icon: "mdi:battery", color: "#66bb6a", digits: null, find: /batt/i, health: true },
+  signal: { label: "Station signal", icon: "mdi:signal", color: "#42a5f5", digits: 0, find: /signal/i, health: true },
+  rssi: { label: "Station RSSI", icon: "mdi:wifi-strength-2", color: "#42a5f5", digits: 0, find: /rssi/i, health: true },
   vpd: { label: "Vapour pressure deficit", icon: "mdi:water-opacity", color: "#8d6e63", digits: 2, find: /vapou?r[\s_-]?pressure[\s_-]?deficit|\bvpd\b/i },
   indoor_temperature: { label: "Indoor temperature", icon: "mdi:home-thermometer", color: "#ab47bc", digits: 1, find: /indoor[\s_-]?temp/i },
   indoor_humidity: { label: "Indoor humidity", icon: "mdi:home-percent", color: "#7e57c2", digits: 0, find: /indoor[\s_-]?humid/i },
@@ -42,6 +46,7 @@ export function digitsFor(metric, unit, override) {
   const d = METRICS[metric]?.digits;
   if (d != null) return d;
   if (/inHg/i.test(unit)) return 2;
+  if (unit === "V") return 2;
   if (/psi|kPa/i.test(unit)) return 1;
   return 0;
 }

@@ -21,6 +21,7 @@ import "../panels/stack.js";
 import "../panels/astronomy.js";
 import "../panels/wind-map.js";
 import "../panels/statistics.js";
+import "../panels/health.js";
 import "../editor/editor.js";
 
 const NARROW_PX = 720;

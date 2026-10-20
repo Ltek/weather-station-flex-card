@@ -61,13 +61,29 @@ export function pick(panelCfg, station, hass, key, cfgKey = key) {
   return panelCfg?.entities?.[cfgKey] || metricSensor(station, hass, key);
 }
 
-/** Entity ids belonging to the device sources (enabled ones, in priority order). */
-export function stationDeviceEntities(station, hass) {
+/**
+ * Station devices: each enabled device source, then its sibling devices (same
+ * integration entry — e.g. Ecowitt Local's gateway next to its WS90 device).
+ */
+export function stationDevices(station, hass) {
   const out = [];
-  const sources = station?.metric_sources?.sources || [];
-  for (const s of sources) {
+  const devs = hass?.devices || {};
+  for (const s of station?.metric_sources?.sources || []) {
     if (s.disabled || typeof s.ref !== "string" || !s.ref.startsWith("device:")) continue;
     const id = s.ref.slice(7);
+    if (!out.includes(id)) out.push(id);
+    const entries = devs[id]?.config_entries || [];
+    for (const [did, d] of Object.entries(devs)) {
+      if (!out.includes(did) && (d.config_entries || []).some((e) => entries.includes(e))) out.push(did);
+    }
+  }
+  return out;
+}
+
+/** Entity ids on the station devices, in device priority order. */
+export function stationDeviceEntities(station, hass) {
+  const out = [];
+  for (const id of stationDevices(station, hass)) {
     for (const eid in hass?.entities || {}) if (hass.entities[eid]?.device_id === id) out.push(eid);
   }
   return out;

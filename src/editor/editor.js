@@ -16,7 +16,7 @@ import { PANEL_TYPES, COMMON_SCHEMA, STACK_CHILD_SCHEMA, panelMeta, spanOf, rows
 import { CORE_EDITOR_TAG, FLEX_SECTIONS_BUILD, flexOverride, deepMerge } from "../card/core.js";
 import { flexBase, trackerConfig } from "../panels/flex.js";
 import { prune, clone } from "../card/config.js";
-import { METRICS } from "../card/metrics.js";
+import { METRICS, metricEntity } from "../card/metrics.js";
 import "./layout-map.js";
 import { metricSensor, entityValue } from "../card/resolve.js";
 
@@ -53,7 +53,7 @@ const LABELS = {
   owm_api_key: "OpenWeatherMap API key", owm_layers: "OpenWeatherMap layers", owm_default: "Layer shown first", owm_opacity: "Layer opacity",
   base_map_url: "Custom tile URL", base_map_attribution: "Custom tile attribution", day_offset: "Day", icon_size: "Icon size",
   show_moon: "Show moon", show_sun: "Show sun", attribute: "Text attribute", alerts_entity: "Alerts sensor", card: "Card configuration",
-  show_status: "Show station status", overlay: "Layer", model: "Forecast model", level: "Altitude", wind_unit: "Wind unit", marker: "Location pin", preset: "Graph", engine: "Graph card", days_to_show: "Days", period: "Resolution", chart_type: "Chart type", stat_types: "Values", show_chart: "Altitude chart", show_arc: "Sun arc", show_sky: "Sky gradient & forecast row", timeframe: "Time window", hours: "Hours", anchor: "Now is", moon: "Moon at night", moon_phase: "Draw the moon phase", background: "Card background", panel_opacity: "Panel opacity", panel_blur: "Panel blur", sky_bar: "Sky Bar in the hero", show_facts: "Show sun times", moon_size: "Moon size", direction: "Direction", min_width: "Minimum width", grow: "Grow", show_bar: "Panel buttons here",
+  show_status: "Show station status", show_devices: "Show device names", overlay: "Layer", model: "Forecast model", level: "Altitude", wind_unit: "Wind unit", marker: "Location pin", preset: "Graph", engine: "Graph card", days_to_show: "Days", period: "Resolution", chart_type: "Chart type", stat_types: "Values", show_chart: "Altitude chart", show_arc: "Sun arc", show_sky: "Sky gradient & forecast row", timeframe: "Time window", hours: "Hours", anchor: "Now is", moon: "Moon at night", moon_phase: "Draw the moon phase", background: "Card background", panel_opacity: "Panel opacity", panel_blur: "Panel blur", sky_bar: "Sky Bar in the hero", show_facts: "Show sun times", moon_size: "Moon size", direction: "Direction", min_width: "Minimum width", grow: "Grow", show_bar: "Panel buttons here",
 };
 
 const getPath = (o, path) => path.split(".").reduce((a, k) => (a == null ? a : a[k]), o);
@@ -237,12 +237,15 @@ class WeatherStationFlexCardEditor extends LitElement {
   _stationEditor() {
     const station = this._station;
     return html`
-      <p class="hint">Add your station's <b>device</b> (e.g. the Ecowitt GW2000B — its sensors are mapped automatically, outdoor first) and a <b>weather entity</b> for the forecast and condition. The top source wins for each value. These sources apply to every panel.</p>
+      <p class="hint">Add your station's <b>device</b> (its sensors are mapped automatically, outdoor first) and a <b>weather entity</b> for the forecast and condition. The top source wins for each value; these sources apply to every panel.</p>
+      <p class="hint">Any Ecowitt integration works — Home Assistant's <b>Ecowitt</b>, <b>Ecowitt Local</b> or the <b>Ecowitt Official Integration</b> — and you can add more than one: e.g. the core integration for readings plus Ecowitt Local for battery and signal (Station health panel). With Ecowitt Local, add either its sensor or gateway device; the other one is found automatically.</p>
       <div class="flexed">${this._sourcesEditor()}</div>
       <div class="grp">Values used</div>
       <div class="map">
-        ${MAP_KEYS.map((k) => {
-          const e = metricSensor(station, this.hass, k) || (this.hass.states[station.entity]?.attributes?.[k] != null ? station.entity : null);
+        ${[...MAP_KEYS, "rain_today", "battery", "signal", "rssi"].map((k) => {
+          const e = METRICS[k]?.find
+            ? metricEntity(k, station, this.hass)
+            : metricSensor(station, this.hass, k) || (this.hass.states[station.entity]?.attributes?.[k] != null ? station.entity : null);
           const v = e && !e.startsWith("weather.") ? entityValue(this.hass, e) : null;
           const label = MAP_LABELS[k] || METRICS[k]?.label || k.replace(/_/g, " ");
           return html`<span class="k">${label}</span><span class="e ${e ? "" : "none"}" title=${e || ""}>${e || "not found"}</span><span class="v">${v ? `${v.value} ${v.unit}` : ""}</span>`;

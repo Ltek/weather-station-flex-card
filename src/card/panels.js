@@ -169,6 +169,10 @@ export const PANEL_TYPES = {
       { name: "card", selector: { object: {} }, helper: "Extra options merged into the graph card's config, e.g. show_interval_picker: true, or a full entities: list." },
     ],
   },
+  health: {
+    tag: "wsfc-panel-health", label: "Station health", icon: "mdi:heart-pulse", span: 4, rows: 0,
+    schema: [{ name: "show_devices", selector: { boolean: {} }, helper: "Show device names even when there is only one." }],
+  },
   moon: {
     tag: "wsfc-panel-moon", label: "Moon", icon: "mdi:moon-waning-crescent", span: 4, rows: 2, rowsCompact: 0,
     schema: [{ name: "moon_size", selector: { number: { min: 40, max: 240, mode: "box", unit_of_measurement: "px" } } }],
@@ -256,6 +260,7 @@ export const DEFAULT_PANELS = [
   { type: "uv_solar", show: false },
   { type: "moon", show: false },
   { type: "astronomy", show: false },
+  { type: "health", show: false },
   { type: "radar", display: "popup" },
   { type: "wind_map", display: "popup" },
 ];
