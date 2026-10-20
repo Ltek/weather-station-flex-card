@@ -158,14 +158,15 @@ export const PANEL_TYPES = {
     ],
   },
   statistics: {
-    tag: "wsfc-panel-statistics", label: "Station graph (Statistics card)", icon: "mdi:chart-bell-curve-cumulative", span: 6, rows: 3,
+    tag: "wsfc-panel-statistics", label: "Station graph", icon: "mdi:chart-bell-curve-cumulative", span: 6, rows: 3,
     schema: [
-      { name: "preset", selector: { select: { options: opt([["temps", "Temperatures (temp, feels like, dew point)"], ["wind", "Wind (speed, gust)"], ["pressure_humidity", "Pressure & humidity"], ["solar_uv", "Solar & UV"], ["rain", "Rain (rate, today)"], ["temperature_range", "Daily temperature range (30 days)"]]) } }, default: "temps" },
-      { name: "days_to_show", selector: { number: { min: 1, max: 365, mode: "box" } } },
+      { name: "engine", selector: { select: { options: opt([["auto", "Automatic"], ["sgcc", "Statistics Graph Chart Card (custom)"], ["builtin", "Home Assistant Statistics graph"]]) } }, default: "auto", helper: "Automatic uses cataseven's Statistics Graph Chart Card when it is installed (mixed bars/lines/areas, second axis), otherwise Home Assistant's built-in card." },
+      { name: "preset", selector: { select: { options: opt([["temps", "Temperatures (temp, feels like, dew point)"], ["wind", "Wind (speed, gust, direction)"], ["pressure_humidity", "Pressure & humidity"], ["solar_uv", "Solar & UV"], ["rain", "Rain (rate, today)"], ["temperature_range", "Daily temperature range (30 days)"]]) } }, default: "temps" },
+      { name: "days_to_show", selector: { number: { min: 0.25, max: 365, step: 0.25, mode: "box" } } },
       { name: "period", selector: { select: { options: opt([["5minute", "5 minutes"], ["hour", "Hour"], ["day", "Day"], ["week", "Week"], ["month", "Month"]]) } } },
-      { name: "chart_type", selector: { select: { options: opt([["line", "Line"], ["bar", "Bar"]]) } } },
+      { name: "chart_type", selector: { select: { options: opt([["line", "Line"], ["bar", "Bar"]]) } }, helper: "Built-in card only (the custom card sets this per series)." },
       { name: "stat_types", selector: { select: { multiple: true, options: opt([["mean", "Mean"], ["min", "Min"], ["max", "Max"], ["state", "State"], ["change", "Change"]]) } } },
-      { name: "card", selector: { object: {} }, helper: "Extra Statistics graph card options (e.g. min_y_axis, hide_legend)." },
+      { name: "card", selector: { object: {} }, helper: "Extra options merged into the graph card's config, e.g. show_interval_picker: true, or a full entities: list." },
     ],
   },
   moon: {
