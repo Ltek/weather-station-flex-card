@@ -18,7 +18,9 @@ import { flexBase, trackerConfig } from "../panels/flex.js";
 import { prune, clone } from "../card/config.js";
 import { METRICS, metricEntity } from "../card/metrics.js";
 import "./layout-map.js";
-import { metricSensor, entityValue } from "../card/resolve.js";
+import { metricSensor, entityValue, integrationOf } from "../card/resolve.js";
+import "./sources.js";
+import "./series-editor.js";
 
 const MAP_KEYS = ["temperature", "apparent_temperature", "dew_point", "humidity", "pressure", "wind_speed", "wind_gust_speed", "wind_bearing", "uv_index", "solar_radiation", "illuminance", "precipitation"];
 const MAP_LABELS = { wind_bearing: "Wind direction", precipitation: "Rain rate" };
@@ -112,7 +114,7 @@ class WeatherStationFlexCardEditor extends LitElement {
 
   constructor() {
     super();
-    this._open = "station";
+    this._open = null;
     this._openPanel = null;
     this._addType = "metric";
     this._flexEds = new Map();
@@ -207,50 +209,38 @@ class WeatherStationFlexCardEditor extends LitElement {
     return src ? src.ref.slice(7) : undefined;
   }
 
-  // The card-wide Weather Sources list (Weather Flex's own editor, sources
-  // panel only). Its edits set the top-level entity and metric_sources.
-  _sourcesEditor() {
-    let ed = this._sourcesEd;
-    if (!ed) {
-      ed = this._sourcesEd = document.createElement(CORE_EDITOR_TAG);
-      ed.wsfcMode = "sources";
-      ed.addEventListener("config-changed", (e) => {
-        e.stopPropagation();
-        const c = e.detail.config;
-        const next = { ...this._config };
-        if (c.entity) next.entity = c.entity;
-        if (c.metric_sources && Object.keys(c.metric_sources).length) next.metric_sources = c.metric_sources;
-        else delete next.metric_sources;
-        this._emit(next);
-      });
-    }
-    const cfg = { entity: this._config.entity, ...(this._config.metric_sources ? { metric_sources: this._config.metric_sources } : {}) };
-    const json = JSON.stringify(cfg);
-    if (ed._wsfcJson !== json) {
-      ed._wsfcJson = json;
-      ed.setConfig(cfg);
-    }
-    ed.hass = this.hass;
-    return ed;
-  }
-
   _stationEditor() {
     const station = this._station;
+    const rows = [...MAP_KEYS, "rain_today", "battery", "signal", "rssi"].map((k) => {
+      const e = METRICS[k]?.find
+        ? metricEntity(k, station, this.hass)
+        : metricSensor(station, this.hass, k) || (this.hass.states[station.entity]?.attributes?.[k] != null ? station.entity : null);
+      const v = e && !e.startsWith("weather.") ? entityValue(this.hass, e) : null;
+      const wv = e?.startsWith("weather.") ? this.hass.states[e]?.attributes?.[k] : null;
+      return { k, e, v: v ? `${v.value} ${v.unit}` : wv != null ? String(wv) : "", label: MAP_LABELS[k] || METRICS[k]?.label || k.replace(/_/g, " "), integ: e ? integrationOf(this.hass, e) : "" };
+    });
+    const found = rows.filter((r) => r.e).length;
     return html`
-      <p class="hint">Add your station's <b>device</b> (its sensors are mapped automatically, outdoor first) and a <b>weather entity</b> for the forecast and condition. The top source wins for each value; these sources apply to every panel.</p>
-      <p class="hint">Any Ecowitt integration works — Home Assistant's <b>Ecowitt</b>, <b>Ecowitt Local</b> or the <b>Ecowitt Official Integration</b> — and you can add more than one: e.g. the core integration for readings plus Ecowitt Local for battery and signal (Station health panel). With Ecowitt Local, add either its sensor or gateway device; the other one is found automatically.</p>
-      <div class="flexed">${this._sourcesEditor()}</div>
-      <div class="grp">Values used</div>
-      <div class="map">
-        ${[...MAP_KEYS, "rain_today", "battery", "signal", "rssi"].map((k) => {
-          const e = METRICS[k]?.find
-            ? metricEntity(k, station, this.hass)
-            : metricSensor(station, this.hass, k) || (this.hass.states[station.entity]?.attributes?.[k] != null ? station.entity : null);
-          const v = e && !e.startsWith("weather.") ? entityValue(this.hass, e) : null;
-          const label = MAP_LABELS[k] || METRICS[k]?.label || k.replace(/_/g, " ");
-          return html`<span class="k">${label}</span><span class="e ${e ? "" : "none"}" title=${e || ""}>${e || "not found"}</span><span class="v">${v ? `${v.value} ${v.unit}` : ""}</span>`;
-        })}
-      </div>
+      <p class="hint">Sources are used top to bottom: for each value the first source that has it wins, and they apply to every panel. Add your station's <b>device</b> (sensors are mapped automatically, outdoor first) and a <b>weather entity</b> for the forecast and condition. Open a source to see or change what it supplies.</p>
+      <wsfc-sources-editor .hass=${this.hass} .config=${{ entity: this._config.entity, metric_sources: this._config.metric_sources }}
+        @sources-changed=${(e) => {
+          const next = { ...this._config };
+          if (e.detail.entity) next.entity = e.detail.entity;
+          if (e.detail.metric_sources) next.metric_sources = e.detail.metric_sources;
+          else delete next.metric_sources;
+          this._emit(next);
+        }}></wsfc-sources-editor>
+      <details class="sub">
+        <summary><ha-icon icon="mdi:format-list-checks"></ha-icon><span>Values used</span><span class="cnt">${found} of ${rows.length} found</span></summary>
+        <div class="map">
+          <span class="h">Value</span><span class="h">Entity</span><span class="h">Integration</span><span class="h">Now</span>
+          ${rows.map((r) => html`<span class="k">${r.label}</span><span class="e ${r.e ? "" : "none"}" title=${r.e || ""}>${r.e || "not found"}</span><span class="i">${r.integ}</span><span class="v">${r.v}</span>`)}
+        </div>
+      </details>
+      <details class="sub">
+        <summary><ha-icon icon="mdi:information-outline"></ha-icon><span>Which Ecowitt integration?</span></summary>
+        <p class="hint">Any of them works — Home Assistant's <b>Ecowitt</b>, <b>Ecowitt Local</b> or the <b>Ecowitt Official Integration</b> — and you can add more than one: e.g. the core integration for readings plus Ecowitt Local for battery, signal and RSSI (Station health panel). Home Assistant's own integration has no signal or RSSI sensors. With Ecowitt Local, add either its sensor or its gateway device; the other is found automatically.</p>
+      </details>
     `;
   }
 
@@ -449,7 +439,21 @@ class WeatherStationFlexCardEditor extends LitElement {
     const defs = nested ? {} : panelDefaults(p);
     let common = nested ? STACK_CHILD_SCHEMA : COMMON_SCHEMA;
     if (p.type === "hero") common = common.filter((f) => !["icon", "display", "in_bar"].includes(f.name));
+    const isGraph = ["graph", "temp_humidity", "uv_solar", "statistics"].includes(p.type);
+    // Reset keeps the panel's type, place and size; everything else returns to defaults.
+    const KEEP = ["type", "span", "rows", "display", "in_bar", "show", "id", "span_medium", "span_narrow", "rows_compact", "grow", "min_width",
+      ...(p.type === "metric" ? ["metric"] : []), ...(p.type === "statistics" ? ["preset"] : []), ...(p.type === "stack" ? ["panels", "direction"] : [])];
+    const customized = Object.keys(p).some((k) => !KEEP.includes(k));
+    const reset = () => update(Object.fromEntries(Object.entries(p).filter(([k]) => KEEP.includes(k))));
     return html`<div class="pbody">
+      <div class="resetbar">
+        <button class="btn sm ghost" ?disabled=${!customized} title="Keeps the panel's type, position and size" @click=${() => { this._flexEds.clear(); reset(); }}>
+          <ha-icon icon="mdi:restore"></ha-icon>Reset to default</button>
+      </div>
+      ${isGraph
+        ? html`<div class="grp first">Series</div>
+            <wsfc-series-editor .hass=${this.hass} .panel=${p} .station=${this._station} @panel-changed=${(e) => update(e.detail.panel)}></wsfc-series-editor>`
+        : nothing}
       <div class="grp">Layout</div>
       ${this._form(formData(p, common, defs), common, (v) => update({ type: p.type, ...applyForm(p, common, v, defs) }))}
       ${m.schema.length
@@ -540,13 +544,22 @@ class WeatherStationFlexCardEditor extends LitElement {
     .ib[disabled] { opacity: 0.3; cursor: default; }
     .ib ha-icon { --mdc-icon-size: var(--ltek-icon-sm); }
     .pbody { padding: 0 var(--ltek-sp-4) var(--ltek-sp-4); display: flex; flex-direction: column; gap: var(--ltek-sp-3); }
+    .resetbar { display: flex; justify-content: flex-end; }
+    .btn[disabled] { opacity: 0.4; cursor: default; }
     .grp.first { margin-top: 0; border-top: 0; padding-top: 0; }
     .grp { font-size: var(--ltek-fs-group); font-weight: var(--ltek-fw-semibold); margin-top: var(--ltek-sp-3); border-top: 1px solid var(--ltek-c-border-soft); padding-top: var(--ltek-sp-3); }
     .add { display: flex; gap: var(--ltek-sp-3); align-items: center; }
     .sel { flex: 1; font: inherit; font-size: var(--ltek-fs-label); padding: var(--ltek-ctrl-pad); border-radius: var(--ltek-r-ctrl); border: 1px solid var(--ltek-c-border); background: var(--card-background-color, #1c1c1c); color: var(--ltek-c-text); }
     .btn { display: inline-flex; align-items: center; gap: var(--ltek-sp-2); font: inherit; font-size: var(--ltek-fs-label); padding: var(--ltek-ctrl-pad); border-radius: var(--ltek-r-ctrl); border: 0; background: var(--ltek-c-accent); color: var(--ltek-c-on-accent); cursor: pointer; }
     .btn ha-icon { --mdc-icon-size: var(--ltek-icon-sm); }
-    .map { display: grid; grid-template-columns: auto 1fr auto; gap: 2px var(--ltek-sp-4); font-size: var(--ltek-fs-small); align-items: baseline; }
+    details.sub { border: 1px solid var(--ltek-c-border-soft); border-radius: var(--ltek-r-card); }
+    details.sub > summary { font-size: var(--ltek-fs-group); padding: var(--ltek-sp-3) var(--ltek-sp-4); gap: var(--ltek-sp-3); }
+    details.sub > summary ha-icon { --mdc-icon-size: var(--ltek-icon-sm); }
+    details.sub > summary .cnt { margin-left: auto; font-size: var(--ltek-fs-small); font-weight: var(--ltek-fw-normal); color: var(--ltek-c-muted); }
+    details.sub > :not(summary) { margin: 0 var(--ltek-sp-4) var(--ltek-sp-4); }
+    .map .h { font-size: var(--ltek-fs-tiny); text-transform: uppercase; letter-spacing: 0.04em; color: var(--ltek-c-muted); }
+    .map .i { color: var(--ltek-c-accent); white-space: nowrap; }
+    .map { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; gap: 2px var(--ltek-sp-4); font-size: var(--ltek-fs-small); align-items: baseline; }
     .map .k { color: var(--ltek-c-label); }
     .map .e { font-family: monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .map .e.none { color: var(--ltek-c-muted); font-family: inherit; font-style: italic; }

@@ -1,5 +1,11 @@
 # Changelog
 
+## v2026.10.20.10
+
+- **Weather station editor:** every editor section starts collapsed. Weather Sources rebuilt: each source is its own collapsible section with its priority number, type, integration and how many values it supplies; open one to see each value, its current reading, and a drop-down that shows **Default** (the sensor picked automatically) or another sensor — with a *Default* button to go back. Priority arrows, skip and remove on each source; *Add source* takes a device or an entity.
+- **Values used** is collapsible and shows which integration each value comes from.
+- **Graph panels** (Graph, Temp & Humidity, UV & Solar, Station graph): a *Series* list to change each line's **color** and **sensor** (drop-down shows *Default* while the station's own sensor is used), and **Reset to default** — on every panel, keeping its type, position and size.
+
 ## v2026.10.20.9
 
 - **Works with all three Ecowitt integrations** — Home Assistant's Ecowitt, Ecowitt Local and the Ecowitt Official Integration — alone or together. See [docs/ECOWITT_INTEGRATIONS.md](docs/ECOWITT_INTEGRATIONS.md) for what each exposes.

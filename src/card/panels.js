@@ -50,7 +50,7 @@ export const PANEL_TYPES = {
   graph: {
     tag: "wsfc-panel-graph", label: "Graph", icon: "mdi:chart-line", span: 6, rows: 3,
     schema: [
-      { name: "series", selector: { object: {} }, helper: "List of series: metric or entity, label, color, axis (left/right), style (line/area/dashed/bar), cumulative, band." },
+      { name: "series", selector: { object: {} }, helper: "Advanced: list of series (metric or entity, label, color, axis left/right, style line/area/dashed/bar, cumulative, band). Colors and sensors can also be set under Series above." },
       { name: "ranges", selector: { select: { multiple: true, options: RANGES.map((r) => ({ value: r, label: r })) } } },
       { name: "range", selector: { select: { options: RANGES.map((r) => ({ value: r, label: r })) } }, helper: "Range shown first." },
       { name: "show_readings", selector: { boolean: {} }, default: true },
@@ -64,9 +64,6 @@ export const PANEL_TYPES = {
     tag: "wsfc-panel-temp-humidity", label: "Temp & Humidity", icon: "mdi:thermometer-water", span: 6, rows: 3,
     schema: [
       { name: "range", selector: { select: { options: RANGES.map((r) => ({ value: r, label: r })) } } },
-      { name: "entities.temperature", selector: ent("sensor") },
-      { name: "entities.dew_point", selector: ent("sensor") },
-      { name: "entities.humidity", selector: ent("sensor") },
       { name: "show_readings", selector: { boolean: {} }, default: true },
     ],
   },
@@ -74,8 +71,6 @@ export const PANEL_TYPES = {
     tag: "wsfc-panel-uv-solar", label: "UV & Solar", icon: "mdi:weather-sunny-alert", span: 6, rows: 3,
     schema: [
       { name: "range", selector: { select: { options: RANGES.map((r) => ({ value: r, label: r })) } } },
-      { name: "entities.uv_index", label: "UV index sensor", selector: ent("sensor") },
-      { name: "entities.solar_radiation", label: "Solar radiation sensor", selector: ent("sensor") },
       { name: "show_readings", selector: { boolean: {} }, default: true },
     ],
   },

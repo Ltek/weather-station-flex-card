@@ -116,7 +116,9 @@ function sgccCard(p, station, hass) {
     : metrics
         .map((m) => {
           const e = metricEntity(m, station, hass, p.entity_overrides?.[m]);
-          return e ? { entity: e, name: METRICS[m]?.label || m, ...(preset.series?.[m] || {}) } : null;
+          if (!e) return null;
+          const c = p.colors?.[m];
+          return { entity: e, name: METRICS[m]?.label || m, ...(preset.series?.[m] || {}), ...(c ? { color: c } : {}) };
         })
         .filter(Boolean);
   // No secondary axis bounds/labels when nothing uses it (e.g. no direction sensor).

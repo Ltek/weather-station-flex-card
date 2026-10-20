@@ -117,3 +117,32 @@ export function stationStatus(station, hass) {
   const ok = ids.filter((e) => entityValue(hass, e) != null).length;
   return ok === ids.length ? "online" : ok ? "partial" : "offline";
 }
+
+/** Entity a single source supplies for a metric, before overrides (null if none). */
+export function sourceDefault(station, hass, ref, key) {
+  if (!ref || !hass) return null;
+  return P._wfcSlotEntityForKey.call(ctxFor(station, hass), ref, key) || null;
+}
+
+const INTEGRATION_NAMES = {
+  ecowitt: "Ecowitt",
+  ecowitt_local: "Ecowitt Local",
+  ha_ecowitt_iot: "Ecowitt Official",
+  openweathermap: "OpenWeatherMap",
+  pirateweather: "Pirate Weather",
+  nws: "National Weather Service",
+  met: "Met.no",
+  accuweather: "AccuWeather",
+  wunderground: "Weather Underground",
+  weatherunderground: "Weather Underground",
+  wundergroundpws: "Weather Underground PWS",
+  tomorrowio: "Tomorrow.io",
+  template: "Template",
+};
+
+/** Human name of the integration that created an entity ("" when unknown). */
+export function integrationOf(hass, eid) {
+  const p = eid && hass?.entities?.[eid]?.platform;
+  if (!p) return "";
+  return INTEGRATION_NAMES[p] || p.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}

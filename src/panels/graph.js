@@ -42,7 +42,7 @@ export class WsfcGraph extends LitElement {
         ...s,
         entity,
         label: s.label || m.label || st?.attributes?.friendly_name || entity || "—",
-        color: s.color || m.color || PALETTE[i % PALETTE.length],
+        color: s.color || this.config?.colors?.[s.metric] || m.color || PALETTE[i % PALETTE.length],
         axis: s.axis === "right" ? "right" : "left",
         style: s.style || (m.chart === "bar" ? "bar" : "line"),
         cumulative: s.cumulative ?? m.cumulative ?? false,
@@ -174,13 +174,22 @@ export class WsfcGraph extends LitElement {
   }
 }
 
+export const PRESET_SERIES = {
+  temp_humidity: [
+    { metric: "temperature" },
+    { metric: "dew_point", style: "dashed" },
+    { metric: "humidity", axis: "right", style: "area", color: "#42a5f5" },
+  ],
+  uv_solar: [
+    { metric: "uv_index", style: "area", color: "#ffa726" },
+    { metric: "solar_radiation", axis: "right", color: "#ffd54f" },
+  ],
+  graph: [{ metric: "temperature" }],
+};
+
 class WsfcTempHumidity extends WsfcGraph {
   get defaultSeries() {
-    return [
-      { metric: "temperature" },
-      { metric: "dew_point", style: "dashed" },
-      { metric: "humidity", axis: "right", style: "area", color: "#42a5f5" },
-    ];
+    return PRESET_SERIES.temp_humidity;
   }
   get defaultTitle() {
     return "Temperature & Humidity";
@@ -192,10 +201,7 @@ class WsfcTempHumidity extends WsfcGraph {
 
 class WsfcUvSolar extends WsfcGraph {
   get defaultSeries() {
-    return [
-      { metric: "uv_index", style: "area", color: "#ffa726" },
-      { metric: "solar_radiation", axis: "right", color: "#ffd54f" },
-    ];
+    return PRESET_SERIES.uv_solar;
   }
   get defaultTitle() {
     return "UV & Solar radiation";
