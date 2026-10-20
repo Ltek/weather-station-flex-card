@@ -14,7 +14,7 @@ import { LitElement, html, css, nothing } from "lit";
 import { CARD_VERSION, CARD_NAME } from "../card/constants.js";
 import { PANEL_TYPES, COMMON_SCHEMA, STACK_CHILD_SCHEMA, panelMeta, spanOf, rowsOf, inBarOf, normalizePanels } from "../card/panels.js";
 import { CORE_EDITOR_TAG, FLEX_SECTIONS_BUILD, flexOverride, deepMerge } from "../card/core.js";
-import { flexBase } from "../panels/flex.js";
+import { flexBase, trackerConfig } from "../panels/flex.js";
 import { prune, clone } from "../card/config.js";
 import { METRICS } from "../card/metrics.js";
 import "./layout-map.js";
@@ -53,7 +53,7 @@ const LABELS = {
   owm_api_key: "OpenWeatherMap API key", owm_layers: "OpenWeatherMap layers", owm_default: "Layer shown first", owm_opacity: "Layer opacity",
   base_map_url: "Custom tile URL", base_map_attribution: "Custom tile attribution", day_offset: "Day", icon_size: "Icon size",
   show_moon: "Show moon", show_sun: "Show sun", attribute: "Text attribute", alerts_entity: "Alerts sensor", card: "Card configuration",
-  show_status: "Show station status", background: "Card background", panel_opacity: "Panel opacity", panel_blur: "Panel blur", sky_bar: "Sky Bar in the hero", show_facts: "Show sun times", moon_size: "Moon size", direction: "Direction", min_width: "Minimum width", grow: "Grow", show_bar: "Panel buttons here",
+  show_status: "Show station status", show_arc: "Sun arc", show_sky: "Sky gradient & forecast row", timeframe: "Time window", hours: "Hours", anchor: "Now is", moon: "Moon at night", moon_phase: "Draw the moon phase", background: "Card background", panel_opacity: "Panel opacity", panel_blur: "Panel blur", sky_bar: "Sky Bar in the hero", show_facts: "Show sun times", moon_size: "Moon size", direction: "Direction", min_width: "Minimum width", grow: "Grow", show_bar: "Panel buttons here",
 };
 
 const getPath = (o, path) => path.split(".").reduce((a, k) => (a == null ? a : a[k]), o);
@@ -160,8 +160,10 @@ class WeatherStationFlexCardEditor extends LitElement {
         <div class="hdr"><span class="name">${CARD_NAME}</span><span class="ver">v${CARD_VERSION} · Weather Flex sections ${FLEX_SECTIONS_BUILD}</span></div>
         ${this._section("station", "mdi:weather-cloudy-clock", "Weather station", () => this._stationEditor())}
         ${this._section("general", "mdi:cog-outline", "General", () => this._general())}
+        ${this._section("buttons", "mdi:gesture-tap-button", "Panel buttons", () => this._buttonsEditor())}
+        ${this._section("layout", "mdi:view-dashboard-edit-outline", "Layout", () => this._layoutEditor())}
         ${this._section("hero", "mdi:weather-partly-cloudy", "Hero", () => this._heroEditor())}
-        ${this._section("panels", "mdi:view-dashboard-outline", `Panels (${this._panels.length})`, () => this._panelList())}
+        ${this._section("panels", "mdi:view-list-outline", `Panels (${this._panels.length})`, () => this._panelList())}
       </div>
     `;
   }
@@ -278,14 +280,18 @@ class WeatherStationFlexCardEditor extends LitElement {
       });
       this._flexEds.set(k, ed);
     }
+    // The Weather Flex editor sees the panel's effective config; only the
+    // difference from the panel without `flex:` is stored.
+    const effective = (q) => (q.type === "sky_tracker" ? trackerConfig(q, this._station) : deepMerge(flexBase(q.type, this._station), q.flex || {}));
+    ed.wsfcPanels = panelMeta(p)?.flexPanels || null;
     ed._wsfcOnChange = (emitted) => {
       const np = clone(p);
-      const override = flexOverride(emitted, flexBase(p.type, this._station));
+      const override = flexOverride(emitted, effective({ ...p, flex: undefined }));
       if (Object.keys(override).length) np.flex = override;
       else delete np.flex;
       update(np);
     };
-    const cfg = deepMerge(flexBase(p.type, this._station), p.flex || {});
+    const cfg = effective(p);
     const json = JSON.stringify(cfg);
     if (ed._wsfcJson !== json) {
       ed._wsfcJson = json;
@@ -295,18 +301,66 @@ class WeatherStationFlexCardEditor extends LitElement {
     return html`<div class="flexed">${ed}</div>`;
   }
 
-  _panelList() {
+  _layoutEditor() {
     return html`
-      <div class="grp first">Layout</div>
       <p class="hint"><b>Drag</b> a panel to move it; drag its <b>right or bottom edge</b> (or the corner) to resize. Keyboard: arrows move, Shift+arrows resize. This is the desktop layout — tablets and phones adapt automatically. Dashed = hidden on load.</p>
       <wsfc-layout-map .panels=${this._panels} @layout-changed=${(e) => {
         this._flexEds.clear();
         this._openPanel = null;
         this._setPanels(e.detail.panels);
       }}></wsfc-layout-map>
-      <div class="grp">Panels</div>
-      <p class="hint">Panels fill a 12-column grid left to right, in this order. To keep panels side by side on every screen, put them in a <b>Stack</b>.</p>
+    `;
+  }
+
+  _panelList() {
+    return html`
+      <p class="hint">Edit, show/hide, duplicate, delete and add panels. Arrange them under <b>Layout</b>. To keep panels side by side on every screen, put them in a <b>Stack</b>.</p>
       ${this._list(this._panels, (list, extra) => this._setPanels(list, extra), "")}
+    `;
+  }
+
+  // Panel buttons: where the bar sits, and which panels get a button.
+  _buttonsEditor() {
+    const c = this._config;
+    const panels = this._panels;
+    const headingIdx = panels.findIndex((p) => p.type === "heading");
+    const inHeading = headingIdx >= 0 && !!panels[headingIdx].show_bar;
+    const place = c.panel_bar === false ? "hidden" : inHeading ? "heading" : "top";
+    const setPlace = (v) => {
+      const list = panels.map((p, i) => (i === headingIdx ? prune({ ...p, show_bar: v === "heading" ? true : undefined }) : p));
+      if (v === "heading" && headingIdx < 0) list.splice(1, 0, { type: "heading", title: "Local measurements", show_status: true, show_bar: true });
+      this._setPanels(list, { panel_bar: v === "hidden" ? false : undefined });
+    };
+    const setBtn = (idx, on) => {
+      const list = panels.map((p, i) => {
+        if (!idx.includes(i)) return p;
+        const def = inBarOf({ ...p, in_bar: undefined });
+        return prune({ ...p, in_bar: on === def ? undefined : on });
+      });
+      this._setPanels(list);
+    };
+    const all = panels.map((_, i) => i);
+    return html`
+      <div class="row-inline">
+        <label for="bp">Buttons</label>
+        <select id="bp" class="sel" @change=${(e) => setPlace(e.target.value)}>
+          <option value="top" ?selected=${place === "top"}>Above the panels</option>
+          <option value="heading" ?selected=${place === "heading"}>In the heading panel</option>
+          <option value="hidden" ?selected=${place === "hidden"}>Hidden</option>
+        </select>
+      </div>
+      <p class="hint">A button toggles its panel (pop-up panels open instead). Panels without a button stay as they are.</p>
+      <div class="btnbar">
+        <button class="btn sm" @click=${() => setBtn(all, true)}>All</button>
+        <button class="btn sm ghost" @click=${() => setBtn(all, false)}>None</button>
+      </div>
+      <div class="checks">
+        ${panels.map((p, i) => html`<label class="chk">
+          <input type="checkbox" .checked=${inBarOf(p)} @change=${(e) => setBtn([i], e.target.checked)} />
+          <ha-icon icon=${p.icon || (p.type === "metric" && METRICS[p.metric]?.icon) || panelMeta(p).icon}></ha-icon>
+          <span>${panelName(p)}</span>${p.display === "popup" ? html`<span class="tag">pop-up</span>` : p.show === false ? html`<span class="tag">hidden on load</span>` : nothing}
+        </label>`)}
+      </div>
     `;
   }
 
@@ -360,8 +414,10 @@ class WeatherStationFlexCardEditor extends LitElement {
       <div class="line">
         <ha-icon class="lead" icon=${p.icon || (p.type === "metric" && METRICS[p.metric]?.icon) || (p.type === "stack" && p.direction === "vertical" ? "mdi:view-agenda-outline" : m.icon)}></ha-icon>
         <div class="txt"><div class="n">${panelName(p)}</div><div class="s">${sub}${size ? ` · ${size}` : ""}</div></div>
-        <button class="ib" title="Move up" ?disabled=${i === 0} @click=${() => move(-1)}><ha-icon icon="mdi:arrow-up"></ha-icon></button>
-        <button class="ib" title="Move down" ?disabled=${i === panels.length - 1} @click=${() => move(1)}><ha-icon icon="mdi:arrow-down"></ha-icon></button>
+        ${nested
+          ? html`<button class="ib" title="Move up" ?disabled=${i === 0} @click=${() => move(-1)}><ha-icon icon="mdi:arrow-up"></ha-icon></button>
+              <button class="ib" title="Move down" ?disabled=${i === panels.length - 1} @click=${() => move(1)}><ha-icon icon="mdi:arrow-down"></ha-icon></button>`
+          : nothing}
         ${nested
           ? nothing
           : html`<button class="ib" title=${hidden ? "Show when the dashboard loads" : "Hide when the dashboard loads"} @click=${() => update(prune({ ...p, show: hidden ? undefined : false }))}>
@@ -402,7 +458,8 @@ class WeatherStationFlexCardEditor extends LitElement {
             <div class="nest">${this._list(p.panels || [], (list, extra) => update({ ...p, panels: list }, extra), key)}</div>`
         : nothing}
       ${m.flex
-        ? html`<div class="grp">Weather Flex sections</div>
+        ? html`<div class="grp">${p.type === "sky_tracker" ? "Arc & sky details" : "Weather Flex sections"}</div>
+            ${p.type === "sky_tracker" ? html`<p class="hint">Fine-tune the arc (Sun Position) and the sky (Sky Bar): heights, colors, labels, ticks and the forecast row. Layers, time window and moon are set above and override the same options here.</p>` : nothing}
             ${p.type === "hero" && !nested ? html`<p class="hint">Also under Hero above.</p>` : this._flexEditor(key, p, update)}`
         : nothing}
     </div>`;
@@ -491,6 +548,15 @@ class WeatherStationFlexCardEditor extends LitElement {
     .map .e { font-family: monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .map .e.none { color: var(--ltek-c-muted); font-family: inherit; font-style: italic; }
     .map .v { color: var(--ltek-c-muted); white-space: nowrap; }
+    .row-inline { display: flex; align-items: center; gap: var(--ltek-sp-4); font-size: var(--ltek-fs-label); }
+    .btnbar { display: flex; gap: var(--ltek-sp-3); }
+    .btn.sm { padding: 3px 12px; font-size: var(--ltek-fs-body); }
+    .btn.ghost { background: transparent; border: 1px solid var(--ltek-c-border); color: var(--ltek-c-text); }
+    .checks { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 2px var(--ltek-sp-4); }
+    .chk { display: flex; align-items: center; gap: var(--ltek-sp-2); font-size: var(--ltek-fs-label); padding: 3px 0; cursor: pointer; min-width: 0; }
+    .chk span:not(.tag) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .chk ha-icon { --mdc-icon-size: var(--ltek-icon-sm); color: var(--ltek-c-icon); flex: 0 0 auto; }
+    .chk .tag { font-size: var(--ltek-fs-tiny); color: var(--ltek-c-muted); white-space: nowrap; }
     .nest { border-left: 2px solid var(--ltek-c-border); padding-left: var(--ltek-sp-3); display: flex; flex-direction: column; gap: var(--ltek-sp-3); }
     .flexed { border-left: 2px solid var(--ltek-c-accent-fade); padding-left: var(--ltek-sp-3); }
   `;

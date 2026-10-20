@@ -800,7 +800,8 @@ import { actionHandler as iq } from "../../vendor/weather-forecast-card/src/hass
     const wfc = wfcResolve(config);
     const sp = wfc.sun_position || {};
     const fx = sp.forecast_extra;
-    const skyNeedsHourly = !!(sp.show && (sp.weather_adjust !== false || [sp.forecast_temps, sp.forecast_icons].some((v) => v && v !== "hidden") || (Array.isArray(fx) ? fx.length : fx && fx !== "none")));
+    const skyShown = !!(sp.show || (wfc.sun_arc && wfc.sun_arc.show && wfc.sun_arc.baseline_mode === "sky"));
+    const skyNeedsHourly = !!(skyShown && (sp.weather_adjust !== false || [sp.forecast_temps, sp.forecast_icons].some((v) => v && v !== "hidden") || (Array.isArray(fx) ? fx.length : fx && fx !== "none") || Object.values(sp.forecast_metric_pos || {}).some((v) => v && v !== "hidden")));
     const wantHourly = !!(wfc.hourly.show || skyNeedsHourly);
     const wantForecast = !!(wantHourly || wfc.daily.show);
     const types = wantHourly && wfc.daily.show ? "both" : wantHourly ? "hourly" : "daily";
@@ -2553,7 +2554,12 @@ import { actionHandler as iq } from "../../vendor/weather-forecast-card/src/hass
       const cls = "wfc-sunarc-sun" + (isDay ? "" : " wfc-sunarc-sun-night");
       const style = `left:${dotLeftPct}%;top:${dotTopPct}%;`;
       // At night, optionally swap in a moon icon (custom or default).
-      if (!isDay && cfg.night_moon) {
+      if (!isDay && cfg.night_moon && cfg.moon_icon === "phase") {
+        const ph = i_.getMoonIllumination(new Date()).phase, r = 10, c = 11;
+        const f = Math.cos(ph * 2 * Math.PI), rx = Math.abs(f) * r, lit = ph < 0.5 ? 1 : 0;
+        const d = `M${c} ${c - r} A${r} ${r} 0 0 ${lit} ${c} ${c + r} A${rx} ${r} 0 0 ${f > 0 ? 1 - lit : lit} ${c} ${c - r} Z`;
+        marker = eq`<span class="${cls} wfc-sunarc-sun-icon wfc-sunarc-moon-icon" style=${style}><svg viewBox="0 0 22 22" width="22" height="22" style="display:block"><circle cx="11" cy="11" r="10" fill="#2b2f36" stroke="rgba(255,255,255,.35)" stroke-width=".8"></circle><path d=${d} fill="#e9e6d6"></path></svg></span>`;
+      } else if (!isDay && cfg.night_moon) {
         const moon = cfg.moon_icon || "mdi:weather-night";
         marker = eq`<ha-icon class="${cls} wfc-sunarc-sun-icon wfc-sunarc-moon-icon" .icon=${moon} style=${style}></ha-icon>`;
       } else if (cfg.sun_icon) {

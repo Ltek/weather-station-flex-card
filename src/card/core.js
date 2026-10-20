@@ -33,8 +33,17 @@ if (!customElements.get(CORE_TAG)) customElements.define(CORE_TAG, WeatherForeca
   };
   P.updated = function (changed) {
     updated?.call(this, changed);
+    // wsfcPanels: only show the Weather Flex editor panels relevant to this
+    // panel type (matched by their titles).
+    const keep = this.wsfcPanels;
+    if (keep && this.wsfcMode !== "sources") {
+      this.renderRoot?.querySelectorAll("details.wfc-panel, details.wsfc-panel").forEach((d) => {
+        const t = d.querySelector(":scope > summary .wfc-panel-title, :scope > summary .wsfc-panel-title")?.textContent?.trim();
+        d.hidden = !!t && !keep.includes(t);
+      });
+    }
     if (this.wsfcMode === "sources" && !this.__wsfcOpened) {
-      const d = this.renderRoot?.querySelector("details.wfc-panel");
+      const d = this.renderRoot?.querySelector("details.wfc-panel, details.wsfc-panel");
       if (d) {
         d.open = true;
         this.__wsfcOpened = true;

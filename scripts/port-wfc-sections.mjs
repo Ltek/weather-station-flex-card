@@ -98,7 +98,7 @@ const patches = [
   ["    const wantForecast = !!(wfc.hourly.show || wfc.daily.show);\n",
    "    const sp = wfc.sun_position || {};\n" +
    "    const fx = sp.forecast_extra;\n" +
-   "    const skyNeedsHourly = !!(sp.show && (sp.weather_adjust !== false || [sp.forecast_temps, sp.forecast_icons].some((v) => v && v !== \"hidden\") || (Array.isArray(fx) ? fx.length : fx && fx !== \"none\")));\n" +
+   "    const skyNeedsHourly = !!(sp.show && (sp.weather_adjust !== false || [sp.forecast_temps, sp.forecast_icons].some((v) => v && v !== \"hidden\") || (Array.isArray(fx) ? fx.length : fx && fx !== \"none\") || Object.values(sp.forecast_metric_pos || {}).some((v) => v && v !== \"hidden\")));\n" +
    "    const wantHourly = !!(wfc.hourly.show || skyNeedsHourly);\n" +
    "    const wantForecast = !!(wantHourly || wfc.daily.show);\n" +
    "    const types = wantHourly && wfc.daily.show ? \"both\" : wantHourly ? \"hourly\" : \"daily\";\n"],
@@ -106,6 +106,19 @@ const patches = [
    '    if (wantForecast && (types === "both" || !config.forecast_types || skyNeedsHourly)) patched.forecast_types = types;\n'],
   ['    if (wfc.hourly.show && wfc.daily.show) this.config.forecast_types = "both";\n',
    '    if (patched.forecast_types) this.config.forecast_types = patched.forecast_types;\n'],
+  // The Sun Position arc with baseline "Sky Bar" renders the complete Sky Bar
+  // (forecast row included) even while the Sky Bar section itself is hidden,
+  // so it needs the hourly forecast too.
+  ["    const sp = wfc.sun_position || {};\n    const fx = sp.forecast_extra;\n    const skyNeedsHourly = !!(sp.show && (",
+   "    const sp = wfc.sun_position || {};\n    const fx = sp.forecast_extra;\n    const skyShown = !!(sp.show || (wfc.sun_arc && wfc.sun_arc.show && wfc.sun_arc.baseline_mode === \"sky\"));\n    const skyNeedsHourly = !!(skyShown && ("],
+  // Moon marker drawn in the current phase: moon_icon "phase" (Sky Tracker).
+  ["      if (!isDay && cfg.night_moon) {\n        const moon = cfg.moon_icon || \"mdi:weather-night\";",
+   "      if (!isDay && cfg.night_moon && cfg.moon_icon === \"phase\") {\n" +
+   "        const ph = i_.getMoonIllumination(new Date()).phase, r = 10, c = 11;\n" +
+   "        const f = Math.cos(ph * 2 * Math.PI), rx = Math.abs(f) * r, lit = ph < 0.5 ? 1 : 0;\n" +
+   "        const d = `M${c} ${c - r} A${r} ${r} 0 0 ${lit} ${c} ${c + r} A${rx} ${r} 0 0 ${f > 0 ? 1 - lit : lit} ${c} ${c - r} Z`;\n" +
+   "        marker = eq`<span class=\"${cls} wfc-sunarc-sun-icon wfc-sunarc-moon-icon\" style=${style}><svg viewBox=\"0 0 22 22\" width=\"22\" height=\"22\" style=\"display:block\"><circle cx=\"11\" cy=\"11\" r=\"10\" fill=\"#2b2f36\" stroke=\"rgba(255,255,255,.35)\" stroke-width=\".8\"></circle><path d=${d} fill=\"#e9e6d6\"></path></svg></span>`;\n" +
+   "      } else if (!isDay && cfg.night_moon) {\n        const moon = cfg.moon_icon || \"mdi:weather-night\";"],
 ];
 for (const [from, to] of patches) {
   if (!body.includes(from)) throw new Error(`Patch target missing: ${from}`);

@@ -4,7 +4,7 @@ A weather-station dashboard in one Home Assistant card. Panels sit in a 12-colum
 
 Built around an Ecowitt WS90 / GW2000B; works with any station whose sensors are in Home Assistant.
 
-Current build: **v2026.10.19.6** · full history in [CHANGELOG.md](CHANGELOG.md)
+Current build: **v2026.10.20.7** · full history in [CHANGELOG.md](CHANGELOG.md)
 
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Ltek&repository=weather-station-flex-card&category=plugin)
 
@@ -36,8 +36,10 @@ For a full-screen dashboard put the card in a **Panel** view and set `layout: fu
 
 - **Weather station** — the Weather Sources list: add your station device (e.g. the Ecowitt GW2000B) and a weather entity for the forecast, set their priority and per-value overrides, and see which sensor is used for each value. Applies to every panel.
 - **General** — title, layout, layout size, full-screen fit, panel buttons, row height and gap.
-- **Hero** — Weather Flex Card's editor for the hero's sections (card appearance, section order, header, metrics/chips, hourly, daily, sun position, sky bar, clock, actions, advanced).
-- **Panels** — a **layout map** of the grid: drag panels to move them and drag their edges to resize (arrow keys work too). Below it, the panel list: show/hide, duplicate, delete and add panels. Each panel has **Layout** (title, icon, width, height, grid or pop-up, panel button, shown on load) and its own options. Forecast, Sun & Moon and Weather Flex sections panels also embed Weather Flex Card's editor for their sections.
+- **Panel buttons** — above the panels, in the heading panel, or hidden; one checkbox per panel, All / None.
+- **Layout** — a map of the grid: drag panels to move them and drag their edges to resize (arrow keys work too).
+- **Hero** — Weather Flex Card's editor for the hero (card appearance, header, metrics/chips, clock, actions).
+- **Panels** — the panel list: edit, show/hide, duplicate, delete and add panels. Each panel has **Layout** (title, icon, width, height, grid or pop-up, panel button, shown on load) and its own options. Forecast, Sun & Moon and Weather Flex sections panels also embed Weather Flex Card's editor for their sections.
 
 Only what you change is saved, so the YAML stays short.
 
@@ -45,7 +47,7 @@ Only what you change is saved, so the YAML stays short.
 
 | Type | What it shows |
 |---|---|
-| `hero` | Weather Flex header, chips, Sky Bar and clock over the animated weather background. Larger text on wide tiles, compact on narrow ones. |
+| `hero` | Weather Flex header, chips and clock over the animated weather background. Larger text on wide tiles, compact on narrow ones. |
 | `bulletin` | Generated summary of current conditions, sun and moon times; optional text sensor and NWS Alerts sensor. |
 | `heading` | Section title with station status (online / partial / offline) and, with `show_bar`, the panel buttons. |
 | `metric` | One value: today's min/max, a 24h sparkline (line or hourly bars), UV level, pressure trend. `metric:` temperature, apparent_temperature, dew_point, humidity, pressure, wind_speed, wind_gust_speed, uv_index, solar_radiation, illuminance, rain_rate, rain_today, rain_24h, rain_event, vpd, indoor_temperature, indoor_humidity — or any `entity`. |
@@ -58,11 +60,9 @@ Only what you change is saved, so the YAML stays short.
 | `hourly` | Weather Flex hourly forecast. |
 | `daily` | Weather Flex daily forecast. |
 | `forecast` | Hourly + daily together. |
-| `sky_bar` | The Sky Bar on its own (sky gradient over the day with forecast temps and icons). Set `sky_bar: false` on the hero to move it out of the hero. |
 | `day` | One day's forecast (`day_offset`: 0 today, 1 tomorrow, …). |
-| `sun` | Sun arc over the sky, plus dawn, sunrise, solar noon, sunset, dusk and daylight. |
 | `moon` | Moon phase, illumination, moonrise/moonset, next full and new moon. |
-| `sun_moon` | Sun arc, Sky Bar and moon together. |
+| `sky_tracker` | **Sky Tracker**: the sun arc over the sky gradient (daylight, cloud cover) with the forecast row under it, and the moon — in its current phase — on the arc at night. `show_arc`, `show_sky`, `timeframe` (`hours` / `day` / `sunrise_sunset`), `hours`, `anchor` (`now_center` / `now_left`), `moon`, `moon_phase`, `show_facts`; fine-tune under Arc & sky details. Two trackers with one layer each show them separately. |
 | `flex` | Any Weather Flex Card configuration under `flex:` — every Weather Flex feature. |
 | `card` | Any Home Assistant card under `card:` (e.g. `statistics-graph`). |
 

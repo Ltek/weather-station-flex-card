@@ -13,7 +13,8 @@ const ent = (domain) => ({ entity: domain ? { domain } : {} });
 export const PANEL_TYPES = {
   hero: {
     tag: "wsfc-panel-hero", label: "Hero (current conditions)", icon: "mdi:weather-partly-cloudy", span: 12, rows: 3, rowsCompact: 0, flex: true, inBar: false,
-    schema: [{ name: "sky_bar", selector: { boolean: {} }, default: true, helper: "Show the Sky Bar in the hero. Turn off to use a separate Sky Bar panel instead." }],
+    flexPanels: ["Card Appearance", "Section order & visibility", "Current Weather Header", "Current Weather Metrics", "Clock & Date", "User Actions", "Advanced"],
+    schema: [],
   },
   bulletin: {
     tag: "wsfc-panel-bulletin", label: "Bulletin", icon: "mdi:text-box-outline", span: 4, rows: 3, spanMedium: 12, rowsCompact: 0,
@@ -114,24 +115,30 @@ export const PANEL_TYPES = {
     ],
   },
   forecast: {
-    tag: "wsfc-panel-forecast", label: "Forecast (hourly + daily)", icon: "mdi:calendar-week", span: 8, rows: 4, flex: true,
+    tag: "wsfc-panel-forecast", label: "Forecast (hourly + daily)", icon: "mdi:calendar-week", span: 8, rows: 4, flex: true, flexPanels: ["Section order & visibility", "Hourly Forecast", "Daily Forecast"],
     schema: [],
   },
   hourly: {
-    tag: "wsfc-panel-hourly", label: "Hourly forecast", icon: "mdi:clock-outline", span: 8, rows: 3, flex: true,
+    tag: "wsfc-panel-hourly", label: "Hourly forecast", icon: "mdi:clock-outline", span: 8, rows: 3, flex: true, flexPanels: ["Hourly Forecast"],
     schema: [],
   },
   daily: {
-    tag: "wsfc-panel-daily", label: "Daily forecast", icon: "mdi:calendar-week", span: 8, rows: 3, flex: true,
+    tag: "wsfc-panel-daily", label: "Daily forecast", icon: "mdi:calendar-week", span: 8, rows: 3, flex: true, flexPanels: ["Daily Forecast"],
     schema: [],
   },
-  sky_bar: {
-    tag: "wsfc-panel-sky-bar", label: "Sky Bar", icon: "mdi:theme-light-dark", span: 12, rows: 0, flex: true,
-    schema: [],
-  },
-  sun: {
-    tag: "wsfc-panel-sun", label: "Sun", icon: "mdi:white-balance-sunny", span: 4, rows: 3, rowsCompact: 0, flex: true,
-    schema: [{ name: "show_facts", selector: { boolean: {} }, default: true, helper: "Dawn, sunrise, solar noon, sunset, dusk and daylight." }],
+  sky_tracker: {
+    tag: "wsfc-panel-sky-tracker", label: "Sky Tracker", icon: "mdi:sun-clock-outline", span: 4, rows: 2, rowsCompact: 0, flex: true,
+    flexPanels: ["Sun Position", "Sky Bar"],
+    schema: [
+      { name: "show_arc", selector: { boolean: {} }, default: true, helper: "Sun arc: the sun's path, its position now, sunrise and sunset; the moon at night." },
+      { name: "show_sky", selector: { boolean: {} }, default: true, helper: "Sky gradient: daylight and cloud cover over time, with the forecast row (temperatures, icons, wind…)." },
+      { name: "timeframe", selector: { select: { options: opt([["hours", "Number of hours"], ["day", "Today (midnight to midnight)"], ["sunrise_sunset", "Sunrise to sunset"]]) } }, default: "hours", helper: "One time window for the arc and the sky." },
+      { name: "hours", selector: { number: { min: 6, max: 72, mode: "box" } }, default: 24 },
+      { name: "anchor", selector: { select: { options: opt([["now_center", "Now in the middle"], ["now_left", "Now at the left"]]) } }, default: "now_center" },
+      { name: "moon", selector: { boolean: {} }, default: true, helper: "Show the moon on the arc at night." },
+      { name: "moon_phase", selector: { boolean: {} }, default: true, helper: "Draw the moon in its current phase (off: a moon icon)." },
+      { name: "show_facts", selector: { boolean: {} }, default: false, helper: "Dawn, sunrise, solar noon, sunset, dusk and daylight under the tracker." },
+    ],
   },
   moon: {
     tag: "wsfc-panel-moon", label: "Moon", icon: "mdi:moon-waning-crescent", span: 4, rows: 2, rowsCompact: 0,
@@ -144,10 +151,6 @@ export const PANEL_TYPES = {
       { name: "entity", selector: ent("weather"), helper: "Weather entity (default: the card's)." },
       { name: "icon_size", selector: { number: { min: 32, max: 160, mode: "box" } } },
     ],
-  },
-  sun_moon: {
-    tag: "wsfc-panel-sun-moon", label: "Sun & Moon (combined)", icon: "mdi:weather-sunset", span: 4, rows: 4, rowsCompact: 0, flex: true,
-    schema: [{ name: "show_moon", selector: { boolean: {} }, default: true }],
   },
   flex: {
     tag: "wsfc-panel-flex", label: "Weather Flex sections", icon: "mdi:view-agenda-outline", span: 6, rows: 0, flex: true,
@@ -208,6 +211,7 @@ export const opensPopup = (p) => p.display === "popup" || p.display === "tile_po
 export const DEFAULT_PANELS = [
   { type: "hero", span: 8 },
   { type: "bulletin" },
+  { type: "sky_tracker", span: 12, rows: 0 },
   { type: "heading", title: "Local measurements", show_status: true, show_bar: true },
   { type: "wind" },
   { type: "metric", metric: "temperature" },
@@ -221,14 +225,81 @@ export const DEFAULT_PANELS = [
   { type: "daily", show: false },
   { type: "temp_humidity", show: false },
   { type: "uv_solar", show: false },
-  { type: "sun", show: false },
   { type: "moon", show: false },
   { type: "radar", display: "popup" },
 ];
 
 /** Normalize a config: panels list (legacy hero/no-panels handled), ids. */
+// Panel types replaced by sky_tracker (v2026.10.20.7). Old configs are
+// migrated on load; the editor saves the migrated form.
+const SKY_TYPES = new Set(["sky_bar", "sun", "sun_moon"]);
+
+/** Old sky panels -> one Sky Tracker; returns the new list. */
+export function migrateSky(panels, heroWasSky) {
+  let out = [];
+  const sky = panels.filter((p) => p && SKY_TYPES.has(p.type));
+  // A Sky Bar panel and a Sun panel side by side become one tracker with both
+  // layers (the arc drew the Sky Bar as its baseline anyway).
+  const bar = sky.find((p) => p.type === "sky_bar");
+  const sun = sky.find((p) => p.type === "sun" || p.type === "sun_moon");
+  let merged = false;
+  for (const p of panels) {
+    if (!p || !SKY_TYPES.has(p.type)) { out.push(p); continue; }
+    const { type, sky_bar: _x, show_moon, ...rest } = p;
+    const t = { ...rest, type: "sky_tracker" };
+    if (type === "sky_bar") t.show_arc = false;
+    if (type === "sun") t.show_facts = p.show_facts !== false;
+    if (bar && sun && (p === bar || p === sun)) {
+      if (merged) continue;
+      merged = true;
+      const other = p === bar ? sun : bar;
+      const { type: _t2, sky_bar: _y, show_moon: _sm, ...orest } = other;
+      Object.assign(t, orest, rest);
+      t.flex = deepMergeShallowWfc(other === bar ? other.flex : p.flex, other === bar ? p.flex : other.flex);
+      delete t.show_arc;
+      if (sun.type === "sun") t.show_facts = sun.show_facts !== false;
+      if (!t.flex) delete t.flex;
+    }
+    out.push(t);
+    if (type === "sun_moon" && show_moon !== false) out.push({ type: "moon" });
+  }
+  // The hero no longer draws a Sky Bar: carry it into a tracker after the hero.
+  if (heroWasSky && !out.some((p) => p?.type === "sky_tracker")) {
+    const i = out.findIndex((p) => p?.type === "hero");
+    const hero = out[i];
+    const sp = hero?.flex?.wfc?.sun_position;
+    const t = { type: "sky_tracker", span: 12, rows: 0, ...(sp ? { flex: { wfc: { sun_position: sp } } } : {}) };
+    out.splice(i + 1, 0, t);
+  }
+  return out.map((p) => (p?.type === "hero" ? stripHeroSky(p) : p));
+}
+
+function stripHeroSky(p) {
+  const { sky_bar: _s, ...rest } = p;
+  const sp = rest.flex?.wfc?.sun_position;
+  if (!sp) return rest;
+  const { sun_position: _sp, ...wfc } = rest.flex.wfc;
+  const flex = { ...rest.flex, wfc };
+  if (!Object.keys(wfc).length) delete flex.wfc;
+  if (Object.keys(flex).length) rest.flex = flex;
+  else delete rest.flex;
+  return rest;
+}
+
+/** Sky Bar settings from the bar panel + arc settings from the sun panel. */
+function deepMergeShallowWfc(barFlex, sunFlex) {
+  if (!barFlex && !sunFlex) return undefined;
+  const w = { ...(sunFlex?.wfc || {}) };
+  if (barFlex?.wfc?.sun_position) w.sun_position = { ...(w.sun_position || {}), ...barFlex.wfc.sun_position };
+  return { ...(sunFlex || {}), ...(barFlex || {}), wfc: w };
+}
+
 export function normalizePanels(config) {
   let panels = Array.isArray(config.panels) && config.panels.length ? config.panels : DEFAULT_PANELS;
+  // A hero that showed its own Sky Bar (default before v2026.10.20.7).
+  const hero = panels.find((p) => p?.type === "hero");
+  const heroWasSky = !!hero && hero.sky_bar !== false && hero.flex?.wfc?.sun_position?.show !== false && panels !== DEFAULT_PANELS;
+  panels = migrateSky(panels, heroWasSky).map((p) => (p?.type === "stack" ? { ...p, panels: migrateSky(p.panels || [], false) } : p));
   panels = panels.filter((p) => p && PANEL_TYPES[p.type]);
   // Configs from the first build had no hero panel; the hero was implied (and
   // configured under top-level `hero:`). Keep showing it.

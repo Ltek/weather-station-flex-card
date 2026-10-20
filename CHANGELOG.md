@@ -1,5 +1,13 @@
 # Changelog
 
+## v2026.10.20.7
+
+- **Sky Tracker** (`sky_tracker`) replaces the Sky Bar, Sun and Sun & Moon panels: the sun arc drawn over the sky gradient (daylight and cloud cover) with the forecast row under it, and the moon on the arc at night — drawn in its current phase. Layers (`show_arc`, `show_sky`), one time window for both (`timeframe`, `hours`, `anchor`), `moon`, `moon_phase` and `show_facts` (sun times). Use two trackers with one layer each to show the arc and the sky separately. Default size 4×2.
+- **Hero** no longer contains a Sky Bar — place a Sky Tracker anywhere instead.
+- **Automatic migration:** `sky_bar` → tracker (sky only), `sun` → tracker (arc + sky, sun times on), `sun_moon` → tracker + `moon`; a Sky Bar panel and a Sun panel together become one tracker; a hero that showed its Sky Bar gets a tracker right after it with the same settings. The editor saves the new form.
+- Fix: the forecast row under the arc (Sun Position with the Sky Bar as baseline) was missing because the hourly forecast wasn't subscribed.
+- **Editor:** *Layout* (drag-and-drop map) and *Panels* (the list with settings) are separate sections, so editing a panel no longer re-renders the map; the list has no move arrows at the top level (use Layout; stacks keep theirs). New **Panel buttons** section: buttons above the panels, in the heading, or hidden, and a checkbox per panel with All / None. Embedded Weather Flex editors only show the parts that apply to the panel (e.g. Sun Position and Sky Bar for the tracker).
+
 ## v2026.10.19.6
 
 - **Hero:** no longer shows the weather entity's name (e.g. "OpenWeatherMap") under the condition — the readings come from your station, so the label was misleading. Set a *Name* in the Hero editor (Weather Flex's name field) to show your own label.

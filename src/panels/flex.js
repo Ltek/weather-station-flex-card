@@ -4,6 +4,7 @@
 import { LitElement, html, css, nothing } from "lit";
 import { panelStyles, head } from "./shared.js";
 import { CoreSlot, deepMerge } from "../card/core.js";
+import { sunInfo, timeFmt } from "../card/astro.js";
 
 // Bases per panel type. The editor diffs against these, so changing a base
 // changes what existing configs look like — treat them like defaults.
@@ -17,7 +18,7 @@ export const FLEX_BASES = {
     show_condition_effects: true,
     show_moon_phase: true,
     wfc: {
-      order: ["current", "details", "sun_position"],
+      order: ["current", "details"],
       current: {
         show: true,
         clock_show_time: true,
@@ -42,18 +43,7 @@ export const FLEX_BASES = {
           { key: "uv_index", show: true },
         ],
       },
-      sun_position: {
-        show: true,
-        height: 30,
-        timeframe_mode: "hours",
-        timeframe_hours: 24,
-        ss_markers_position: "overlay",
-        times_position: "below",
-        forecast_icons: "above",
-        forecast_temps: "above",
-        forecast_temp_with_icon: true,
-        forecast_every: 3,
-      },
+      sun_position: { show: false },
       hourly: { show: false },
       daily: { show: false },
       sun_arc: { show: false },
@@ -69,17 +59,6 @@ export const FLEX_BASES = {
       daily: { show: true },
       sun_position: { show: false },
       sun_arc: { show: false },
-    },
-  },
-  sun_moon: {
-    wfc: {
-      order: ["sun_arc", "sun_position"],
-      current: { show: false },
-      details: { show: false },
-      hourly: { show: false },
-      daily: { show: false },
-      sun_arc: { show: true, night_moon: true, show_ss_icons: true, height: 100 },
-      sun_position: { show: true, height: 28, timeframe_mode: "day", ss_markers_position: "overlay", times_position: "below" },
     },
   },
   hourly: {
@@ -98,22 +77,29 @@ export const FLEX_BASES = {
       sun_position: { show: false }, sun_arc: { show: false },
     },
   },
-  sky_bar: {
-    wfc: {
-      order: ["sun_position"],
-      current: { show: false }, details: { show: false }, hourly: { show: false }, daily: { show: false }, sun_arc: { show: false },
-      sun_position: {
-        show: true, height: 34, timeframe_mode: "hours", timeframe_hours: 24,
-        ss_markers_position: "overlay", times_position: "below",
-        forecast_icons: "above", forecast_temps: "above", forecast_temp_with_icon: true, forecast_every: 2,
-      },
-    },
-  },
-  sun: {
+  // Sky Tracker: the Sun Position arc with the full Sky Bar (gradient, time
+  // labels, forecast row) as its baseline. trackerConfig() applies the
+  // panel's own options (layers, timeframe, moon) on top.
+  sky_tracker: {
     wfc: {
       order: ["sun_arc"],
-      current: { show: false }, details: { show: false }, hourly: { show: false }, daily: { show: false }, sun_position: { show: false },
-      sun_arc: { show: true, night_moon: true, show_ss_icons: true, height: 110, baseline_mode: "sky" },
+      current: { show: false }, details: { show: false }, hourly: { show: false }, daily: { show: false },
+      sun_arc: {
+        show: true, height: 50, baseline_mode: "sky",
+        night_moon: true, moon_icon: "phase", sun_icon: "mdi:white-balance-sunny",
+        labels_position: 74, show_ss_icons: true, show_captions: false, show_base_ticks: true,
+        time_font_size: 11, ss_icon_size: 20,
+      },
+      sun_position: {
+        show: false, height: 40,
+        timeframe_mode: "hours", timeframe_hours: 24, timeframe_anchor: "now_center",
+        times_position: "above", ticks_position: "overlay", ticks_every: 4,
+        weather_adjust: true, ss_markers_position: "overlay",
+        forecast_every: "midticks", forecast_font_size: 11, forecast_icon_size: 18,
+        forecast_metric_detail_icons: true,
+        forecast_metric_order: ["temps", "icons", "precipitation_probability", "wind_speed", "humidity", "cloud_coverage", "uv_index", "wind_bearing"],
+        forecast_metric_pos: { temps: "below", icons: "overlay", wind_speed: "below", humidity: "below", cloud_coverage: "below" },
+      },
     },
   },
   // Generic: Weather Flex Card's own defaults (current header + daily forecast).
@@ -221,8 +207,6 @@ class WsfcHeroPanel extends WsfcFlexPanel {
     if (this._size === "large") cfg = deepMerge(cfg, HERO_LARGE);
     if (this._size === "narrow") cfg = deepMerge(cfg, HERO_NARROW);
     cfg = deepMerge(cfg, this.config?.flex || {});
-    // Options on the panel itself win over its Weather Flex config.
-    if (this.config?.sky_bar === false) cfg = deepMerge(cfg, { wfc: { sun_position: { show: false } } });
     // The card draws the animated background behind every panel: the hero
     // becomes transparent and stops animating on its own.
     if (this.cardBg) cfg = deepMerge(cfg, { show_condition_effects: false, wfc: { card: { bg_color: "transparent" } } });
@@ -255,16 +239,72 @@ class WsfcDailyPanel extends WsfcFlexPanel {
   defaultTitle = "Daily forecast";
   defaultIcon = "mdi:calendar-week";
 }
-class WsfcSkyBarPanel extends WsfcFlexPanel {
-  type = "sky_bar";
-  defaultTitle = "Sky";
-  defaultIcon = "mdi:theme-light-dark";
+/**
+ * Weather Flex config for a Sky Tracker panel: base + the panel's flex:
+ * override, then the panel's own options, which always win:
+ *   show_arc / show_sky  layers (both = arc over the sky)
+ *   timeframe            hours | day | sunrise_sunset (one window for both)
+ *   hours, anchor        for "hours": span and now_left | now_center
+ *   moon, moon_phase     moon marker at night, drawn in its current phase
+ */
+export function trackerConfig(p, station) {
+  const cfg = deepMerge(flexBase("sky_tracker", station), p?.flex || {});
+  const w = cfg.wfc;
+  const sa = (w.sun_arc ||= {}), sp = (w.sun_position ||= {});
+  const arc = p?.show_arc !== false, sky = p?.show_sky !== false;
+  const tf = p?.timeframe || "hours";
+  const hours = Number(p?.hours ?? 24), anchor = p?.anchor || "now_center";
+  sa.timeframe_mode = tf;
+  sp.timeframe_mode = tf === "sunrise_sunset" ? "match_arc" : tf;
+  sa.timeframe_hours = sp.timeframe_hours = hours;
+  sa.timeframe_anchor = sp.timeframe_anchor = anchor;
+  sa.night_moon = p?.moon !== false;
+  if (p?.moon_phase === false) { if (sa.moon_icon === "phase") sa.moon_icon = "mdi:weather-night"; }
+  else sa.moon_icon = "phase";
+  if (arc) {
+    w.order = ["sun_arc"];
+    sa.show = true;
+    sa.baseline_mode = sky ? "sky" : "line";
+    sp.show = false; // drawn by the arc as its baseline
+  } else {
+    w.order = ["sun_position"];
+    sa.show = false;
+    sp.show = sky;
+  }
+  return cfg;
+}
+
+class WsfcSkyTracker extends WsfcFlexPanel {
+  type = "sky_tracker";
+  defaultTitle = "Sky Tracker";
+  defaultIcon = "mdi:sun-clock-outline";
+  static styles = [
+    ...WsfcFlexPanel.styles,
+    css`
+      .facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 6px 14px; margin-top: 8px; font-size: 13px; }
+      .facts div span { display: block; font-size: 11px; color: var(--wsfc-muted); }
+    `,
+  ];
+  _coreConfig() {
+    return trackerConfig(this.config, this.station);
+  }
   render() {
-    // A title only when one is set — the bar reads fine on its own.
     if (!this.hass || !this.station?.entity) return nothing;
-    return html`${this.config?.title ? head(this.config, this.defaultIcon, "") : nothing}
+    const c = this.config || {};
+    if (c.show_arc === false && c.show_sky === false) return html`${head(c, this.defaultIcon, this.defaultTitle)}<div class="note">Turn on the sun arc or the sky gradient.</div>`;
+    return html`${c.title || c.show_title ? head(c, this.defaultIcon, this.defaultTitle) : nothing}
       <div class="core">${this._slot.update(this._coreConfig(), this.hass)}</div>
-      ${this._slot.error ? html`<div class="err">${this._slot.error}</div>` : nothing}`;
+      ${this._slot.error ? html`<div class="err">${this._slot.error}</div>` : nothing}
+      ${c.show_facts ? this._facts() : nothing}`;
+  }
+  _facts() {
+    const sun = sunInfo(this.hass);
+    if (!sun) return nothing;
+    const tf = timeFmt(this.hass);
+    const hm = (ms) => `${Math.floor(ms / 3600e3)}h ${String(Math.round((ms % 3600e3) / 60e3)).padStart(2, "0")}m`;
+    const rows = [["Dawn", tf.format(sun.dawn)], ["Sunrise", tf.format(sun.sunrise)], ["Solar noon", tf.format(sun.noon)],
+      ["Sunset", tf.format(sun.sunset)], ["Dusk", tf.format(sun.dusk)], ["Daylight", hm(sun.daylightMs)]];
+    return html`<div class="facts">${rows.map(([k, v]) => html`<div><span>${k}</span>${v}</div>`)}</div>`;
   }
 }
 
@@ -273,6 +313,6 @@ customElements.get("wsfc-panel-hero") || customElements.define("wsfc-panel-hero"
 customElements.get("wsfc-panel-forecast") || customElements.define("wsfc-panel-forecast", WsfcForecastPanel);
 customElements.get("wsfc-panel-hourly") || customElements.define("wsfc-panel-hourly", WsfcHourlyPanel);
 customElements.get("wsfc-panel-daily") || customElements.define("wsfc-panel-daily", WsfcDailyPanel);
-customElements.get("wsfc-panel-sky-bar") || customElements.define("wsfc-panel-sky-bar", WsfcSkyBarPanel);
+customElements.get("wsfc-panel-sky-tracker") || customElements.define("wsfc-panel-sky-tracker", WsfcSkyTracker);
 
 export { WsfcFlexPanel };
