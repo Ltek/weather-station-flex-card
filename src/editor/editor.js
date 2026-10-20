@@ -124,6 +124,36 @@ class WeatherStationFlexCardEditor extends LitElement {
     this._config = config;
   }
 
+  // Home Assistant passes the editor a new `hass` on every state change —
+  // several times a second with a live weather station. Re-rendering then
+  // rebuilds every open Home Assistant form (entity pickers filter all
+  // entities) and the embedded Weather Flex editors, which made the editor
+  // slow and could reset a control while it was in use. Only re-render for
+  // hass when something the forms depend on changed (entity/device registry,
+  // theme, language) or, for live values, at most every 15 s.
+  shouldUpdate(changed) {
+    if (changed.size === 1 && changed.has("hass")) {
+      const old = changed.get("hass"), h = this.hass;
+      const same = old && h && old.entities === h.entities && old.devices === h.devices && old.areas === h.areas &&
+        old.themes === h.themes && old.locale === h.locale && old.language === h.language;
+      if (same && Date.now() - (this._renderedAt || 0) < 15000) {
+        if (!this._hassTimer) this._hassTimer = setTimeout(() => { this._hassTimer = null; this.requestUpdate(); }, 15000);
+        return false;
+      }
+    }
+    return true;
+  }
+
+  updated() {
+    this._renderedAt = Date.now();
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    clearTimeout(this._hassTimer);
+    this._hassTimer = null;
+  }
+
   get _panels() {
     return normalizePanels(this._config);
   }

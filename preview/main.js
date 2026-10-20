@@ -117,6 +117,14 @@ function stationStates() {
 }
 
 const params = new URLSearchParams(location.search);
+// ?sgcc=1: load a local copy of cataseven's Statistics Graph Chart Card
+// (preview/build/sgcc/, not committed) to test the station graphs against it.
+if (params.get("sgcc")) {
+  const sc = document.createElement("script");
+  sc.type = "module";
+  sc.src = "/preview/build/sgcc/statistics-graph-chart-card.js";
+  document.head.append(sc);
+}
 let condition = params.get("condition") || "partlycloudy";
 let dark = params.get("theme") !== "light";
 const mock = new MockHass({ unitOfMeasurement: "°F", darkMode: dark, currentCondition: condition });
@@ -189,6 +197,10 @@ const config = () => ({
   layout: params.get("layout") || "auto",
   remember: false,
   ...(params.get("bg") ? { background: "animated", panel_opacity: Number(params.get("op") || 0.55) } : {}),
+  ...(params.get("panels") === "stats" ? { panels: [
+    { type: "statistics", preset: "temps", span: 6, rows: 3, colors: { temperature: "#00ff00", dew_point: "#ff00ff" } },
+    { type: "statistics", preset: "rain", span: 6, rows: 3 },
+  ] } : {}),
   ...(params.get("panels") === "user" ? { panels: [
     { type: "hero", span: 8 }, { type: "bulletin" },
     { type: "sky_tracker", span: 4, rows: 2 },
@@ -245,6 +257,13 @@ window.__card = card;
 // Stand-in for Home Assistant's card helpers: shows the generated config.
 window.loadCardHelpers = async () => ({
   createCardElement(cfg) {
+    // Real custom cards loaded in the preview (?sgcc=1) are created for real.
+    const tag = String(cfg.type || "").replace(/^custom:/, "");
+    if (cfg.type?.startsWith("custom:") && customElements.get(tag)) {
+      const el = document.createElement(tag);
+      el.setConfig(cfg);
+      return el;
+    }
     const el = document.createElement("pre");
     el.className = "stub-card";
     el.style.cssText = "margin:0;font-size:10px;color:#8a8;white-space:pre-wrap;overflow:auto;max-height:240px";

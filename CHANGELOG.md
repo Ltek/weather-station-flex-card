@@ -1,5 +1,10 @@
 # Changelog
 
+## v2026.10.20.12
+
+- **Faster editor:** Home Assistant hands the editor new data on every state change; the editor re-rendered all of its open forms (entity pickers and the embedded Weather Flex editors) each time. It now re-renders for that only when the entity/device registry, theme or language changed, and refreshes live values every 15 s. An update to an open editor went from ~1–5 ms of our own work plus Home Assistant's form rebuilds to ~0.2 ms.
+- Station graph: when the config changes twice quickly (e.g. a color), the graph can no longer end up built from the older one.
+
 ## v2026.10.20.11
 
 - **Much faster:** every state change in Home Assistant re-rendered the card's panels, and each one re-scanned every entity in Home Assistant to find the station's sensors. The station's sensors are now indexed once per registry change. With ~3000 entities, an update went from ~66 ms to ~5 ms (default dashboard, measured headless). Bigger installs gain more.

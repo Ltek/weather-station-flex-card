@@ -241,6 +241,7 @@ class WsfcCardHost extends LitElement {
     try {
       const helpers = await window.loadCardHelpers?.();
       if (!helpers) throw new Error("Card helpers unavailable");
+      if (this._json !== json) return;
       this._el = helpers.createCardElement(cfg);
       this._el.hass = this.hass;
       this._err = undefined;

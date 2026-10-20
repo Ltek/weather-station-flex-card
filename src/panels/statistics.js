@@ -199,6 +199,8 @@ class WsfcStatistics extends LitElement {
     try {
       const helpers = await window.loadCardHelpers?.();
       if (!helpers) throw new Error("Home Assistant card helpers unavailable");
+      // A newer config arrived while waiting (e.g. a color changed twice): drop this one.
+      if (this._json !== json) return;
       this._el = helpers.createCardElement(cfg);
       this._el.hass = this.hass;
       this._err = undefined;
