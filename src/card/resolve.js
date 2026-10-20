@@ -70,7 +70,8 @@ export function stationDevices(station, hass) {
   const devsObj = hass?.devices || {};
   const key = JSON.stringify(station?.metric_sources?.sources || []);
   let c = SD_CACHE.get(devsObj);
-  if (!c) { c = new Map(); SD_CACHE.set(devsObj, c); }
+  if (c && c.hass !== hass) { c.hass = hass; if (Object.keys(devsObj).length !== c.size0) c = null; }
+  if (!c) { c = new Map(); c.size0 = Object.keys(devsObj).length; c.hass = hass; SD_CACHE.set(devsObj, c); }
   if (!c.has(key)) c.set(key, stationDevicesRaw(station, hass));
   return c.get(key);
 }
@@ -96,6 +97,8 @@ export function deviceEntities(hass, deviceId) {
   const reg = hass?.entities;
   if (!reg) return [];
   let idx = DEV_INDEX.get(reg);
+  // Re-check the registry size once per hass object, in case it was mutated in place.
+  if (idx && idx.hass !== hass) { idx.hass = hass; if (Object.keys(reg).length !== idx.size0) idx = null; }
   if (!idx) {
     idx = new Map();
     for (const eid in reg) {
@@ -104,6 +107,8 @@ export function deviceEntities(hass, deviceId) {
       if (!idx.has(d)) idx.set(d, []);
       idx.get(d).push(eid);
     }
+    idx.size0 = Object.keys(reg).length;
+    idx.hass = hass;
     DEV_INDEX.set(reg, idx);
   }
   return idx.get(deviceId) || [];

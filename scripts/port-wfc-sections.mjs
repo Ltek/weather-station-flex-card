@@ -159,6 +159,8 @@ const patches = [
    "  function wfcDeviceEntities(hass, deviceId) {\n" +
    "    if (!hass || !deviceId || !hass.entities) return [];\n" +
    "    let idx = WFC_DEV_INDEX.get(hass.entities);\n" +
+   "    // Re-check the registry size once per hass object, in case it was mutated in place.\n" +
+   "    if (idx && idx.hass !== hass) { idx.hass = hass; if (Object.keys(hass.entities).length !== idx.size0) idx = null; }\n" +
    "    if (!idx) {\n" +
    "      idx = new Map();\n" +
    "      for (const eid in hass.entities) {\n" +
@@ -167,6 +169,8 @@ const patches = [
    "        if (!idx.has(d)) idx.set(d, []);\n" +
    "        idx.get(d).push(eid);\n" +
    "      }\n" +
+   "      idx.size0 = Object.keys(hass.entities).length;\n" +
+   "      idx.hass = hass;\n" +
    "      WFC_DEV_INDEX.set(hass.entities, idx);\n" +
    "    }\n" +
    "    return idx.get(deviceId) || [];\n" +

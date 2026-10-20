@@ -1441,6 +1441,8 @@ import { actionHandler as iq } from "../../vendor/weather-forecast-card/src/hass
   function wfcDeviceEntities(hass, deviceId) {
     if (!hass || !deviceId || !hass.entities) return [];
     let idx = WFC_DEV_INDEX.get(hass.entities);
+    // Re-check the registry size once per hass object, in case it was mutated in place.
+    if (idx && idx.hass !== hass) { idx.hass = hass; if (Object.keys(hass.entities).length !== idx.size0) idx = null; }
     if (!idx) {
       idx = new Map();
       for (const eid in hass.entities) {
@@ -1449,6 +1451,8 @@ import { actionHandler as iq } from "../../vendor/weather-forecast-card/src/hass
         if (!idx.has(d)) idx.set(d, []);
         idx.get(d).push(eid);
       }
+      idx.size0 = Object.keys(hass.entities).length;
+      idx.hass = hass;
       WFC_DEV_INDEX.set(hass.entities, idx);
     }
     return idx.get(deviceId) || [];
