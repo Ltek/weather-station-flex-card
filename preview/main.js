@@ -247,7 +247,7 @@ const config = () => ({
   ] } : {}),
   ...(params.get("panels") === "air" ? { panels: [
     { type: "pollen", span: 6 }, { type: "air_quality", span: 6 },
-    ...["rows", "bars"].map((layout) => ({ type: "air_quality", span: 6, layout, title: `Erie air (${layout})`,
+    ...["scale", "bars"].map((layout) => ({ type: "air_quality", span: 6, layout, title: `Erie air (${layout})`,
       entities: { aqi: "sensor.erie_aqi", pm2_5: "sensor.erie_pm2_5_24_hour", pm10: "sensor.erie_pm10", ozone: "sensor.erie_ozone_8_hour", co2: "sensor.erie_co2" },
       extra: [{ entity: "sensor.erie_benzene", label: "Benzene" }, { entity: "sensor.erie_ethane", label: "Ethane" }] })),
     { type: "statistics", preset: "air_quality", span: 6, rows: 3 }, { type: "metric", metric: "aqi" }, { type: "metric", metric: "pm2_5" },

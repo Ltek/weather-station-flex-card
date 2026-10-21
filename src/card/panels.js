@@ -1,6 +1,7 @@
 // Panel type registry: element tag, label/icon, default size and the editor
 // schema (Home Assistant ha-form) for the type's own options.
 import { METRICS } from "./metrics.js";
+import { pollenModel } from "./pollen.js";
 
 const opt = (pairs) => pairs.map(([value, label]) => ({ value, label }));
 const RANGES = ["6h", "12h", "24h", "48h", "7d", "30d", "90d", "365d"];
@@ -27,7 +28,7 @@ export const PANEL_TYPES = {
     ],
   },
   heading: {
-    tag: "wsfc-panel-heading", label: "Heading", icon: "mdi:format-title", span: 12, rows: 0, inBar: false, bare: true,
+    tag: "wsfc-panel-heading", label: "Button Menu", icon: "mdi:format-title", span: 12, rows: 0, inBar: false, bare: true,
     schema: [
       { name: "subtitle", selector: { text: {} } },
       { name: "show_status", selector: { boolean: {} }, helper: "Show whether the station's sensors are reporting." },
@@ -170,11 +171,15 @@ export const PANEL_TYPES = {
   },
   pollen: {
     tag: "wsfc-panel-pollen", label: "Pollen", icon: "mdi:flower-pollen", span: 4, rows: 0,
+    // Out of season: no tile in the grid (its button still opens it).
+    hideWhen: (p, hass) => p.hide_when_off_season !== false && pollenModel(p, hass).outOfSeason,
     schema: [
       { name: "device", selector: { device: { integration: "pollenlevels" } }, helper: "Pollen Levels location (default: the first one)." },
       { name: "view", selector: { select: { options: opt([["plants", "Species (oak, juniper, ragweed …)"], ["types", "Types (tree, grass, weed)"]]) } }, default: "plants" },
       { name: "species", selector: { text: { multiple: true } }, helper: "Species to show, in order, by Google code or name (e.g. JUNIPER, OAK, GRAMINALES). Blank shows the busiest." },
       { name: "max_rows", selector: { number: { min: 0, max: 20, mode: "box" } }, default: 6, helper: "Rows when no species are listed (0 = all)." },
+      { name: "hide_off_season", selector: { boolean: {} }, default: true, helper: "Hide species that are out of season." },
+      { name: "hide_when_off_season", selector: { boolean: {} }, default: true, helper: "Hide the whole panel when no species is in season (its panel button still opens it)." },
       { name: "show_tomorrow", selector: { boolean: {} }, default: true },
       { name: "show_season", selector: { boolean: {} }, default: true, helper: "12-month strip: how many of the shown species are in season each month." },
       { name: "location", selector: { text: {} }, helper: "Town shown in the heading (default: your Home Assistant location name)." },
@@ -185,11 +190,11 @@ export const PANEL_TYPES = {
   air_quality: {
     tag: "wsfc-panel-air-quality", label: "Air quality", icon: "mdi:air-filter", span: 4, rows: 0,
     schema: [
-      { name: "layout", selector: { select: { options: opt([["tiles", "Tiles"], ["rows", "Rows — bar, level and value per pollutant"], ["bars", "Vertical bars on the AQI scale"]]) } }, default: "tiles" },
+      { name: "layout", selector: { select: { options: opt([["scale", "Scale — colour scale and rating per pollutant (like Pollen)"], ["rows", "Rows — bar, level and value per pollutant"], ["bars", "Vertical bars on the AQI scale"], ["tiles", "Tiles"]]) } }, default: "scale" },
       { name: "pollutants", selector: { select: { multiple: true, options: opt([["pm2_5", "PM2.5"], ["pm10", "PM10"], ["ozone", "Ozone"], ["co2", "CO₂"]]) } }, helper: "Default: all that are found." },
       { name: "extra", selector: { object: {} }, helper: "More readings, e.g. - entity: sensor.erie_benzene with optional label, icon and thresholds: [moderate, elevated, high, very high] in the sensor's unit. Benzene and CO₂ have built-in thresholds." },
       { name: "show_aqi", selector: { boolean: {} }, default: true },
-      { name: "show_scale", selector: { boolean: {} }, helper: "AQI colour scale under the number (default: on for tiles, off for rows and bars)." },
+      { name: "show_scale", selector: { boolean: {} }, helper: "Rows, bars and tiles: AQI colour scale under the number (default: on for tiles only)." },
       { name: "bar_height", selector: { number: { min: 60, max: 400, mode: "box", unit_of_measurement: "px" } }, helper: "Vertical bars: height (default 140)." },
       { name: "source", selector: { text: {} }, helper: "Source shown under the AQI (default: the sensor's source attribute or integration)." },
       { name: "entities.aqi", selector: ent("sensor"), helper: "Default: the station's own sensor, else AirNow, else any outdoor AQI sensor." },
@@ -230,7 +235,8 @@ export const COMMON_SCHEMA = [
   { name: "span", selector: { number: { min: 1, max: 12, mode: "slider" } }, helper: "Width in twelfths of the card." },
   { name: "rows", selector: { number: { min: 0, max: 10, mode: "slider" } }, helper: "Height in row units (0 = fit content)." },
   { name: "display", selector: { select: { options: opt([["grid", "In the grid"], ["tile_popup", "In the grid — tap it to open larger"], ["popup", "Pop-up only (from its panel button)"]]) } } },
-  { name: "in_bar", selector: { boolean: {} }, helper: "Show a panel button for it." },
+  { name: "in_bar", selector: { boolean: {} }, helper: "Adds a button for this panel to the button menu, to show or hide it (or open its pop-up). Off: no button, and the panel is always shown (unless Shown is off)." },
+  { name: "tile_background", selector: { select: { options: opt([["default", "Default"], ["translucent", "See-through (uses Panel opacity)"], ["solid", "Solid"], ["none", "None"]]) } }, default: "default", helper: "This panel's background. Default: see-through with the animated background, the theme's otherwise; the button menu has none." },
   { name: "show", selector: { boolean: {} }, default: true, helper: "Visible when the dashboard loads." },
 ];
 

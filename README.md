@@ -4,7 +4,7 @@ A weather-station dashboard in one Home Assistant card. Panels sit in a 12-colum
 
 Built around an Ecowitt WS90 / GW2000B; works with any station whose sensors are in Home Assistant — including all three Ecowitt integrations (Home Assistant's Ecowitt, Ecowitt Local, Ecowitt Official), alone or combined. See [docs/ECOWITT_INTEGRATIONS.md](docs/ECOWITT_INTEGRATIONS.md).
 
-Current build: **v2026.10.21.15** · full history in [CHANGELOG.md](CHANGELOG.md)
+Current build: **v2026.10.21.16** · full history in [CHANGELOG.md](CHANGELOG.md)
 
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Ltek&repository=weather-station-flex-card&category=plugin)
 
@@ -49,7 +49,7 @@ Only what you change is saved, so the YAML stays short.
 |---|---|
 | `hero` | Weather Flex header, chips and clock over the animated weather background. Larger text on wide tiles, compact on narrow ones. |
 | `bulletin` | Generated summary of current conditions, sun and moon times; optional text sensor and NWS Alerts sensor. |
-| `heading` | Section title with station status (online / partial / offline) and, with `show_bar`, the panel buttons. |
+| `heading` | **Button Menu**: a title with station status (online / partial / offline) and, with `show_bar`, the panel buttons. |
 | `metric` | One value: today's min/max, a 24h sparkline (line or hourly bars), UV level, pressure trend. `metric:` temperature, apparent_temperature, dew_point, humidity, pressure, wind_speed, wind_gust_speed, uv_index, solar_radiation, illuminance, rain_rate, rain_today, rain_24h, rain_event, vpd, indoor_temperature, indoor_humidity — or any `entity`. |
 | `graph` | Any series on two axes; 6h–48h from history, 7d–365d from long-term statistics with min–max bands. |
 | `temp_humidity` | Graph preset: temperature, dew point and humidity. |
@@ -65,8 +65,8 @@ Only what you change is saved, so the YAML stays short.
 | `wind_map` | Windy's animated wind map (or gusts, rain, temperature, clouds, pressure, radar, satellite) centred on home. `overlay`, `zoom`, `model`, `level`, `wind_unit`, `marker`. |
 | `statistics` | Station graphs drawn by [Statistics Graph Chart Card](https://github.com/cataseven/Statistics-Graph-Chart-Card) when installed (mixed bars/lines/areas, second axis), else Home Assistant's Statistics graph card; sensors filled in from your station. `preset`: `temps`, `wind`, `pressure_humidity`, `solar_uv`, `rain`, `temperature_range`; `engine`, `days_to_show`; anything else under `card:`. |
 | `health` | Station health: battery, capacitor, signal, RSSI and online state per station device, plus the age of the last reading. |
-| `pollen` | Pollen per species from the [Pollen Levels](https://github.com/eXPerience83/pollenlevels) integration (Google Pollen API, needs a Google Cloud key): main allergen, level chips, tomorrow's trend and a 12-month season strip. |
-| `air_quality` | US AQI and EPA category with PM2.5, PM10, ozone and CO₂, from the station's own air sensors or Home Assistant's [AirNow](https://www.home-assistant.io/integrations/airnow/) integration (free key). Layouts: tiles, rows or vertical bars on the AQI scale; `extra:` adds other readings (benzene, VOCs…) with health-standard thresholds. |
+| `pollen` | Pollen per species from the [Pollen Levels](https://github.com/eXPerience83/pollenlevels) integration (Google Pollen API, needs a Google Cloud key): main allergen, level chips, tomorrow's trend and a 12-month season strip. Out-of-season species and (when nothing is in season) the whole panel are hidden by default. |
+| `air_quality` | US AQI and EPA category with PM2.5, PM10, ozone and CO₂, from the station's own air sensors or Home Assistant's [AirNow](https://www.home-assistant.io/integrations/airnow/) integration (free key). Layouts: scale (default, in the Pollen panel's style), rows, vertical bars or tiles, all on the EPA AQI colours; `extra:` adds other readings (benzene, VOCs…) with health-standard thresholds. |
 | `moon` | Moon phase, illumination, moonrise/moonset, next full and new moon. |
 | `sky_tracker` | **Sky Tracker**: the sun arc over the sky gradient (daylight, cloud cover) with the forecast row under it, and the moon — in its current phase — on the arc at night. `show_arc`, `show_sky`, `timeframe` (`hours` / `day` / `sunrise_sunset`), `hours`, `anchor` (`now_center` / `now_left`), `moon`, `moon_phase`, `show_facts`; fine-tune under Arc & sky details. Two trackers with one layer each show them separately. |
 | `flex` | Any Weather Flex Card configuration under `flex:` — every Weather Flex feature. |

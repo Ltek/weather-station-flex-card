@@ -159,13 +159,18 @@ export function pollenModel(config, hass, now = new Date()) {
     if (max > 0) rows = rows.slice(0, max);
   }
   const month = now.getMonth() + 1;
+  // The strip and "due next" use every species shown, in season or not.
   const strip = Array.from({ length: 12 }, (_, i) => rows.filter((r) => r.months.includes(i + 1)).length);
   const top = rows.filter((r) => (r.value ?? 0) > 0).sort((a, b) => b.value - a.value)[0] || null;
-  const anyIn = rows.some((r) => r.inSeason === true || (r.inSeason == null && r.months.includes(month)));
+  const inSeason = (r) => (r.value ?? 0) > 0 || r.inSeason === true || (r.inSeason == null && r.months.includes(month));
+  const anyIn = rows.some(inSeason);
+  const all = rows;
+  // Off-season species are hidden by default (hide_off_season: false shows them).
+  if (c.hide_off_season !== false) rows = rows.filter(inSeason);
   let status;
   if (top) status = `${top.name} ${LEVEL_LABEL[top.level].toLowerCase()} today`;
   else if (anyIn) status = "In season, but nothing in the air today";
-  else status = ["Out of season", nextDue(rows, month)].filter(Boolean).join(" · ");
+  else status = ["Out of season", nextDue(all, month)].filter(Boolean).join(" · ");
   const summary = loc?.summary || {};
   return {
     source: c.entities?.length ? "Pollen" : "Google",
@@ -173,6 +178,8 @@ export function pollenModel(config, hass, now = new Date()) {
     top,
     status,
     rows,
+    total: all.length,
+    outOfSeason: all.length > 0 && !anyIn,
     strip,
     month,
     entities: [...ids, ...Object.values(summary)],

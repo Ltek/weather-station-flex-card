@@ -280,7 +280,8 @@ class WeatherStationFlexCard extends LitElement {
     if (!items.length) return nothing;
     return items.map(([p, i]) => {
       const meta = panelMeta(p);
-      const popup = p.display === "popup";
+      // A panel hiding itself (e.g. pollen out of season) opens as a pop-up from its button.
+      const popup = p.display === "popup" || this._isEmpty(p);
       const active = popup ? this._popup === i : !this._hidden.has(this._key(p, i));
       // tile_popup panels toggle like grid panels; their tile opens the pop-up.
       return html`<button
@@ -305,7 +306,7 @@ class WeatherStationFlexCard extends LitElement {
   }
 
   _toggle(p, i) {
-    if (p.display === "popup") {
+    if (p.display === "popup" || this._isEmpty(p)) {
       this._popup = this._popup === i ? null : i;
       return;
     }
@@ -317,9 +318,26 @@ class WeatherStationFlexCard extends LitElement {
     this._saveHidden();
   }
 
+  // A panel with a button follows its toggle; one without a button can't be
+  // toggled, so a remembered "off" from before the button was removed is ignored.
+  _isHidden(p, i) {
+    if (!inBarOf(p) || this._config.panel_bar === false) return p.show === false;
+    return this._hidden.has(this._key(p, i));
+  }
+
+  // Panels that hide themselves when they have nothing to show (e.g. pollen out of season).
+  _isEmpty(p) {
+    const fn = panelMeta(p)?.hideWhen;
+    try {
+      return !!(fn && fn(p, this.hass, this._station));
+    } catch (_e) {
+      return false;
+    }
+  }
+
   _renderPanels() {
     const panels = this._config.panels;
-    let idx = panels.map((p, i) => i).filter((i) => panels[i].display !== "popup" && !this._hidden.has(this._key(panels[i], i)));
+    let idx = panels.map((p, i) => i).filter((i) => panels[i].display !== "popup" && !this._isHidden(panels[i], i) && !this._isEmpty(panels[i]));
     if (this._focus != null) idx = [this._focus];
     if (!idx.length) return html`<div class="empty">All panels are hidden — use the panel buttons to show one.</div>`;
     const size = this._layoutSize;
@@ -334,7 +352,8 @@ class WeatherStationFlexCard extends LitElement {
       const bare = meta.bare || p.type === "hero";
       const tapToOpen = p.display === "tile_popup";
       const expandable = !bare && !tapToOpen && !["metric", "stack"].includes(p.type) && size !== "narrow";
-      return html`<section class="tile ${p.type} ${meta.bare ? "bare" : ""} ${rows ? "" : "auto"} ${tapToOpen ? "tap" : ""}" style=${style}>
+      const bg = p.tile_background && p.tile_background !== "default" ? `bg-${p.tile_background}` : "";
+      return html`<section class="tile ${p.type} ${meta.bare ? "bare" : ""} ${bg} ${rows ? "" : "auto"} ${tapToOpen ? "tap" : ""}" style=${style}>
         ${tapToOpen
           ? html`<button class="tap-open" type="button" aria-haspopup="dialog" aria-label=${`Open ${p.title || this._autoTitle(p)}`}
               @click=${() => (this._popup = i)}><span><ha-icon icon="mdi:arrow-expand"></ha-icon>Open</span></button>`
@@ -420,6 +439,12 @@ class WeatherStationFlexCard extends LitElement {
     /* Editing: a still gradient instead of the animation, and no blur. */
     ha-card.animated.lite { background: linear-gradient(180deg, #24425f 0%, #172a3c 55%, #10202e 100%); }
     ha-card.animated.lite .tile:not(.bare):not(.hero):not(.stack) { backdrop-filter: none; -webkit-backdrop-filter: none; }
+    /* Per-panel background: see-through (panel opacity), solid, or none. */
+    .tile.bg-translucent { background: var(--wsfc-tile-bg); padding: 12px 14px; }
+    ha-card.animated:not(.lite) .tile.bg-translucent { backdrop-filter: blur(var(--wsfc-panel-blur, 6px)); -webkit-backdrop-filter: blur(var(--wsfc-panel-blur, 6px)); }
+    .tile.bg-solid { background: var(--ha-card-background, var(--card-background-color, #1c1c1c)); padding: 12px 14px; }
+    .tile.bg-none { background: transparent; }
+    ha-card .tile.bg-solid, ha-card .tile.bg-none { backdrop-filter: none; -webkit-backdrop-filter: none; }
     ha-card.animated .dialog { --wsfc-tile-bg: var(--ha-card-background, var(--card-background-color, #1c1c1c)); }
     .bg { z-index: 0; border-radius: inherit; }
 

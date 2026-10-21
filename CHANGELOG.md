@@ -1,5 +1,13 @@
 # Changelog
 
+## v2026.10.21.16
+
+- **Air quality: new default layout `scale`**, in the Pollen panel's style. A header line (source · area · category · time), the Air Quality Index with its main pollutant on a segmented EPA colour scale with a marker, then one row per pollutant: icon, name and value, its own colour scale with a marker, and its rating. PM2.5, PM10 and ozone use the six EPA categories (Good, Moderate, Sensitive groups, Unhealthy, Very unhealthy, Hazardous). Benzene, CO₂ and readings with your own `thresholds` use five bands (Low, Moderate, Elevated, High, Very high). Readings with no standard show just the value. `rows`, `bars` and `tiles` are still available.
+- **Pollen:** out-of-season species are hidden (`hide_off_season`, on by default). When no species is in season the panel leaves the grid (`hide_when_off_season`, on by default); its panel button then opens it as a pop-up showing what's due next.
+- **Panel background** for every panel (Layout → Panel background): Default, See-through (uses Panel opacity), Solid or None. A see-through Button Menu gets a tile behind its buttons.
+- The **Heading** panel is now called **Button Menu**. The Add panel list shows Hero first, then the other types alphabetically.
+- **Fix: Panel button.** Turning off a panel's button could leave the panel hidden for good: a remembered "off" from its old button still applied, and nothing could turn it back on. A panel without a button now always follows **Shown**. The option's help now explains what it does.
+
 ## v2026.10.21.15
 
 - **Air quality panel layouts:** `layout: rows` gives one row per pollutant (icon, name, bar, category chip, value), and `layout: bars` gives vertical bars side by side with 50/100/150 guide lines. Both use the EPA AQI scale and colours (green Good, yellow Moderate, orange Unhealthy for sensitive groups, red Unhealthy, purple, maroon). `tiles` stays the default.

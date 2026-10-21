@@ -59,7 +59,7 @@ class WsfcPollen extends LitElement {
     const c = this.config || {};
     const m = pollenModel(c, this.hass);
     this._ids = m.entities;
-    if (!m.rows.length) {
+    if (!m.total) {
       return html`${head(c, "mdi:flower-pollen", "Pollen")}
         <div class="note">No pollen sensors found. Install the Pollen Levels integration from HACS (Google Pollen API — US and worldwide), or list sensors under this panel's options.</div>`;
     }
@@ -67,6 +67,7 @@ class WsfcPollen extends LitElement {
     return html`
       ${head(c, "mdi:flower-pollen", "Pollen")}
       <div class="hdr">${parts.join(" · ")}</div>
+      ${m.rows.length ? nothing : html`<div class="note">No species in season right now.</div>`}
       <div class="rows">${m.rows.map((r) => html`
         <div class="row ${r.level}" @click=${() => moreInfo(this, r.entity)} role="button" tabindex="0"
           @keydown=${(e) => (e.key === "Enter" || e.key === " ") && moreInfo(this, r.entity)}

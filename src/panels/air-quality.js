@@ -1,6 +1,9 @@
 // Air quality: the US AQI with its EPA category, and one entry per pollutant
 // coloured by its own category.
-//   layout: tiles (default) — compact tiles under the AQI
+//   layout: scale (default) — like the pollen panel: a header line, then the
+//           AQI and one row per pollutant on a segmented EPA colour scale
+//           with a marker and the pollutant's rating
+//           tiles — compact tiles under the AQI
 //           rows — one row per pollutant: icon, name, bar, category chip, value
 //           bars — vertical bars side by side on a common AQI scale
 // Bars use the EPA AQI for PM2.5, PM10 and ozone; other readings (benzene, CO2,
@@ -21,6 +24,17 @@ const SCALE_MAX = 200;
 const short = (lvl) => (lvl == null ? "" : AQI_LEVELS[lvl].short || AQI_LEVELS[lvl].name);
 // Readings without an EPA AQI get plain band names.
 const OTHER_NAMES = ["Low", "Moderate", "Elevated", "High", "Very high", "Very high"];
+const EDGES = [0, 50, 100, 150, 200, 300, 500];
+
+/** Marker position (0–100 %) on a scale of `n` equal segments, one per category. */
+export function scalePos(index, n) {
+  if (index == null) return null;
+  const v = Math.max(0, Math.min(index, EDGES[n]));
+  let i = EDGES.findIndex((e, k) => k > 0 && v <= e) - 1;
+  if (i < 0) i = n - 1;
+  const frac = (v - EDGES[i]) / (EDGES[i + 1] - EDGES[i]);
+  return ((i + frac) / n) * 100;
+}
 
 /** Everything the panel shows, from live states (exported for tests). */
 export function airQualityModel(config, station, hass) {
@@ -111,6 +125,29 @@ class WsfcAirQuality extends LitElement {
       .chip.none { --c: rgba(127, 127, 127, 0.6); color: var(--wsfc-muted); }
       .val { text-align: right; font-weight: 500; white-space: nowrap; font-variant-numeric: tabular-nums; }
 
+      /* scale (pollen style) */
+      .shead { display: grid; grid-template-columns: 1fr auto auto; align-items: baseline; column-gap: 10px; cursor: pointer; }
+      .shead .t { font-size: 16px; font-weight: 500; }
+      .shead .p { font-size: 13px; color: var(--secondary-text-color); }
+      .shead .n { font-size: 26px; font-weight: 600; line-height: 1.1; font-variant-numeric: tabular-nums; }
+      .seg { position: relative; display: flex; gap: 2px; height: 10px; margin: 6px 0 4px; }
+      .seg span { flex: 1; border-radius: 2px; opacity: 0.9; }
+      .seg span:first-child { border-radius: 5px 2px 2px 5px; }
+      .seg span:last-child { border-radius: 2px 5px 5px 2px; }
+      .seg .knob { position: absolute; top: 50%; width: 18px; height: 18px; margin: -9px 0 0 -9px; border-radius: 50%;
+        background: var(--c, #888); box-shadow: 0 0 0 3px var(--card-background-color, #1c1c1c), 0 1px 4px rgba(0, 0, 0, 0.5); }
+      .seg.big { height: 14px; margin-top: 8px; }
+      .seg.big .knob { width: 24px; height: 24px; margin: -12px 0 0 -12px; }
+      .srows { display: grid; grid-template-columns: 22px max-content minmax(60px, 1fr) max-content; align-items: center; column-gap: 12px; margin-top: 8px; }
+      .srow { display: grid; grid-template-columns: subgrid; grid-column: 1 / -1; align-items: center; padding: 8px 0; border-top: 1px solid var(--divider-color, rgba(127, 127, 127, 0.25)); cursor: pointer; }
+      .srow ha-icon { --mdc-icon-size: 20px; color: var(--wsfc-muted); }
+      .srow .nm { font-size: 14px; line-height: 1.2; }
+      .srow .nv { font-size: 12px; color: var(--secondary-text-color); white-space: nowrap; font-variant-numeric: tabular-nums; }
+      .srow .seg { margin: 0; height: 8px; }
+      .srow .seg .knob { width: 14px; height: 14px; margin: -7px 0 0 -7px; }
+      .srow .rt { font-size: 12px; font-weight: 500; color: var(--c, var(--wsfc-muted)); min-width: 7ch; text-align: right; white-space: nowrap; }
+      .srow .plain { grid-column: 3 / -1; text-align: right; font-size: 14px; }
+
       /* vertical bars */
       .bars { display: grid; grid-template-columns: 30px repeat(var(--n), minmax(36px, 1fr)); column-gap: 8px; margin-top: 10px; }
       .axis { position: relative; height: var(--h); font-size: 10px; color: var(--wsfc-muted); }
@@ -144,7 +181,8 @@ class WsfcAirQuality extends LitElement {
       return html`${head(c, "mdi:air-filter", "Air quality")}
         <div class="note">No air-quality sensors found. Add Home Assistant's AirNow integration (free key from airnowapi.org), an outdoor PM2.5 sensor, or set the entities under this panel's options.</div>`;
     }
-    const layout = c.layout || "tiles";
+    const layout = c.layout || "scale";
+    if (layout === "scale") return html`${head(c, "mdi:air-filter", "Air quality")}${this._scaleLayout(m, c)}`;
     return html`
       ${head(c, "mdi:air-filter", "Air quality")}
       ${m.aqiE && c.show_aqi !== false ? this._aqi(m, c, layout) : nothing}
@@ -171,6 +209,46 @@ class WsfcAirQuality extends LitElement {
           ${pos != null ? html`<i class="mark" style="left:${pos}%"></i>` : nothing}
         </div>
         <div class="ticks">${[0, 50, 100, 150, 200, 300].map((t) => html`<span style="left:${(t / 300) * 100}%">${t === 300 ? "300+" : t}</span>`)}</div>` : nothing}`;
+  }
+
+  // Segmented colour scale with a marker: EPA readings get 6 categories, others 5.
+  _seg(index, epa, big = false) {
+    const n = epa ? 6 : 5;
+    const pos = scalePos(index, n);
+    const lvl = aqiLevel(index);
+    return html`<div class="seg ${big ? "big" : ""}" role="img" aria-hidden="true">
+      ${AQI_LEVELS.slice(0, n).map((l) => html`<span style="background:${l.color}"></span>`)}
+      ${pos != null ? html`<i class="knob" style="left:${pos}%;--c:${AQI_LEVELS[lvl].color}"></i>` : nothing}
+    </div>`;
+  }
+
+  _scaleLayout(m, c) {
+    const upd = m.time ? new Date(m.time) : null;
+    const when = upd && !isNaN(upd) ? upd.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "";
+    const hdr = [m.source, m.area, m.name, when].filter(Boolean).join(" · ");
+    return html`
+      ${hdr ? html`<div class="hdr">${hdr}</div>` : nothing}
+      ${m.aqiE && c.show_aqi !== false ? html`
+        <div class="shead" @click=${() => moreInfo(this, m.aqiE)} role="button" tabindex="0"
+          @keydown=${(e) => (e.key === "Enter" || e.key === " ") && moreInfo(this, m.aqiE)}
+          aria-label="Air Quality Index ${fmt(m.aqi)}, ${m.name}${m.main ? `, main pollutant ${m.main}` : ""}">
+          <span class="t">Air Quality Index</span>
+          <span class="p">${m.main ? `(${m.main})` : ""}</span>
+          <span class="n">${fmt(m.aqi)}</span>
+        </div>
+        ${this._seg(m.aqi, true, true)}` : nothing}
+      ${m.rows.length ? html`<div class="srows">${m.rows.map((r) => html`
+        <div class="srow" style=${this._color(r)} role="button" tabindex="0" @click=${() => moreInfo(this, r.e)}
+          @keydown=${(e) => (e.key === "Enter" || e.key === " ") && moreInfo(this, r.e)}
+          title=${chipTitle(r)} aria-label="${r.label}: ${fmt(r.value, r.digits)} ${r.unit}${r.level != null ? `, ${chipLabel(r)}` : ""}">
+          <ha-icon icon=${r.icon}></ha-icon>
+          ${r.level == null
+            ? html`<span class="nm">${r.label}</span><span class="plain">${valueText(r)}</span>`
+            : html`<div><div class="nm">${r.label}</div><div class="nv">${fmt(r.value, r.digits)} ${r.unit}</div></div>
+              ${this._seg(r.index, r.epa)}
+              <span class="rt">${chipLabel(r)}</span>`}
+        </div>`)}</div>` : nothing}
+    `;
   }
 
   _color(r) {

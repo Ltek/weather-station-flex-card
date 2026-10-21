@@ -46,7 +46,7 @@ const GENERAL_DEFAULTS = { layout: "auto", panel_bar: true, remember: true, fit_
 const LABELS = {
   entity: "Weather entity", title: "Title", subtitle: "Subtitle", icon: "Icon", layout: "Layout", panel_bar: "Panel buttons",
   remember: "Remember toggles", station_device: "Weather station device", layout_size: "Layout size", fit_height: "Fit panels to the screen height", row_height: "Row height", gap: "Gap", span: "Width", rows: "Height", display: "Display",
-  in_bar: "Panel button", show: "Shown", metric: "Metric", label: "Label", color: "Color", digits: "Decimals", chart: "Sparkline",
+  in_bar: "Panel button", tile_background: "Panel background", show: "Shown", metric: "Metric", label: "Label", color: "Color", digits: "Decimals", chart: "Sparkline",
   hours: "Sparkline hours", show_minmax: "Show today's min/max", series: "Series", ranges: "Range buttons", range: "Default range",
   show_readings: "Show current readings", left_min: "Left axis min", left_max: "Left axis max", right_min: "Right axis min",
   right_max: "Right axis max", "entities.temperature": "Temperature sensor", "entities.dew_point": "Dew point sensor",
@@ -57,7 +57,7 @@ const LABELS = {
   base_map_url: "Custom tile URL", base_map_attribution: "Custom tile attribution", day_offset: "Day", icon_size: "Icon size",
   show_moon: "Show moon", show_sun: "Show sun", attribute: "Text attribute", alerts_entity: "Alerts sensor", card: "Card configuration",
   show_status: "Show station status", show_devices: "Show device names", overlay: "Layer", model: "Forecast model", level: "Altitude", wind_unit: "Wind unit", marker: "Location pin", preset: "Graph", engine: "Graph card", days_to_show: "Days", period: "Resolution", chart_type: "Chart type", stat_types: "Values", show_chart: "Altitude chart", show_arc: "Sun arc", show_sky: "Sky gradient & forecast row", timeframe: "Time window", hours: "Hours", anchor: "Now is", moon: "Moon at night", moon_phase: "Draw the moon phase", background: "Card background", panel_opacity: "Panel opacity", panel_blur: "Panel blur", sky_bar: "Sky Bar in the hero", show_facts: "Show sun times", moon_size: "Moon size", direction: "Direction", min_width: "Minimum width", grow: "Grow", show_bar: "Panel buttons here", lite_editing: "Pause animations and maps while editing",
-  device: "Pollen location", species: "Species", max_rows: "Rows", show_tomorrow: "Tomorrow's trend", show_season: "Season strip", location: "Town",
+  device: "Pollen location", hide_off_season: "Hide out-of-season species", hide_when_off_season: "Hide the panel out of season", species: "Species", max_rows: "Rows", show_tomorrow: "Tomorrow's trend", show_season: "Season strip", location: "Town",
   seasons: "Season months", entities: "Sensors", pollutants: "Pollutants", show_scale: "AQI scale", show_aqi: "Show the AQI", extra: "More readings", bar_height: "Bar height", source: "Source label", "entities.aqi": "AQI sensor",
   "entities.pm2_5": "PM2.5 sensor", "entities.pm10": "PM10 sensor", "entities.ozone": "Ozone sensor", "entities.co2": "CO₂ sensor",
 };
@@ -372,7 +372,7 @@ class WeatherStationFlexCardEditor extends LitElement {
         <label for="bp">Buttons</label>
         <select id="bp" class="sel" @change=${(e) => setPlace(e.target.value)}>
           <option value="top" ?selected=${place === "top"}>Above the panels</option>
-          <option value="heading" ?selected=${place === "heading"}>In the heading panel</option>
+          <option value="heading" ?selected=${place === "heading"}>In the Button Menu panel</option>
           <option value="hidden" ?selected=${place === "hidden"}>Hidden</option>
         </select>
       </div>
@@ -394,7 +394,10 @@ class WeatherStationFlexCardEditor extends LitElement {
   /** A reorderable panel list (top level, or a stack's children). */
   _list(panels, setList, prefix) {
     const nested = !!prefix;
-    const types = Object.entries(PANEL_TYPES).filter(([k]) => k !== "map" && !(nested && k === "hero"));
+    // Hero first, then the rest alphabetically.
+    const types = Object.entries(PANEL_TYPES)
+      .filter(([k]) => k !== "map" && !(nested && k === "hero"))
+      .sort(([a, x], [b, y]) => (a === "hero" ? -1 : b === "hero" ? 1 : x.label.localeCompare(y.label)));
     const addKey = prefix || "top";
     const addType = (this._addTypes ||= {})[addKey] || (nested ? "metric" : this._addType);
     return html`
@@ -475,7 +478,7 @@ class WeatherStationFlexCardEditor extends LitElement {
     if (p.type === "hero") common = common.filter((f) => !["icon", "display", "in_bar"].includes(f.name));
     const isGraph = ["graph", "temp_humidity", "uv_solar", "statistics"].includes(p.type);
     // Reset keeps the panel's type, place and size; everything else returns to defaults.
-    const KEEP = ["type", "span", "rows", "display", "in_bar", "show", "id", "span_medium", "span_narrow", "rows_compact", "grow", "min_width",
+    const KEEP = ["type", "span", "rows", "display", "in_bar", "tile_background", "show", "id", "span_medium", "span_narrow", "rows_compact", "grow", "min_width",
       ...(p.type === "metric" ? ["metric"] : []), ...(p.type === "statistics" ? ["preset"] : []), ...(p.type === "stack" ? ["panels", "direction"] : [])];
     const customized = Object.keys(p).some((k) => !KEEP.includes(k));
     const reset = () => update(Object.fromEntries(Object.entries(p).filter(([k]) => KEEP.includes(k))));
