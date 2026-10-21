@@ -46,7 +46,8 @@ export function airQualityModel(config, station, hass) {
   const lvl = aqiLevel(aqiNum);
   const st = aqiE ? hass.states[aqiE] : null;
   const areaE = aqiE && airnowStation(hass, aqiE);
-  const area = areaE ? entityValue(hass, areaE)?.value : null;
+  // show_location / show_source: false hide them; location / source replace the text.
+  const area = c.show_location === false ? null : c.location || (areaE ? entityValue(hass, areaE)?.value : null);
   const show = Array.isArray(c.pollutants) && c.pollutants.length ? c.pollutants : POLLUTANTS;
   const rows = [];
   for (const k of show) {
@@ -71,7 +72,7 @@ export function airQualityModel(config, station, hass) {
   }
   const main = st?.attributes?.main_pollutant || st?.attributes?.dominant_pollutant
     || rows.filter((r) => r.epa && r.index != null).sort((a, b) => b.index - a.index)[0]?.label || "";
-  const source = c.source || st?.attributes?.source || (aqiE ? integrationOf(hass, aqiE) : "");
+  const source = c.show_source === false ? "" : c.source || st?.attributes?.source || (aqiE ? integrationOf(hass, aqiE) : "");
   return {
     aqiE, aqi: aqiNum, level: lvl,
     name: st?.attributes?.description || st?.attributes?.category || (lvl != null ? AQI_LEVELS[lvl].name : ""),

@@ -67,7 +67,7 @@ class WsfcPollen extends LitElement {
     return html`
       ${head(c, "mdi:flower-pollen", "Pollen")}
       <div class="hdr">${parts.join(" · ")}</div>
-      ${m.rows.length ? nothing : html`<div class="note">No species in season right now.</div>`}
+      ${m.rows.length ? nothing : html`<div class="note">${m.anyIn ? "Nothing in the air today." : "No species in season right now."}</div>`}
       <div class="rows">${m.rows.map((r) => html`
         <div class="row ${r.level}" @click=${() => moreInfo(this, r.entity)} role="button" tabindex="0"
           @keydown=${(e) => (e.key === "Enter" || e.key === " ") && moreInfo(this, r.entity)}

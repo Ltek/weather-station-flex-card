@@ -1,5 +1,10 @@
 # Changelog
 
+## v2026.10.21.17
+
+- **Pollen:** species with nothing in the air today (level None) are hidden (`hide_none`, on by default). When every in-season species is at None, the panel says "Nothing in the air today".
+- **Source and town text** in the Pollen and Air quality headers: `show_source: false` / `show_location: false` hide them, and `source:` / `location:` replace the text (e.g. "Google" → "Google Pollen", AirNow's "Denver" → "Erie").
+
 ## v2026.10.21.16
 
 - **Air quality: new default layout `scale`**, in the Pollen panel's style. A header line (source · area · category · time), the Air Quality Index with its main pollutant on a segmented EPA colour scale with a marker, then one row per pollutant: icon, name and value, its own colour scale with a marker, and its rating. PM2.5, PM10 and ozone use the six EPA categories (Good, Moderate, Sensitive groups, Unhealthy, Very unhealthy, Hazardous). Benzene, CO₂ and readings with your own `thresholds` use five bands (Low, Moderate, Elevated, High, Very high). Readings with no standard show just the value. `rows`, `bars` and `tiles` are still available.

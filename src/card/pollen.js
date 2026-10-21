@@ -162,19 +162,24 @@ export function pollenModel(config, hass, now = new Date()) {
   // The strip and "due next" use every species shown, in season or not.
   const strip = Array.from({ length: 12 }, (_, i) => rows.filter((r) => r.months.includes(i + 1)).length);
   const top = rows.filter((r) => (r.value ?? 0) > 0).sort((a, b) => b.value - a.value)[0] || null;
+  const none = (r) => (r.value ?? 0) <= 0;
   const inSeason = (r) => (r.value ?? 0) > 0 || r.inSeason === true || (r.inSeason == null && r.months.includes(month));
   const anyIn = rows.some(inSeason);
   const all = rows;
   // Off-season species are hidden by default (hide_off_season: false shows them).
   if (c.hide_off_season !== false) rows = rows.filter(inSeason);
+  // Species with nothing in the air today (level None) are hidden too (hide_none: false shows them).
+  if (c.hide_none !== false) rows = rows.filter((r) => !none(r));
   let status;
   if (top) status = `${top.name} ${LEVEL_LABEL[top.level].toLowerCase()} today`;
   else if (anyIn) status = "In season, but nothing in the air today";
   else status = ["Out of season", nextDue(all, month)].filter(Boolean).join(" · ");
   const summary = loc?.summary || {};
   return {
-    source: c.entities?.length ? "Pollen" : "Google",
-    town: c.location || hass?.config?.location_name || "",
+    // show_source / show_location: false hide them; source / location replace the text.
+    source: c.show_source === false ? "" : c.source || (c.entities?.length ? "Pollen" : "Google"),
+    town: c.show_location === false ? "" : c.location || hass?.config?.location_name || "",
+    anyIn,
     top,
     status,
     rows,
