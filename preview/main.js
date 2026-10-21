@@ -148,11 +148,34 @@ function buildHass() {
     entities[s.entity_id] = { entity_id: s.entity_id, device_id: DEVICE_ID, platform: "ecowitt" };
   }
   entities["weather.openweathermap"] = { entity_id: "weather.openweathermap", platform: "openweathermap" };
+  // Pollen Levels (Google) and AirNow, for the pollen and air-quality panels.
+  const add = (id, state, attributes, extra) => {
+    states[id] = { entity_id: id, state: String(state), attributes, last_changed: "", last_updated: "", context: {} };
+    entities[id] = { entity_id: id, ...extra };
+  };
+  const plant = (code, name, v, inSeason, tomorrow, type, season) =>
+    add(`sensor.home_plants_${code.toLowerCase()}`, v, { friendly_name: `Plants (Home) ${name}`, code, type, inSeason, tomorrow_value: tomorrow, trend: tomorrow > v ? "up" : tomorrow < v ? "down" : "flat", season, unit_of_measurement: "UPI" }, { platform: "pollenlevels", device_id: "pl_plants" });
+  plant("JUNIPER", "Juniper", 3, true, 4, "TREE", "Late winter, spring");
+  plant("ELM", "Elm", 2, true, 2, "TREE", "Late winter, spring");
+  plant("COTTONWOOD", "Cottonwood", 1, true, 0, "TREE", "Spring");
+  plant("OAK", "Oak", 0, true, 1, "TREE", "Spring");
+  plant("GRAMINALES", "Grasses", 0, false, 0, "GRASS", "Late spring, summer");
+  plant("RAGWEED", "Ragweed", 0, false, 0, "WEED", "Late summer, fall");
+  const an = (id, v, attrs, tk) => add(id, v, attrs, { platform: "airnow", device_id: "airnow", translation_key: tk });
+  an("sensor.airnow_aqi", 56, { friendly_name: "AirNow AQI", device_class: "aqi", description: "Moderate", level: 2, time: new Date().toISOString() }, "aqi");
+  an("sensor.airnow_pm2_5", 12.1, { friendly_name: "AirNow PM2.5", device_class: "pm25", unit_of_measurement: "µg/m³" }, "pm25");
+  an("sensor.airnow_pm10", 21, { friendly_name: "AirNow PM10", device_class: "pm10", unit_of_measurement: "µg/m³" }, "pm10");
+  an("sensor.airnow_ozone", 0.041, { friendly_name: "AirNow Ozone", unit_of_measurement: "ppm" }, "o3");
+  an("sensor.airnow_reporting_area", "Denver", { friendly_name: "AirNow Reporting area" }, "station");
   return {
     ...base,
     states,
     entities,
-    devices: { [DEVICE_ID]: { id: DEVICE_ID, name: "GW2000B", manufacturer: "Ecowitt", model: "GW2000B" } },
+    devices: {
+      [DEVICE_ID]: { id: DEVICE_ID, name: "GW2000B", manufacturer: "Ecowitt", model: "GW2000B" },
+      pl_plants: { id: "pl_plants", name: "Plants (Home)", config_entries: ["pl"] },
+      airnow: { id: "airnow", name: "AirNow", config_entries: ["an"] },
+    },
     config: { ...base.config, latitude: LAT, longitude: LON, time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone, location_name: "Home" },
     callWS: async (msg) => {
       if (msg.type === "history/history_during_period") {
@@ -213,6 +236,10 @@ const config = () => ({
     { type: "astronomy" }, { type: "wind_map", display: "tile_popup" },
     { type: "statistics", preset: "temps" }, { type: "statistics", preset: "wind" },
     { type: "statistics", preset: "pressure_humidity" }, { type: "statistics", preset: "solar_uv" }, { type: "statistics", preset: "rain" },
+  ] } : {}),
+  ...(params.get("panels") === "air" ? { panels: [
+    { type: "pollen", span: 6 }, { type: "air_quality", span: 6 },
+    { type: "statistics", preset: "air_quality", span: 6, rows: 3 }, { type: "metric", metric: "aqi" }, { type: "metric", metric: "pm2_5" },
   ] } : {}),
   ...(params.get("panels") === "legacy" ? { panels: LEGACY_PANELS } : {}),
 });

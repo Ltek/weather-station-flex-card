@@ -2,6 +2,7 @@
 // Weather Flex metric key (resolved through Weather Sources); `find` is a
 // pattern for station values outside that catalog (rain totals).
 import { metricSensor, findStationEntity } from "./resolve.js";
+import { aqEntity } from "./air.js";
 
 export const METRICS = {
   temperature: { label: "Temperature", icon: "mdi:thermometer", color: "#ef5350", digits: 1, key: "temperature" },
@@ -27,6 +28,11 @@ export const METRICS = {
   rssi: { label: "Station RSSI", icon: "mdi:wifi-strength-2", color: "#42a5f5", digits: 0, find: /rssi/i, health: true },
   vpd: { label: "Vapour pressure deficit", icon: "mdi:water-opacity", color: "#8d6e63", digits: 2, find: /vapou?r[\s_-]?pressure[\s_-]?deficit|\bvpd\b/i },
   indoor_temperature: { label: "Indoor temperature", icon: "mdi:home-thermometer", color: "#ab47bc", digits: 1, find: /indoor[\s_-]?temp/i },
+  aqi: { label: "AQI", icon: "mdi:air-filter", color: "#66bb6a", digits: 0, aq: "aqi" },
+  pm2_5: { label: "PM2.5", icon: "mdi:blur", color: "#ffb74d", digits: 1, aq: "pm2_5" },
+  pm10: { label: "PM10", icon: "mdi:blur-linear", color: "#a1887f", digits: 0, aq: "pm10" },
+  ozone: { label: "Ozone", icon: "mdi:molecule", color: "#4fc3f7", digits: 3, aq: "ozone" },
+  co2: { label: "CO₂", icon: "mdi:molecule-co2", color: "#4fc3f7", digits: 0, aq: "co2" },
   indoor_humidity: { label: "Indoor humidity", icon: "mdi:home-percent", color: "#7e57c2", digits: 0, find: /indoor[\s_-]?humid/i },
 };
 
@@ -36,6 +42,7 @@ export function metricEntity(metric, station, hass, explicit) {
   const m = METRICS[metric];
   if (!m) return null;
   if (m.key) return metricSensor(station, hass, m.key);
+  if (m.aq) return aqEntity(station, hass, m.aq);
   if (m.find) return findStationEntity(station, hass, m.find);
   return null;
 }

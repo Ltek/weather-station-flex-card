@@ -40,6 +40,11 @@ export const STAT_PRESETS = {
     metrics: ["rain_rate", "rain_today"],
     card: { days_to_show: 1, period: "hour", chart_type: "bar", stat_types: ["max"] },
   },
+  air_quality: {
+    title: "Air quality", icon: "mdi:air-filter",
+    metrics: ["aqi", "pm2_5"],
+    card: { days_to_show: 2, period: "hour", chart_type: "line", stat_types: ["mean", "max"] },
+  },
   temperature_range: {
     title: "Daily temperature range", icon: "mdi:thermometer-chevron-up",
     metrics: ["temperature"],
@@ -86,6 +91,14 @@ export const SGCC_PRESETS = {
     series: {
       rain_rate: { color: "#7e57c2", graph_type: "bar", aggregate_func: "max", decimals: 2 },
       rain_today: { color: "#1e88e5", y_axis: "secondary", aggregate_func: "max", fill_opacity: 0.2, decimals: 2, smooth: false },
+    },
+  },
+  air_quality: {
+    // Like sygad's air-quality card: two axes and a 1–24 h interval picker.
+    card: { hours_to_show: 24, points_per_hour: 2, show_y2_axis: true, lower_bound: 0, lower_bound_secondary: 0 },
+    series: {
+      aqi: { color: "#66bb6a", fill_opacity: 0.2, show_extrema: "always", show_extrema_min: false, decimals: 0 },
+      pm2_5: { color: "#ffb74d", y_axis: "secondary", show_fill: false, decimals: 1 },
     },
   },
   temperature_range: {

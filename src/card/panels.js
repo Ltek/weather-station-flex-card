@@ -156,7 +156,7 @@ export const PANEL_TYPES = {
     tag: "wsfc-panel-statistics", label: "Station graph", icon: "mdi:chart-bell-curve-cumulative", span: 6, rows: 3,
     schema: [
       { name: "engine", selector: { select: { options: opt([["auto", "Automatic"], ["sgcc", "Statistics Graph Chart Card (custom)"], ["builtin", "Home Assistant Statistics graph"]]) } }, default: "auto", helper: "Automatic uses cataseven's Statistics Graph Chart Card when it is installed (mixed bars/lines/areas, second axis), otherwise Home Assistant's built-in card." },
-      { name: "preset", selector: { select: { options: opt([["temps", "Temperatures (temp, feels like, dew point)"], ["wind", "Wind (speed, gust, direction)"], ["pressure_humidity", "Pressure & humidity"], ["solar_uv", "Solar & UV"], ["rain", "Rain (rate, today)"], ["temperature_range", "Daily temperature range (30 days)"]]) } }, default: "temps" },
+      { name: "preset", selector: { select: { options: opt([["temps", "Temperatures (temp, feels like, dew point)"], ["wind", "Wind (speed, gust, direction)"], ["pressure_humidity", "Pressure & humidity"], ["solar_uv", "Solar & UV"], ["rain", "Rain (rate, today)"], ["air_quality", "Air quality (AQI, PM2.5)"], ["temperature_range", "Daily temperature range (30 days)"]]) } }, default: "temps" },
       { name: "days_to_show", selector: { number: { min: 0.25, max: 365, step: 0.25, mode: "box" } } },
       { name: "period", selector: { select: { options: opt([["5minute", "5 minutes"], ["hour", "Hour"], ["day", "Day"], ["week", "Week"], ["month", "Month"]]) } } },
       { name: "chart_type", selector: { select: { options: opt([["line", "Line"], ["bar", "Bar"]]) } }, helper: "Built-in card only (the custom card sets this per series)." },
@@ -167,6 +167,32 @@ export const PANEL_TYPES = {
   health: {
     tag: "wsfc-panel-health", label: "Station health", icon: "mdi:heart-pulse", span: 4, rows: 0,
     schema: [{ name: "show_devices", selector: { boolean: {} }, helper: "Show device names even when there is only one." }],
+  },
+  pollen: {
+    tag: "wsfc-panel-pollen", label: "Pollen", icon: "mdi:flower-pollen", span: 4, rows: 0,
+    schema: [
+      { name: "device", selector: { device: { integration: "pollenlevels" } }, helper: "Pollen Levels location (default: the first one)." },
+      { name: "view", selector: { select: { options: opt([["plants", "Species (oak, juniper, ragweed …)"], ["types", "Types (tree, grass, weed)"]]) } }, default: "plants" },
+      { name: "species", selector: { text: { multiple: true } }, helper: "Species to show, in order, by Google code or name (e.g. JUNIPER, OAK, GRAMINALES). Blank shows the busiest." },
+      { name: "max_rows", selector: { number: { min: 0, max: 20, mode: "box" } }, default: 6, helper: "Rows when no species are listed (0 = all)." },
+      { name: "show_tomorrow", selector: { boolean: {} }, default: true },
+      { name: "show_season", selector: { boolean: {} }, default: true, helper: "12-month strip: how many of the shown species are in season each month." },
+      { name: "location", selector: { text: {} }, helper: "Town shown in the heading (default: your Home Assistant location name)." },
+      { name: "seasons", selector: { object: {} }, helper: "Season months per species, e.g. JUNIPER: [1, 2, 3, 4]. Default: Google's season text, else typical months." },
+      { name: "entities", selector: { entity: { multiple: true, domain: "sensor" } }, helper: "Advanced: use these sensors instead of finding Pollen Levels automatically." },
+    ],
+  },
+  air_quality: {
+    tag: "wsfc-panel-air-quality", label: "Air quality", icon: "mdi:air-filter", span: 4, rows: 0,
+    schema: [
+      { name: "pollutants", selector: { select: { multiple: true, options: opt([["pm2_5", "PM2.5"], ["pm10", "PM10"], ["ozone", "Ozone"], ["co2", "CO₂"]]) } }, helper: "Rows under the AQI (default: all that are found)." },
+      { name: "show_scale", selector: { boolean: {} }, default: true },
+      { name: "entities.aqi", selector: ent("sensor"), helper: "Default: the station's own sensor, else AirNow, else any outdoor AQI sensor." },
+      { name: "entities.pm2_5", selector: ent("sensor") },
+      { name: "entities.pm10", selector: ent("sensor") },
+      { name: "entities.ozone", selector: ent("sensor") },
+      { name: "entities.co2", selector: ent("sensor") },
+    ],
   },
   moon: {
     tag: "wsfc-panel-moon", label: "Moon", icon: "mdi:moon-waning-crescent", span: 4, rows: 2, rowsCompact: 0,
@@ -256,6 +282,8 @@ export const DEFAULT_PANELS = [
   { type: "moon", show: false },
   { type: "astronomy", show: false },
   { type: "health", show: false },
+  { type: "pollen", show: false },
+  { type: "air_quality", show: false },
   { type: "radar", display: "popup" },
   { type: "wind_map", display: "popup" },
 ];

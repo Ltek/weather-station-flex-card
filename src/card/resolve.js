@@ -168,6 +168,10 @@ const INTEGRATION_NAMES = {
   wundergroundpws: "Weather Underground PWS",
   tomorrowio: "Tomorrow.io",
   template: "Template",
+  airnow: "AirNow",
+  pollenlevels: "Pollen Levels (Google)",
+  kleenex_pollenradar: "Kleenex Pollen Radar",
+  silam_pollen: "SILAM Pollen",
 };
 
 /** Human name of the integration that created an entity ("" when unknown). */

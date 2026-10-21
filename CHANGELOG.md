@@ -1,5 +1,11 @@
 # Changelog
 
+## v2026.10.21.13
+
+- **Pollen panel** (`pollen`): reads the Pollen Levels integration (Google Pollen API — covers the US). Heading with source, town and today's main allergen; a status line ("Juniper medium today", "In season, but nothing in the air today", or which species is due next and when); one row per species with icon, a 0–100 bar, a level chip (None / Low / Medium / High / Off season), today's index and an arrow for tomorrow; and a 12-month season strip coloured by how many of the shown species are in season (green 1, amber 2, red 3+), current month outlined. Season months come from Google's season text, else typical months, and can be set per species. Options: location, species view or tree/grass/weed types, a species list and order, row count. Redraws only when one of its sensors changes.
+- **Air quality panel** (`air_quality`): US AQI with its EPA category and a 0–300+ scale, the reporting area and time, and PM2.5, PM10, ozone and CO₂ rows coloured by their own EPA category. Uses the station's own air sensors first, then Home Assistant's AirNow integration, then any outdoor sensor with that device class.
+- New metrics **AQI, PM2.5, PM10, Ozone, CO₂** for metric tiles and graphs, and an **Air quality** preset in Station graph (AQI on the left axis, PM2.5 on the right). They are listed under Weather station → Values used.
+
 ## v2026.10.20.12
 
 - **Faster editor:** Home Assistant hands the editor new data on every state change; the editor re-rendered all of its open forms (entity pickers and the embedded Weather Flex editors) each time. It now re-renders for that only when the entity/device registry, theme or language changed, and refreshes live values every 15 s. An update to an open editor went from ~1–5 ms of our own work plus Home Assistant's form rebuilds to ~0.2 ms.
