@@ -32,6 +32,9 @@ const MEDIUM_PX = 1100;
 class WeatherStationFlexCard extends LitElement {
   static properties = {
     hass: { attribute: false },
+    // Set by Home Assistant: preview in the card editor, editMode while the dashboard is edited.
+    preview: { type: Boolean },
+    editMode: { type: Boolean },
     _config: { state: true },
     _hidden: { state: true }, // Set of panel keys toggled off
     _popup: { state: true }, // index of the open pop-up panel, or null
@@ -204,6 +207,7 @@ class WeatherStationFlexCard extends LitElement {
     const c = this._config;
     const full = this._full;
     const bg = this._animatedBg;
+    const lite = this._lite;
     const style = [
       c.row_height ? `--wsfc-row:${c.row_height}px` : "",
       c.gap != null ? `--wsfc-gap:${c.gap}px` : "",
@@ -212,14 +216,22 @@ class WeatherStationFlexCard extends LitElement {
     ].join(";");
     const barInHeading = c.panels.some((p) => p.type === "heading" && p.show_bar);
     return html`
-      <ha-card class=${`wsfc ${full ? "full" : ""} ${this._layoutSize} ${bg ? "animated" : ""}`} style=${style}>
-        ${bg ? this._renderBackground() : nothing}
+      <ha-card class=${`wsfc ${full ? "full" : ""} ${this._layoutSize} ${bg ? "animated" : ""} ${lite ? "lite" : ""}`} style=${style}>
+        ${bg && !lite ? this._renderBackground() : nothing}
         ${c.title ? this._renderTitle() : nothing}
         ${c.panel_bar === false || barInHeading ? nothing : html`<div class="topbar">${this._renderBar()}</div>`}
         <div class="scroller"><div class="grid">${this._renderPanels()}</div></div>
         ${this._popup != null ? this._renderPopup() : nothing}
       </ha-card>
     `;
+  }
+
+  // Editing (card editor preview or dashboard edit mode): Home Assistant
+  // rebuilds the card on every change, so skip the animated background, blur
+  // and live maps. Dashboard edit mode adds ?edit=1 to the URL.
+  get _lite() {
+    if (this._config?.lite_editing === false) return false;
+    return !!(this.preview || this.editMode || /[?&]edit=1(&|$)/.test(globalThis.location?.search || ""));
   }
 
   // Card-wide animated background (the hero's weather animation, behind every panel).
@@ -366,6 +378,7 @@ class WeatherStationFlexCard extends LitElement {
     el.config = p;
     el.station = this._station;
     el.cardBg = this._animatedBg;
+    el.lite = this._lite;
     el.hass = this.hass;
     if (p.type === "heading") el.bar = p.show_bar && this._config.panel_bar !== false ? this._renderBar() : null;
     return el;
@@ -404,6 +417,9 @@ class WeatherStationFlexCard extends LitElement {
     ha-card.animated > :not(.bg) { position: relative; z-index: 1; }
     ha-card.animated { --wsfc-tile-bg: rgba(var(--rgb-card-background-color, 28, 28, 28), var(--wsfc-panel-opacity, 0.55)); }
     ha-card.animated .tile:not(.bare):not(.hero):not(.stack) { backdrop-filter: blur(var(--wsfc-panel-blur, 6px)); -webkit-backdrop-filter: blur(var(--wsfc-panel-blur, 6px)); }
+    /* Editing: a still gradient instead of the animation, and no blur. */
+    ha-card.animated.lite { background: linear-gradient(180deg, #24425f 0%, #172a3c 55%, #10202e 100%); }
+    ha-card.animated.lite .tile:not(.bare):not(.hero):not(.stack) { backdrop-filter: none; -webkit-backdrop-filter: none; }
     ha-card.animated .dialog { --wsfc-tile-bg: var(--ha-card-background, var(--card-background-color, #1c1c1c)); }
     .bg { z-index: 0; border-radius: inherit; }
 

@@ -4,7 +4,7 @@
 // a radar panel is actually shown).
 import { LitElement, html, css, unsafeCSS } from "lit";
 import leafletCss from "inline-css:leaflet/dist/leaflet.css";
-import { panelStyles, seg, head } from "./shared.js";
+import { panelStyles, seg, head, pausedStyles, paused } from "./shared.js";
 
 const RAINVIEWER_INDEX = "https://api.rainviewer.com/public/weather-maps.json";
 // RainViewer's free tiles are served up to zoom 7; Leaflet upscales beyond.
@@ -40,6 +40,7 @@ class WsfcRadar extends LitElement {
     hass: { attribute: false },
     config: { attribute: false },
     station: { attribute: false },
+    lite: { attribute: false }, // editing: placeholder instead of the live map
     _playing: { state: true },
     _frameLabel: { state: true },
     _overlay: { state: true },
@@ -47,6 +48,7 @@ class WsfcRadar extends LitElement {
   };
   static styles = [
     panelStyles,
+    pausedStyles,
     unsafeCSS(leafletCss),
     css`
       .map { position: relative; flex: 1; min-height: 240px; border-radius: 12px; overflow: hidden; background: #1b1f24; }
@@ -75,6 +77,7 @@ class WsfcRadar extends LitElement {
     const key = this.config?.owm_api_key;
     const overlays = this.config?.owm_layers || ["wind_new"];
     const overlay = this._overlay ?? this.config?.owm_default ?? "none";
+    if (this.lite) return html`${head(this.config, this._radarOn ? "mdi:radar" : "mdi:map", this._radarOn ? "Radar" : "Map")}${paused(this._radarOn ? "mdi:radar" : "mdi:map", this._radarOn ? "Radar loop" : "Map")}`;
     return html`
       ${head(this.config, this._radarOn ? "mdi:radar" : "mdi:map", this._radarOn ? "Radar" : "Map",
         key ? seg([{ value: "none", label: this._radarOn ? "Radar" : "Map" }, ...overlays.map((l) => ({ value: l, label: `${this._radarOn ? "+ " : ""}${OWM_LAYERS[l] || l}` }))], overlay, (v) => this._setOverlay(v), "Map overlay") : "")}
@@ -90,10 +93,14 @@ class WsfcRadar extends LitElement {
     `;
   }
 
-  async firstUpdated() {
+  firstUpdated() {
+    if (!this.lite) this._initMap();
+  }
+
+  async _initMap() {
     await loadLeaflet();
     const el = this.renderRoot.getElementById("map");
-    if (!el || this._map) return;
+    if (!el || this._map || this.lite) return;
     const lat = this.config?.latitude ?? this.hass?.config?.latitude ?? 39.5;
     const lon = this.config?.longitude ?? this.hass?.config?.longitude ?? -98.35;
     this._map = L.map(el, { zoomControl: true, attributionControl: true, zoomSnap: 0.5 }).setView([lat, lon], this.config?.zoom ?? 7);
@@ -110,6 +117,10 @@ class WsfcRadar extends LitElement {
   }
 
   updated(changed) {
+    if (changed.has("lite") && changed.get("lite") !== undefined) {
+      if (this.lite) this._teardown();
+      else if (!this._map) this._initMap();
+    }
     if (changed.has("hass")) {
       const dark = !!this.hass?.themes?.darkMode;
       if (dark !== this._dark) this._applyBase();
@@ -118,17 +129,25 @@ class WsfcRadar extends LitElement {
 
   disconnectedCallback() {
     super.disconnectedCallback();
+    this._teardown();
+  }
+
+  _teardown() {
     clearTimeout(this._timer);
     clearInterval(this._refresh);
     this._ro?.disconnect();
     this._map?.remove();
     this._map = null;
+    // Layers belonged to the removed map; a new map builds its own.
+    this._frames = [];
+    this._base = null;
+    this._owm = null;
   }
 
   connectedCallback() {
     super.connectedCallback();
     // Re-attached after a dashboard view switch: rebuild the map.
-    if (this.hasUpdated && !this._map) this.firstUpdated();
+    if (this.hasUpdated && !this._map && !this.lite) this._initMap();
   }
 
   _applyBase() {

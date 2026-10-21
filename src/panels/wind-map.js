@@ -2,7 +2,7 @@
 // rain, temperature, clouds or pressure layers) centred on home. Usually shown
 // as a tile that opens larger in a pop-up (display: tile_popup).
 import { LitElement, html, css, nothing } from "lit";
-import { panelStyles, head } from "./shared.js";
+import { panelStyles, head, pausedStyles, paused } from "./shared.js";
 
 export const WINDY_OVERLAYS = {
   wind: "Wind", gust: "Gusts", rain: "Rain & thunder", temp: "Temperature", clouds: "Clouds",
@@ -36,9 +36,10 @@ export function windyUrl(c, hass) {
 }
 
 class WsfcWindMap extends LitElement {
-  static properties = { hass: { attribute: false }, config: { attribute: false }, station: { attribute: false } };
+  static properties = { hass: { attribute: false }, config: { attribute: false }, station: { attribute: false }, lite: { attribute: false } };
   static styles = [
     panelStyles,
+    pausedStyles,
     css`
       .frame { position: relative; flex: 1; min-height: 220px; border-radius: 12px; overflow: hidden; background: #1b1f24; }
       iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
@@ -50,7 +51,9 @@ class WsfcWindMap extends LitElement {
     // Build the URL once per config so hass updates don't reload the map.
     const url = windyUrl(c, this.hass);
     if (url !== this._url) this._url = url;
-    return html`${c.show_title === false ? nothing : head(c, "mdi:weather-windy", c.title || `${WINDY_OVERLAYS[c.overlay || "wind"] || "Wind"} map`)}
+    const title = c.show_title === false ? nothing : head(c, "mdi:weather-windy", c.title || `${WINDY_OVERLAYS[c.overlay || "wind"] || "Wind"} map`);
+    if (this.lite) return html`${title}${paused("mdi:map-marker-radius-outline", "Windy map")}`;
+    return html`${title}
       <div class="frame"><iframe src=${this._url} title="Windy weather map" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe></div>`;
   }
 }

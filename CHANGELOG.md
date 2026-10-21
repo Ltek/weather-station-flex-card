@@ -1,5 +1,10 @@
 # Changelog
 
+## v2026.10.21.14
+
+- **Faster editing:** while the dashboard is in edit mode or the card is shown in the card editor's preview, the animated background is replaced by a still gradient, panel blur is off, the hero's own animation stops, and the Radar and Windy map panels show a placeholder instead of loading the live map. Everything returns when you finish editing. Graphs and the other panels stay live. In the preview mockup this cut the page's main-thread work from ~840 ms to ~220 ms per 5 seconds, not counting the Windy map, which no longer loads at all. Turn it off with **General → Pause animations and maps while editing** (`lite_editing: false`).
+- Fix: a radar map re-attached after a dashboard view switch could lose its radar frames.
+
 ## v2026.10.21.13
 
 - **Pollen panel** (`pollen`): reads the Pollen Levels integration (Google Pollen API — covers the US). Heading with source, town and today's main allergen; a status line ("Juniper medium today", "In season, but nothing in the air today", or which species is due next and when); one row per species with icon, a 0–100 bar, a level chip (None / Low / Medium / High / Off season), today's index and an arrow for tomorrow; and a 12-month season strip coloured by how many of the shown species are in season (green 1, amber 2, red 3+), current month outlined. Season months come from Google's season text, else typical months, and can be set per species. Options: location, species view or tree/grass/weed types, a species list and order, row count. Redraws only when one of its sensors changes.

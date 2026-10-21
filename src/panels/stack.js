@@ -14,7 +14,7 @@ import { PANEL_TYPES, panelMeta } from "../card/panels.js";
 import { tileStyles } from "./shared.js";
 
 class WsfcStack extends LitElement {
-  static properties = { hass: { attribute: false }, config: { attribute: false }, station: { attribute: false } };
+  static properties = { hass: { attribute: false }, config: { attribute: false }, station: { attribute: false }, lite: { attribute: false } };
   static styles = [
     tileStyles,
     css`
@@ -66,6 +66,7 @@ class WsfcStack extends LitElement {
     }
     el.config = p;
     el.station = this.station;
+    el.lite = this.lite;
     el.hass = this.hass;
     return el;
   }

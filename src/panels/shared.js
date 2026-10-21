@@ -141,3 +141,14 @@ export function cssColor(el, name, fallback) {
   const v = getComputedStyle(el).getPropertyValue(name).trim();
   return v || fallback;
 }
+
+/** Stand-in for a live map while the dashboard is being edited. */
+export const pausedStyles = css`
+  .paused { flex: 1; min-height: 120px; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+    color: var(--wsfc-muted); font-size: 13px; text-align: center; padding: 8px;
+    background: repeating-linear-gradient(135deg, rgba(127, 127, 127, 0.08) 0 12px, rgba(127, 127, 127, 0.14) 12px 24px); }
+  .paused ha-icon { --mdc-icon-size: 32px; opacity: 0.7; }
+`;
+export function paused(icon, what) {
+  return html`<div class="paused" role="img" aria-label="${what} paused while editing"><ha-icon icon=${icon}></ha-icon><span>${what} — paused while editing</span></div>`;
+}

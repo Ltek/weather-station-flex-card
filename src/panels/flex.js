@@ -178,7 +178,7 @@ class WsfcFlexPanel extends LitElement {
 
 class WsfcHeroPanel extends WsfcFlexPanel {
   type = "hero";
-  static properties = { ...WsfcFlexPanel.properties, cardBg: { attribute: false } };
+  static properties = { ...WsfcFlexPanel.properties, cardBg: { attribute: false }, lite: { attribute: false } };
   static styles = [
     panelStyles,
     coreStyles,
@@ -210,6 +210,8 @@ class WsfcHeroPanel extends WsfcFlexPanel {
     // The card draws the animated background behind every panel: the hero
     // becomes transparent and stops animating on its own.
     if (this.cardBg) cfg = deepMerge(cfg, { show_condition_effects: false, wfc: { card: { bg_color: "transparent" } } });
+    // While editing, the hero's own animation is paused too.
+    else if (this.lite) cfg = deepMerge(cfg, { show_condition_effects: false });
     return cfg;
   }
 

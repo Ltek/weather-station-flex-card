@@ -4,7 +4,7 @@ A weather-station dashboard in one Home Assistant card. Panels sit in a 12-colum
 
 Built around an Ecowitt WS90 / GW2000B; works with any station whose sensors are in Home Assistant — including all three Ecowitt integrations (Home Assistant's Ecowitt, Ecowitt Local, Ecowitt Official), alone or combined. See [docs/ECOWITT_INTEGRATIONS.md](docs/ECOWITT_INTEGRATIONS.md).
 
-Current build: **v2026.10.21.13** · full history in [CHANGELOG.md](CHANGELOG.md)
+Current build: **v2026.10.21.14** · full history in [CHANGELOG.md](CHANGELOG.md)
 
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Ltek&repository=weather-station-flex-card&category=plugin)
 
@@ -122,6 +122,8 @@ background: animated     # the hero's weather animation behind the whole card
 panel_opacity: 0.45      # 0 = transparent panels … 1 = solid
 panel_blur: 8            # px of blur behind panels
 ```
+
+While you edit the dashboard (or the card in the card editor), the animation, blur and the Radar and Windy maps pause so the editor stays responsive; `lite_editing: false` keeps them running.
 
 > An OpenWeatherMap API key is part of the card configuration, so anyone who can view the dashboard can read it.
 
