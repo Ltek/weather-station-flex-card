@@ -72,7 +72,7 @@ Only what you change is saved, so the YAML stays short.
 | `flex` | Any Weather Flex Card configuration under `flex:` — every Weather Flex feature. |
 | `card` | Any Home Assistant card under `card:` (e.g. `statistics-graph`). |
 
-Every panel takes `title`, `icon`, `span` (width in twelfths), `rows` (height in row units, 0 = fit content), `display` (`grid`, `tile_popup` = in the grid and tap to open larger, or `popup` = button only), `in_bar` (panel button), `show` (shown on load) and optional `span_medium`, `span_narrow`, `rows_compact` for tablet and phone widths. On tablets small tiles stay side by side and wide panels go full width; on phones tiles pair up and everything else is full width.
+Every panel takes `title`, `icon`, `span` (width in twelfths), `rows` (height in row units, 0 = fit content), `display` (`grid`, `tile_popup` = in the grid and tap to open larger, or `popup` = button only), `in_bar` (a button in the Button Menu to show/hide it; without one the panel always follows `show`), `tile_background` (`default`, `translucent` = uses Panel opacity, `solid`, `none`), `show` (shown on load) and optional `span_medium`, `span_narrow`, `rows_compact` for tablet and phone widths. On tablets small tiles stay side by side and wide panels go full width; on phones tiles pair up and everything else is full width.
 
 ```yaml
 panels:
