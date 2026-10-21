@@ -166,6 +166,14 @@ function buildHass() {
   an("sensor.airnow_pm2_5", 12.1, { friendly_name: "AirNow PM2.5", device_class: "pm25", unit_of_measurement: "µg/m³" }, "pm25");
   an("sensor.airnow_pm10", 21, { friendly_name: "AirNow PM10", device_class: "pm10", unit_of_measurement: "µg/m³" }, "pm10");
   an("sensor.airnow_ozone", 0.041, { friendly_name: "AirNow Ozone", unit_of_measurement: "ppm" }, "o3");
+  const erie = (id, v, unit, dc, extra = {}) => add(id, v, { friendly_name: id, unit_of_measurement: unit, device_class: dc, ...extra }, { platform: "rest" });
+  erie("sensor.erie_aqi", 37, "", "aqi", { description: "Good", main_pollutant: "PM2.5", source: "Boulder AIR · Erie Community Center" });
+  erie("sensor.erie_pm2_5_24_hour", 6.7, "µg/m³", "pm25");
+  erie("sensor.erie_pm10", 20.4, "µg/m³", "pm10");
+  erie("sensor.erie_ozone_8_hour", 61.6, "ppb");
+  erie("sensor.erie_co2", 431, "ppm", "carbon_dioxide");
+  erie("sensor.erie_benzene", 1.8, "ppb");
+  erie("sensor.erie_ethane", 3.53, "ppb");
   an("sensor.airnow_reporting_area", "Denver", { friendly_name: "AirNow Reporting area" }, "station");
   return {
     ...base,
@@ -239,6 +247,9 @@ const config = () => ({
   ] } : {}),
   ...(params.get("panels") === "air" ? { panels: [
     { type: "pollen", span: 6 }, { type: "air_quality", span: 6 },
+    ...["rows", "bars"].map((layout) => ({ type: "air_quality", span: 6, layout, title: `Erie air (${layout})`,
+      entities: { aqi: "sensor.erie_aqi", pm2_5: "sensor.erie_pm2_5_24_hour", pm10: "sensor.erie_pm10", ozone: "sensor.erie_ozone_8_hour", co2: "sensor.erie_co2" },
+      extra: [{ entity: "sensor.erie_benzene", label: "Benzene" }, { entity: "sensor.erie_ethane", label: "Ethane" }] })),
     { type: "statistics", preset: "air_quality", span: 6, rows: 3 }, { type: "metric", metric: "aqi" }, { type: "metric", metric: "pm2_5" },
   ] } : {}),
   ...(params.get("panels") === "legacy" ? { panels: LEGACY_PANELS } : {}),

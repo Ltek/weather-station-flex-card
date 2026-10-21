@@ -165,7 +165,7 @@ export function pollenModel(config, hass, now = new Date()) {
   let status;
   if (top) status = `${top.name} ${LEVEL_LABEL[top.level].toLowerCase()} today`;
   else if (anyIn) status = "In season, but nothing in the air today";
-  else status = nextDue(rows, month) || "Out of season";
+  else status = ["Out of season", nextDue(rows, month)].filter(Boolean).join(" · ");
   const summary = loc?.summary || {};
   return {
     source: c.entities?.length ? "Pollen" : "Google",

@@ -70,20 +70,52 @@ export const AQI_LEVELS = [
 
 export const aqiLevel = (aqi) => (aqi == null || isNaN(aqi) ? null : AQI_LEVELS.findIndex((l) => aqi <= l.max));
 
-// Concentration breakpoints (upper bound of each category) — EPA, PM2.5 as of 2024.
+// Concentration breakpoints (upper bound of each category, matching AQI
+// 50/100/150/200/300/500) — US EPA, PM2.5 as of 2024.
 const BREAKS = {
-  pm2_5: [9.0, 35.4, 55.4, 125.4, 225.4], // µg/m³, 24 h
-  pm10: [54, 154, 254, 354, 424], // µg/m³, 24 h
-  ozone: [0.054, 0.07, 0.085, 0.105, 0.2], // ppm, 8 h
+  pm2_5: [9.0, 35.4, 55.4, 125.4, 225.4, 325.4], // µg/m³, 24 h
+  pm10: [54, 154, 254, 354, 424, 604], // µg/m³, 24 h
+  ozone: [0.054, 0.07, 0.085, 0.105, 0.2, 0.604], // ppm, 8 h (above 0.2 the EPA uses 1 h values)
+};
+const AQI_EDGES = [0, 50, 100, 150, 200, 300, 500];
+
+// Readings without an EPA AQI: thresholds (in the given unit) for the
+// Moderate / Elevated / High / Very high bands, from other health standards.
+//   Benzene: ATSDR minimal risk levels — chronic 3 ppb, acute 9 ppb.
+//   CO2: ~1000 ppm comfort guidance (ASHRAE), 5000 ppm workplace limit (OSHA).
+export const OTHER_STANDARDS = {
+  benzene: { re: /benzene/i, unit: "ppb", t: [1, 3, 9, 30], source: "ATSDR minimal risk levels (chronic 3 ppb, acute 9 ppb)" },
+  co2: { re: /\bco2\b|carbon[\s_-]?dioxide/i, unit: "ppm", t: [1000, 2000, 5000, 10000], source: "ASHRAE comfort guidance 1000 ppm; OSHA limit 5000 ppm" },
 };
 
+const toPpm = (v, unit) => (/ppb/i.test(unit || "") ? v / 1000 : /µg|ug/i.test(unit || "") ? v / 1960 : v);
+
+/** Interpolate a value on breakpoints [b1..bn] to 0–500 (AQI-like index). */
+function onScale(v, b) {
+  let lo = 0;
+  for (let i = 0; i < b.length; i++) {
+    if (v <= b[i]) return Math.round(AQI_EDGES[i] + ((v - lo) / (b[i] - lo)) * (AQI_EDGES[i + 1] - AQI_EDGES[i]));
+    lo = b[i];
+  }
+  return 500;
+}
+
+/**
+ * AQI-like index (0–500) for a reading: the EPA AQI for PM2.5, PM10 and ozone,
+ * or a scale built from `thresholds` (Moderate, Elevated, High, Very high) for
+ * anything else. null when there is no scale for it.
+ */
+export function pollutantIndex(kind, value, unit, thresholds) {
+  if (value == null || isNaN(value)) return null;
+  const v = Number(value);
+  if (thresholds?.length) return onScale(v, [...thresholds]);
+  if (BREAKS[kind]) return onScale(kind === "ozone" ? toPpm(v, unit) : v, BREAKS[kind]);
+  const o = OTHER_STANDARDS[kind];
+  if (o) return onScale(v, o.t);
+  return null;
+}
+
 /** Category index (0 = Good … 5 = Hazardous) for a pollutant concentration. */
-export function concentrationLevel(kind, value, unit) {
-  const b = BREAKS[kind];
-  if (!b || value == null || isNaN(value)) return null;
-  let v = Number(value);
-  if (kind === "ozone" && /ppb/i.test(unit || "")) v /= 1000;
-  if (kind === "ozone" && /µg|ug/i.test(unit || "")) v /= 1960; // µg/m³ -> ppm at 25 °C
-  const i = b.findIndex((x) => v <= x);
-  return i < 0 ? 5 : i;
+export function concentrationLevel(kind, value, unit, thresholds) {
+  return aqiLevel(pollutantIndex(kind, value, unit, thresholds));
 }

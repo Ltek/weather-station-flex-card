@@ -1,5 +1,12 @@
 # Changelog
 
+## v2026.10.21.15
+
+- **Air quality panel layouts:** `layout: rows` gives one row per pollutant (icon, name, bar, category chip, value), and `layout: bars` gives vertical bars side by side with 50/100/150 guide lines. Both use the EPA AQI scale and colours (green Good, yellow Moderate, orange Unhealthy for sensitive groups, red Unhealthy, purple, maroon). `tiles` stays the default.
+- **More readings:** `extra:` adds any sensor as a row or bar, e.g. Boulder AIR's benzene or ethane. Readings without an EPA AQI are coloured from other health standards: benzene from ATSDR minimal risk levels (chronic 3 ppb, acute 9 ppb), CO₂ from 1000 ppm comfort guidance and the 5000 ppm OSHA limit. Set your own with `thresholds: [moderate, elevated, high, very high]`. Readings with no standard show "No standard".
+- The line under the AQI shows the source and main pollutant (from the sensor's `source` and `main_pollutant` attributes, e.g. the Boulder AIR package); `source:` overrides it.
+- **Pollen panel** restyled like sygad's pop-up: one header line (source · town · today's main allergen, or "Out of season · hazel due in January"), divider lines between rows, filled level chips, and a "Season" strip of month bars with the letters underneath.
+
 ## v2026.10.21.14
 
 - **Faster editing:** while the dashboard is in edit mode or the card is shown in the card editor's preview, the animated background is replaced by a still gradient, panel blur is off, the hero's own animation stops, and the Radar and Windy map panels show a placeholder instead of loading the live map. Everything returns when you finish editing. Graphs and the other panels stay live. In the preview mockup this cut the page's main-thread work from ~840 ms to ~220 ms per 5 seconds, not counting the Windy map, which no longer loads at all. Turn it off with **General → Pause animations and maps while editing** (`lite_editing: false`).

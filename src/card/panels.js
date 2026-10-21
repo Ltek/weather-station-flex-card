@@ -185,8 +185,13 @@ export const PANEL_TYPES = {
   air_quality: {
     tag: "wsfc-panel-air-quality", label: "Air quality", icon: "mdi:air-filter", span: 4, rows: 0,
     schema: [
-      { name: "pollutants", selector: { select: { multiple: true, options: opt([["pm2_5", "PM2.5"], ["pm10", "PM10"], ["ozone", "Ozone"], ["co2", "CO₂"]]) } }, helper: "Rows under the AQI (default: all that are found)." },
-      { name: "show_scale", selector: { boolean: {} }, default: true },
+      { name: "layout", selector: { select: { options: opt([["tiles", "Tiles"], ["rows", "Rows — bar, level and value per pollutant"], ["bars", "Vertical bars on the AQI scale"]]) } }, default: "tiles" },
+      { name: "pollutants", selector: { select: { multiple: true, options: opt([["pm2_5", "PM2.5"], ["pm10", "PM10"], ["ozone", "Ozone"], ["co2", "CO₂"]]) } }, helper: "Default: all that are found." },
+      { name: "extra", selector: { object: {} }, helper: "More readings, e.g. - entity: sensor.erie_benzene with optional label, icon and thresholds: [moderate, elevated, high, very high] in the sensor's unit. Benzene and CO₂ have built-in thresholds." },
+      { name: "show_aqi", selector: { boolean: {} }, default: true },
+      { name: "show_scale", selector: { boolean: {} }, helper: "AQI colour scale under the number (default: on for tiles, off for rows and bars)." },
+      { name: "bar_height", selector: { number: { min: 60, max: 400, mode: "box", unit_of_measurement: "px" } }, helper: "Vertical bars: height (default 140)." },
+      { name: "source", selector: { text: {} }, helper: "Source shown under the AQI (default: the sensor's source attribute or integration)." },
       { name: "entities.aqi", selector: ent("sensor"), helper: "Default: the station's own sensor, else AirNow, else any outdoor AQI sensor." },
       { name: "entities.pm2_5", selector: ent("sensor") },
       { name: "entities.pm10", selector: ent("sensor") },
