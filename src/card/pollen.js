@@ -172,7 +172,8 @@ export function pollenModel(config, hass, now = new Date()) {
   if (c.hide_none !== false) rows = rows.filter((r) => !none(r));
   let status;
   if (top) status = `${top.name} ${LEVEL_LABEL[top.level].toLowerCase()} today`;
-  else if (anyIn) status = "In season, but nothing in the air today";
+  // "Nothing in the air" text: show_nothing: false hides it, nothing_text replaces it.
+  else if (anyIn) status = c.show_nothing === false ? "" : c.nothing_text || "In season, but nothing in the air today";
   else status = ["Out of season", nextDue(all, month)].filter(Boolean).join(" · ");
   const summary = loc?.summary || {};
   return {

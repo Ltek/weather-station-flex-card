@@ -183,6 +183,8 @@ export const PANEL_TYPES = {
       { name: "show_tomorrow", selector: { boolean: {} }, default: true },
       { name: "show_season", selector: { boolean: {} }, default: true, helper: "12-month strip: how many of the shown species are in season each month." },
       { name: "hide_none", selector: { boolean: {} }, default: true, helper: "Hide species with nothing in the air today (level None)." },
+      { name: "show_nothing", selector: { boolean: {} }, default: true, helper: "Show \"In season, but nothing in the air today\" in the header line when every species is at None." },
+      { name: "nothing_text", selector: { text: {} }, helper: "Replace that text, e.g. \"All clear\"." },
       { name: "show_source", selector: { boolean: {} }, default: true, helper: "Show the data source (Google) in the header line." },
       { name: "source", selector: { text: {} }, helper: "Replace the source text." },
       { name: "show_location", selector: { boolean: {} }, default: true, helper: "Show the town in the header line." },

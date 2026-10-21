@@ -1,5 +1,9 @@
 # Changelog
 
+## v2026.10.21.18
+
+- **Pollen:** "Nothing in the air today" was shown twice: in the header line and again as a note when every row was hidden. The note is gone; the header line says it once. New options: `show_nothing: false` hides that text, and `nothing_text` replaces it (e.g. "All clear").
+
 ## v2026.10.21.17
 
 - **Pollen:** species with nothing in the air today (level None) are hidden (`hide_none`, on by default). When every in-season species is at None, the panel says "Nothing in the air today".
