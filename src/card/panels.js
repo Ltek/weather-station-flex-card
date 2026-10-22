@@ -18,6 +18,7 @@ export const PANEL_TYPES = {
     tag: "wsfc-panel-hero", label: "Hero (current conditions)", icon: "mdi:weather-partly-cloudy", span: 12, rows: 3, rowsCompact: 0, flex: true, inBar: false,
     flexPanels: ["Card Appearance", "Section order & visibility", "Current Weather Header", "Current Weather Metrics", "Clock & Date", "User Actions", "Advanced"],
     schema: [
+      { name: "show_chips", label: "Show the metric chips", selector: { boolean: {} }, default: true, helper: "The chips (feels like, humidity, wind …). Their options are under Current Weather Metrics below — the same as the Chips panel's." },
       { name: "auto_scale", selector: { boolean: {} }, default: false, helper: "Size the temperature, condition, icon, clock, date and metric chips from the panel's size, over the sizes set below. Sizes left at Auto below follow the panel either way." },
       { name: "scale", selector: { number: { min: 50, max: 200, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100, helper: "Auto scaling: make the auto sizes bigger or smaller." },
       ...factsFields(),

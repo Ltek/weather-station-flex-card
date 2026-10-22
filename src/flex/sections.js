@@ -4525,15 +4525,16 @@ import { actionHandler as iq } from "../../vendor/weather-forecast-card/src/hass
     if (/^(Day|Night) color$/.test(label)) return this._wfcColorFieldHex(label, value, onChange);
     const THEME = [["var(--primary-color)", "Primary"], ["var(--accent-color)", "Accent"], ["var(--primary-text-color)", "Primary text"], ["var(--secondary-text-color)", "Secondary text"], ["var(--disabled-text-color)", "Disabled text"], ["var(--state-active-color)", "State active"], ["var(--error-color)", "Error"], ["var(--warning-color)", "Warning"], ["var(--success-color)", "Success"], ["var(--info-color)", "Info"]];
     const v = value == null ? "" : String(value);
-    const mode = v === "" ? "default" : /^#[0-9a-fA-F]{3,8}$/.test(v) ? "custom" : /^var\(/.test(v) && THEME.some(([x]) => x === v) ? "theme" : "css";
+    const bg = /background|bg$|^Chip background/i.test(label);
+    const mode = v === "" ? "default" : v === "transparent" ? "transparent" : /^#[0-9a-fA-F]{3,8}$/.test(v) ? "custom" : /^var\(/.test(v) && THEME.some(([x]) => x === v) ? "theme" : "css";
     const hex6 = /^#[0-9a-fA-F]{6}$/.test(v) ? v : "#4fc3f7";
     const set = (x) => onChange({ target: { value: x } });
-    const switchMode = (m) => set(m === "default" ? "" : m === "theme" ? (THEME.some(([x]) => x === v) ? v : THEME[0][0]) : m === "custom" ? hex6 : v || hex6);
+    const switchMode = (m) => set(m === "default" ? "" : m === "transparent" ? "transparent" : m === "theme" ? (THEME.some(([x]) => x === v) ? v : THEME[0][0]) : m === "custom" ? hex6 : v || hex6);
     return eq`
       <div class="wfc-color-field wsfc-color4">
         <span class="wfc-field-label wfc-color-label">${label}</span>
         <select class="wfc-native-select" style="flex:0 0 auto;width:auto" @change=${(e) => switchMode(e.target.value)}>
-          ${[["default", "Not set"], ["theme", "Theme color"], ["custom", "Custom"], ["css", "CSS"]].map(([m, l]) => eq`<option value=${m} ?selected=${m === mode}>${l}</option>`)}
+          ${[["default", "Not set"], ...(bg || mode === "transparent" ? [["transparent", "Transparent"]] : []), ["theme", "Theme color"], ["custom", "Custom"], ["css", "CSS"]].map(([m, l]) => eq`<option value=${m} ?selected=${m === mode}>${l}</option>`)}
         </select>
         ${mode === "theme"
           ? eq`<select class="wfc-native-select" style="flex:1 1 120px;width:auto" @change=${(e) => set(e.target.value)}>${THEME.map(([x, l]) => eq`<option value=${x} ?selected=${x === v}>${l}</option>`)}</select>`
@@ -4542,7 +4543,7 @@ import { actionHandler as iq } from "../../vendor/weather-forecast-card/src/hass
             : mode === "css"
               ? eq`<input type="text" class="wfc-native-select" style="flex:1 1 120px;width:auto" .value=${v} @change=${(e) => set(e.target.value)} />`
               : eY}
-        ${mode !== "default" ? eq`<span style="width:16px;height:16px;border-radius:50%;flex:0 0 auto;border:1px solid var(--divider-color);background:${v}"></span>` : eY}
+        ${mode !== "default" && mode !== "transparent" ? eq`<span style="width:16px;height:16px;border-radius:50%;flex:0 0 auto;border:1px solid var(--divider-color);background:${v}"></span>` : eY}
       </div>
     `;
   };

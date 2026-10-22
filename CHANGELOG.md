@@ -1,5 +1,11 @@
 # Changelog
 
+## v2026.10.22.37
+
+- **Editor look:** the Weather Flex sub-panels inside a panel (Card Appearance, Current Weather Metrics, Sun Position …) are no longer indented, and **Sun & moon facts** looks like them (hairline card, bold title, accent icon, chevron). Group subtitles (Layout, Default Overrides, options groups) follow the design guide: theme accent color, mixed case, group size, semibold, thin divider; Appearance's group titles use the accent too.
+- **Background colors offer Transparent** in the four-mode color control (e.g. Chip background, Card background, section backgrounds).
+- **Hero: Show the metric chips** checkbox. The hero's chips and the Chips panel use the same Current Weather Metrics options and defaults.
+
 ## v2026.10.22.36
 
 - **Editor, panel settings:** a **Default Overrides** group (Panel background, Disable shadow, Disable border, Disable glow) replaces the Shadow / Border / Glow checkboxes in Layout. **Sun & moon facts** is its own collapsible sub-panel in the Hero, Sky Tracker and Astronomy settings. The **Shown** checkbox is gone; the eye icon in the panel list does the same.

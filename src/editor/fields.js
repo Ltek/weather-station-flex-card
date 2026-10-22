@@ -22,6 +22,7 @@ export const THEME_COLORS = [
 export function colorMode(cur) {
   cur = cur == null ? "" : String(cur);
   if (cur === "") return "default";
+  if (cur === "transparent") return "transparent";
   if (/^#[0-9a-fA-F]{3,8}$/.test(cur)) return "custom";
   if (/^var\(/.test(cur) && THEME_COLORS.some(([v]) => v === cur)) return "theme";
   return "css";
@@ -120,7 +121,7 @@ function field(f, value, set, lab, help, autoText) {
         @change=${(e) => set(e.target.value === "" ? undefined : Number(e.target.value))} />${unit ? html`<span class="funit">${unit}</span>` : nothing}
     </div>${hint}</div>`;
   }
-  if (isColor(f)) return colorField(id, value, set, lab, hint);
+  if (isColor(f)) return colorField(id, value, set, lab, hint, /background|(^|_)bg(_|$)/i.test(`${f.name} ${lab}`));
   // plain text
   return html`<div class="fld"><div class="frow"><label for=${id}>${lab}</label>
     <input id=${id} type=${s.text?.type || "text"} class="ftext" .value=${value ?? ""} @change=${(e) => set(e.target.value === "" ? undefined : e.target.value)} />
@@ -128,11 +129,13 @@ function field(f, value, set, lab, help, autoText) {
 }
 
 // Four-mode color control: Not set / Theme color / Custom / CSS.
-function colorField(id, value, set, lab, hint) {
+// Background colors also offer Transparent.
+function colorField(id, value, set, lab, hint, bg = false) {
   const mode = colorMode(value);
   const v = value == null ? "" : String(value);
   const switchMode = (m) => {
     if (m === "default") return set(undefined);
+    if (m === "transparent") return set("transparent");
     if (m === "theme") return set(THEME_COLORS.some(([x]) => x === v) ? v : THEME_COLORS[0][0]);
     if (m === "custom") return set(hex6(v) || "#4fc3f7");
     return set(v || "#4fc3f7"); // css keeps what's there
@@ -140,7 +143,7 @@ function colorField(id, value, set, lab, hint) {
   return html`<div class="fld"><div class="frow"><label for=${id}>${lab}</label>
     <span class="fcolor">
       <select id=${id} class="sel mode" @change=${(e) => switchMode(e.target.value)}>
-        ${[["default", "Not set"], ["theme", "Theme color"], ["custom", "Custom"], ["css", "CSS"]].map(([m, l]) => html`<option value=${m} ?selected=${m === mode}>${l}</option>`)}
+        ${[["default", "Not set"], ...(bg || mode === "transparent" ? [["transparent", "Transparent"]] : []), ["theme", "Theme color"], ["custom", "Custom"], ["css", "CSS"]].map(([m, l]) => html`<option value=${m} ?selected=${m === mode}>${l}</option>`)}
       </select>
       ${mode === "theme"
         ? html`<select class="sel" aria-label="Theme color" @change=${(e) => set(e.target.value)}>${THEME_COLORS.map(([x, l]) => html`<option value=${x} ?selected=${x === v}>${l}</option>`)}</select>`
@@ -149,7 +152,7 @@ function colorField(id, value, set, lab, hint) {
           : mode === "css"
             ? html`<input type="text" class="ftext" aria-label="CSS color" .value=${v} @change=${(e) => set(e.target.value || undefined)} />`
             : nothing}
-      ${mode !== "default" ? html`<span class="fdot" style="background:${v}"></span>` : nothing}
+      ${mode !== "default" && mode !== "transparent" ? html`<span class="fdot" style="background:${v}"></span>` : nothing}
     </span>
   </div>${hint}</div>`;
 }

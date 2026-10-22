@@ -731,7 +731,7 @@ class WeatherStationFlexCardEditor extends LitElement {
     summary ha-icon { --mdc-icon-size: var(--ltek-icon-lg); color: var(--ltek-c-accent); }
     .body { padding: 0 var(--ltek-sp-5) var(--ltek-sp-5); display: flex; flex-direction: column; gap: var(--ltek-sp-3); }
     .agrp + .agrp { margin-top: var(--ltek-sp-4, 16px); }
-    .agrp-t { font-size: var(--ltek-fs-small, 12px); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ltek-c-muted); margin: 0 0 var(--ltek-sp-2, 8px); padding-bottom: 4px; border-bottom: 1px solid var(--divider-color, rgba(127,127,127,.25)); }
+    .agrp-t { font-size: var(--ltek-fs-small, 12px); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ltek-c-accent); margin: 0 0 var(--ltek-sp-2, 8px); padding-bottom: 4px; border-bottom: 1px solid var(--divider-color, rgba(127,127,127,.25)); }
     .hint { margin: 0; color: var(--ltek-c-muted); font-size: var(--ltek-fs-small); line-height: 1.4; }
     .rows { display: flex; flex-direction: column; gap: var(--ltek-sp-2); }
     .row { border: 1px solid var(--ltek-c-border-soft); border-radius: var(--ltek-r-card); background: var(--ltek-c-surface-raised); }
@@ -751,7 +751,9 @@ class WeatherStationFlexCardEditor extends LitElement {
     .resetbar { display: flex; justify-content: flex-end; }
     .btn[disabled] { opacity: 0.4; cursor: default; }
     .grp.first { margin-top: 0; border-top: 0; padding-top: 0; }
-    .grp { font-size: var(--ltek-fs-group); font-weight: var(--ltek-fw-semibold); margin-top: var(--ltek-sp-3); border-top: 1px solid var(--ltek-c-border-soft); padding-top: var(--ltek-sp-3); }
+    /* Group subtitle (design system §2): theme accent, mixed case, group size, semibold, thin divider. */
+    .grp { font-size: var(--ltek-fs-group); font-weight: var(--ltek-fw-semibold); color: var(--accent-color, var(--ltek-c-accent)); margin-top: var(--ltek-sp-3); border-top: 1px solid var(--ltek-c-border-soft); padding-top: var(--ltek-sp-3); }
+    .resetbar + .grp { margin-top: 0; border-top: 0; padding-top: 0; }
     .add { display: flex; gap: var(--ltek-sp-3); align-items: center; }
     .sel { flex: 1; font: inherit; font-size: var(--ltek-fs-label); padding: var(--ltek-ctrl-pad); border-radius: var(--ltek-r-ctrl); border: 1px solid var(--ltek-c-border); background: var(--card-background-color, #1c1c1c); color: var(--ltek-c-text); }
     .btn { display: inline-flex; align-items: center; gap: var(--ltek-sp-2); font: inherit; font-size: var(--ltek-fs-label); padding: var(--ltek-ctrl-pad); border-radius: var(--ltek-r-ctrl); border: 0; background: var(--ltek-c-accent); color: var(--ltek-c-on-accent); cursor: pointer; }
@@ -761,8 +763,16 @@ class WeatherStationFlexCardEditor extends LitElement {
     details.sub > summary ha-icon { --mdc-icon-size: var(--ltek-icon-sm); }
     details.sub > summary .cnt { margin-left: auto; font-size: var(--ltek-fs-small); font-weight: var(--ltek-fw-normal); color: var(--ltek-c-muted); }
     details.sub > :not(summary) { margin: 0 var(--ltek-sp-4) var(--ltek-sp-4); }
-    /* A panel's own sub-panels (e.g. Sun & moon facts). */
-    details.psub { margin-top: var(--ltek-sp-3); }
+    /* A panel's own sub-panels (e.g. Sun & moon facts), styled like the
+       Weather Flex sub-panels next to them: no indent, hairline card, bold
+       title, accent icon, chevron on the right. */
+    details.psub { margin: var(--ltek-sp-3) 0 8px; border: 1px solid #3a3a3a; border-radius: 12px; background: rgba(255,255,255,0.015); }
+    details.psub > summary { list-style: none; cursor: pointer; user-select: none; padding: 10px 14px; display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 700; color: var(--primary-text-color, #e1e1e1); }
+    details.psub > summary::-webkit-details-marker { display: none; }
+    details.psub > summary ha-icon { --mdc-icon-size: 20px; color: var(--primary-color, #2196F3); flex-shrink: 0; }
+    details.psub > summary::after { content: ""; margin-left: auto; width: 10px; height: 10px; border-right: 2px solid #999; border-bottom: 2px solid #999; transform: rotate(45deg); transition: transform 0.2s ease; }
+    details.psub[open] > summary::after { transform: rotate(-135deg); }
+    details.psub > .psub-body { margin: 0 14px 12px; }
     .map .h { font-size: var(--ltek-fs-tiny); text-transform: uppercase; letter-spacing: 0.04em; color: var(--ltek-c-muted); }
     .map .i { color: var(--ltek-c-accent); white-space: nowrap; }
     .map { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; gap: 2px var(--ltek-sp-4); font-size: var(--ltek-fs-small); align-items: baseline; }
@@ -782,7 +792,7 @@ class WeatherStationFlexCardEditor extends LitElement {
     /* A stack's panels, indented under its row. */
     .kids { margin: 0 var(--ltek-sp-2) var(--ltek-sp-2) var(--ltek-sp-6, 24px); padding-left: var(--ltek-sp-3); border-left: 2px solid var(--ltek-c-accent); display: flex; flex-direction: column; gap: var(--ltek-sp-2); }
     .nest { border-left: 2px solid var(--ltek-c-border); padding-left: var(--ltek-sp-3); display: flex; flex-direction: column; gap: var(--ltek-sp-3); }
-    .flexed { border-left: 2px solid var(--ltek-c-accent-fade); padding-left: var(--ltek-sp-3); }
+    .flexed { }
   `];
 }
 
