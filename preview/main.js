@@ -125,6 +125,13 @@ if (params.get("sgcc")) {
   sc.src = "/preview/build/sgcc/statistics-graph-chart-card.js";
   document.head.append(sc);
 }
+// ?windrose=1: same for aukedejong's Wind Rose Card (preview/build/windrose/).
+if (params.get("windrose")) {
+  const sc = document.createElement("script");
+  sc.type = "module";
+  sc.src = "/preview/build/windrose/windrose-card.js";
+  document.head.append(sc);
+}
 let condition = params.get("condition") || "partlycloudy";
 let dark = params.get("theme") !== "light";
 const mock = new MockHass({ unitOfMeasurement: "°F", darkMode: dark, currentCondition: condition });
@@ -228,6 +235,7 @@ const config = () => ({
   layout: params.get("layout") || "auto",
   remember: false,
   ...(params.get("hero") ? { panels: [{ type: "hero", span: Number(params.get("span") || 12), rows: Number(params.get("rows") || 0), auto_scale: params.get("hero") === "auto", scale: Number(params.get("scale") || 100), flex: { wfc: { current: { clock_show_date: true } } } }, { type: "metric", metric: "temperature" }] } : {}),
+  ...(params.get("panels") === "wind" ? { panels: ["standard", "periods", "beaufort", "corners", "stats", "playback"].map((windrose_preset) => ({ type: "wind", view: "rose", windrose_preset, title: `Wind · ${windrose_preset}`, span: 6, show_chart: false })) } : {}),
   ...(params.get("style") ? { panel_radius: 10, panel_shadow: "medium", panel_border_width: 1, panel_border_color: "#4fc3f7", panel_glow: true, panel_glow_size: 8 } : {}),
   ...(params.get("img") ? { background: "image", background_image_url: params.get("img") } : {}),
   ...(params.get("bg") ? { background: "animated", panel_opacity: Number(params.get("op") || 0.55) } : {}),

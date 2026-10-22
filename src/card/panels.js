@@ -2,6 +2,7 @@
 // schema (Home Assistant ha-form) for the type's own options.
 import { METRICS } from "./metrics.js";
 import { pollenModel } from "./pollen.js";
+import { WINDROSE_PRESETS } from "../panels/windrose.js";
 
 const opt = (pairs) => pairs.map(([value, label]) => ({ value, label }));
 const RANGES = ["6h", "12h", "24h", "48h", "7d", "30d", "90d", "365d"];
@@ -93,7 +94,10 @@ export const PANEL_TYPES = {
       { name: "entities.wind_speed", selector: ent("sensor") },
       { name: "entities.wind_gust_speed", selector: ent("sensor") },
       { name: "entities.wind_bearing", selector: ent("sensor") },
-      { name: "rose_bins", selector: { object: {} }, helper: "Speed thresholds for the rose, in the sensor's unit, e.g. [1, 5, 10, 15, 25]." },
+      { name: "rose_engine", selector: { select: { options: opt([["auto", "Automatic — Wind Rose Card when installed"], ["windrose", "Wind Rose Card (custom:windrose-card)"], ["builtin", "Built-in rose"]]) } }, default: "auto", helper: "The rose view uses aukedejong's Wind Rose Card when it is installed (HACS), with your station's sensors filled in." },
+      { name: "windrose_preset", selector: { select: { options: Object.entries(WINDROSE_PRESETS).map(([value, p]) => ({ value, label: p.label })) } }, default: "standard", helper: "Wind Rose Card layout." },
+      { name: "windrose", selector: { object: {} }, helper: "Wind Rose Card: extra options merged into its config, e.g. windspeed_bar_location: bottom, or rose_config / colors / speed_ranges." },
+      { name: "rose_bins", selector: { object: {} }, helper: "Built-in rose: speed thresholds in the sensor's unit, e.g. [1, 5, 10, 15, 25]." },
     ],
   },
   radar: {

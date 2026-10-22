@@ -4,7 +4,7 @@ A weather-station dashboard in one Home Assistant card. Panels sit in a 12-colum
 
 Built around an Ecowitt WS90 / GW2000B; works with any station whose sensors are in Home Assistant — including all three Ecowitt integrations (Home Assistant's Ecowitt, Ecowitt Local, Ecowitt Official), alone or combined. See [docs/ECOWITT_INTEGRATIONS.md](docs/ECOWITT_INTEGRATIONS.md).
 
-Current build: **v2026.10.22.21** · full history in [CHANGELOG.md](CHANGELOG.md)
+Current build: **v2026.10.22.22** · full history in [CHANGELOG.md](CHANGELOG.md)
 
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Ltek&repository=weather-station-flex-card&category=plugin)
 
@@ -55,7 +55,7 @@ Only what you change is saved, so the YAML stays short.
 | `temp_humidity` | Graph preset: temperature, dew point and humidity. |
 | `uv_solar` | Graph preset: UV index (left axis, shaded) and solar radiation (right axis). |
 | `stack` | Child panels side by side (`direction: horizontal`, wraps only below `min_width`) or one above another (`vertical`). Children take `grow` (relative width), `min_width` and `rows`. |
-| `wind` | Compass or 24h wind rose, plus a speed/gust chart. |
+| `wind` | Compass or wind rose, plus a speed/gust chart. The rose view uses the [Wind Rose Card](https://github.com/aukedejong/lovelace-windrose-card) when it is installed (`windrose_preset`: standard, periods, beaufort, corners, stats, playback, minimal; extra options under `windrose:`), else a built-in 24 h rose. |
 | `radar` | RainViewer radar loop on a choice of base maps (gray, streets, topo, satellite imagery, OSM or a custom URL), optional OpenWeatherMap layers. `radar: false` gives a plain map — add several with different zooms and layers. |
 | `hourly` | Weather Flex hourly forecast. |
 | `daily` | Weather Flex daily forecast. |

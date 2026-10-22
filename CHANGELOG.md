@@ -1,5 +1,10 @@
 # Changelog
 
+## v2026.10.22.22
+
+- **Wind panel uses the Wind Rose Card when it's installed.** If aukedejong's [Wind Rose Card](https://github.com/aukedejong/lovelace-windrose-card) is installed (HACS), the Wind panel's Rose view shows it in place of the built-in rose, with your station's direction, speed and gust sensors filled in from Weather Sources and the bars in your unit. Without it, the built-in rose stays. `rose_engine: builtin` keeps the built-in rose either way.
+- **Wind Rose Card presets** (`windrose_preset`), based on its examples: Standard (24 h, speed bars at the side), Period buttons (1 h / 8 h / 1 day / 7 days), Beaufort (Beaufort bars with live speed arrows), Corner info (speed, direction and gust around the rose), Statistics (min / average / max / P90 / calm % under the rose), Playback (step or play through the last 10 days) and Minimal. Any of the card's own options can be added under `windrose:`.
+
 ## v2026.10.22.21
 
 - **Hero: Set scale to Auto** (`auto_scale: true`, at the top of the Hero section). The temperature, condition text, icon, clock, date and metric chips are sized from the hero panel's width and height, over the sizes set in the sections editor, so they stay in proportion when the panel or screen changes size.

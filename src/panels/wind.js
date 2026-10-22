@@ -7,6 +7,7 @@ import { panelStyles, seg, reading, fmt, head } from "./shared.js";
 import { cardinal } from "../card/metrics.js";
 import { pick, metricValue } from "../card/resolve.js";
 import { fetchHistory, decimate } from "../card/history.js";
+import { roseEngine, windroseCard, WINDROSE_TAG } from "./windrose.js";
 
 
 // Speed bins for the rose, in the sensor's own unit. Defaults suit mph; for
@@ -40,6 +41,8 @@ class WsfcWind extends LitElement {
       .spd { fill: var(--primary-text-color); font-size: 26px; font-weight: 500; text-anchor: middle; }
       .unit { fill: var(--secondary-text-color); font-size: 11px; text-anchor: middle; }
       .ptr { fill: var(--wsfc-wind); transition: transform .8s ease; }
+      .wr { min-height: 200px; }
+      .wr > * { --ha-card-background: transparent; --ha-card-box-shadow: none; --ha-card-border-width: 0; display: block; }
     `,
   ];
 
@@ -56,6 +59,20 @@ class WsfcWind extends LitElement {
     const gu = metricValue(s, h, "wind_gust_speed");
     const di = metricValue(s, h, "wind_bearing");
     const unit = sp?.unit || gu?.unit || "";
+    const roseLabel = { value: "rose", label: roseEngine(this.config) === "windrose" ? "Rose" : "Rose 24h" };
+    // Rose view with the Wind Rose Card installed: it replaces our rose and readings.
+    if (view === "rose" && roseEngine(this.config) === "windrose") {
+      const ids = this._ids();
+      if (ids.dir && ids.speed) {
+        this._ensureRose(windroseCard(this.config, ids, unit));
+        if (this._wrEl) this._wrEl.hass = this.hass;
+        return html`
+          ${head(this.config, "mdi:weather-windy", "Wind", seg([{ value: "compass", label: "Compass" }, roseLabel], view, (v) => (this._view = v), "Wind view"))}
+          ${this._wrErr ? html`<div class="note">${this._wrErr}</div>` : html`<div class="wr">${this._wrEl || ""}</div>`}
+          ${this.config?.show_chart === false || this.config?.windrose_chart === false ? "" : html`<div class="body"><canvas aria-label="Wind speed and gust history"></canvas></div>`}
+        `;
+      }
+    }
     return html`
       ${head(this.config, "mdi:weather-windy", "Wind", seg([{ value: "compass", label: "Compass" }, { value: "rose", label: "Rose 24h" }], view, (v) => (this._view = v), "Wind view"))}
       <div class="top">
@@ -72,6 +89,30 @@ class WsfcWind extends LitElement {
       ${this.config?.show_chart === false ? "" : html`<div class="body"><canvas aria-label="Wind speed and gust history"></canvas></div>`}
       ${this._error ? html`<div class="note">${this._error}</div>` : ""}
     `;
+  }
+
+  connectedCallback() {
+    super.connectedCallback();
+    // Dashboard resources load in any order: switch to the Wind Rose Card when it arrives.
+    if (!customElements.get(WINDROSE_TAG)) customElements.whenDefined(WINDROSE_TAG).then(() => this.requestUpdate());
+  }
+
+  async _ensureRose(cfg) {
+    const json = JSON.stringify(cfg);
+    if (json === this._wrJson) return;
+    this._wrJson = json;
+    try {
+      const helpers = await window.loadCardHelpers?.();
+      if (!helpers) throw new Error("Home Assistant card helpers unavailable");
+      if (this._wrJson !== json) return;
+      this._wrEl = helpers.createCardElement(cfg);
+      this._wrEl.hass = this.hass;
+      this._wrErr = undefined;
+      this.requestUpdate();
+    } catch (e) {
+      this._wrErr = `Wind Rose Card failed to load: ${e?.message || e}`;
+      this.requestUpdate();
+    }
   }
 
   // Compass: pointer sits on the ring at the bearing the wind comes FROM and
