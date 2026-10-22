@@ -18,6 +18,7 @@ import { flexBase, trackerConfig } from "../panels/flex.js";
 import { prune, clone } from "../card/config.js";
 import { METRICS, metricEntity } from "../card/metrics.js";
 import "./layout-map.js";
+import { renderFields, fieldStyles } from "./fields.js";
 import { metricSensor, entityValue, integrationOf } from "../card/resolve.js";
 import "./sources.js";
 import "./series-editor.js";
@@ -45,14 +46,14 @@ const APPEARANCE_GROUPS = [
     { name: "panel_radius", selector: { number: { min: 0, max: 40, step: 1, mode: "slider", unit_of_measurement: "px" } }, helper: "Corner radius (default: the theme's card radius)." },
     { name: "panel_shadow", selector: { select: { options: [{ value: "none", label: "None" }, { value: "soft", label: "Soft" }, { value: "medium", label: "Medium" }, { value: "strong", label: "Strong" }] } }, default: "none" },
     { name: "panel_border_width", selector: { number: { min: 0, max: 6, step: 0.5, mode: "slider", unit_of_measurement: "px" } }, helper: "Border (default none)." },
-    { name: "panel_border_color", selector: { text: {} }, helper: "CSS color, e.g. #4fc3f7 or rgba(255,255,255,.2). Blank: the theme's divider color." },
+    { name: "panel_border_color", selector: { text: {} }, helper: "Not set: the theme's divider color." },
     { name: "panel_glow", selector: { boolean: {} }, default: false, helper: "A soft glow around each panel." },
-    { name: "panel_glow_color", selector: { text: {} }, helper: "Glow color (default: the border color, else the theme's primary color)." },
-    { name: "panel_glow_size", selector: { number: { min: 2, max: 40, step: 1, mode: "slider", unit_of_measurement: "px" } }, default: 10 },
+    { name: "panel_glow_color", when: (d) => !!d.panel_glow, selector: { text: {} }, helper: "Not set: the border color, else the theme's primary color." },
+    { name: "panel_glow_size", when: (d) => !!d.panel_glow, selector: { number: { min: 2, max: 40, step: 1, mode: "slider", unit_of_measurement: "px" } }, default: 10 },
   ]],
   ["Layout & behaviour", [
     { name: "layout", selector: { select: { options: [{ value: "auto", label: "Size to content" }, { value: "fullscreen", label: "Full screen (fills the view below the header)" }] } } },
-    { name: "fit_height", selector: { boolean: {} }, default: true, helper: "Full screen: panels with a height share the screen height (row height is calculated)." },
+    { name: "fit_height", when: (d) => d.layout === "fullscreen", selector: { boolean: {} }, default: true, helper: "Full screen: panels with a height share the screen height (row height is calculated)." },
     { name: "layout_size", selector: { select: { options: [{ value: "auto", label: "Automatic (from the card's width)" }, { value: "wide", label: "Wide — desktop layout" }, { value: "medium", label: "Medium — tablet layout" }, { value: "narrow", label: "Narrow — phone layout (stacked)" }] } }, helper: "In a Sections view the card is only as wide as its section; widen the section or use a Panel view for the desktop layout." },
     { name: "row_height", selector: { number: { min: 40, max: 300, mode: "box", unit_of_measurement: "px" } }, helper: "Height of one row unit (default 110)." },
     { name: "gap", selector: { number: { min: 0, max: 32, mode: "box", unit_of_measurement: "px" } }, helper: "Space between panels (default 12)." },
@@ -79,7 +80,7 @@ const LABELS = {
   show_moon: "Show moon", show_sun: "Show sun", attribute: "Text attribute", alerts_entity: "Alerts sensor", card: "Card configuration",
   show_status: "Show station status", show_devices: "Show device names", overlay: "Layer", model: "Forecast model", level: "Altitude", wind_unit: "Wind unit", marker: "Location pin", preset: "Graph", engine: "Graph card", days_to_show: "Days", period: "Resolution", chart_type: "Chart type", stat_types: "Values", show_chart: "Altitude chart", show_arc: "Sun arc", show_sky: "Sky gradient & forecast row", timeframe: "Time window", hours: "Hours", anchor: "Now is", moon: "Moon at night", moon_phase: "Draw the moon phase", background: "Card background", panel_opacity: "Panel opacity", panel_blur: "Panel blur", sky_bar: "Sky Bar in the hero", show_facts: "Show sun times", moon_size: "Moon size", direction: "Direction", min_width: "Minimum width", grow: "Grow", show_bar: "Panel buttons here", lite_editing: "Pause animations and maps while editing", background_image: "Background image", background_image_url: "Background image URL", background_image_fit: "Image fit", background_dim: "Darken image",
   panel_radius: "Corner radius", panel_shadow: "Shadow", panel_border_width: "Border width", panel_border_color: "Border color", panel_glow: "Glow", panel_glow_color: "Glow color", panel_glow_size: "Glow size",
-  rose_engine: "Wind rose", show_view_buttons: "View buttons", readings_position: "Readings", chart_position: "Chart position", show_legend: "Rose legend", wr_bars: "Speed bars", wr_corners: "Corner info", wr_stats: "Min / avg / max", wr_buttons: "Buttons", wr_buttons_position: "Button position", wr_period: "Default period", wr_beaufort: "Bar scale", wr_arrow: "Direction arrow", windrose_chart: "Chart with the Wind Rose Card", compass_arrow_size: "Pointer size", compass_arrow_color: "Pointer color", wr_arrow_size: "Arrow size", wr_arrow_color: "Arrow color", wr_speed_arrows: "Speed arrows", wr_speed_arrow_size: "Speed arrow size", stats_items: "Show", stats_size: "Text size", stats_weight: "Text weight", stats_color: "Text color", wr_stats: "Position", windrose_preset: "Wind Rose Card preset", windrose: "Wind Rose Card options", auto_scale: "Set scale to Auto", show_time: "Show the time", show_seconds: "Seconds", time_format: "Time format", show_date: "Show the date", date_format: "Date format", align: "Alignment", auto_size: "Auto size", time_size: "Time size", date_size: "Date size", time_weight: "Time weight", date_color: "Date color", scale: "Auto scaling", device: "Pollen location", hide_off_season: "Hide out-of-season species", hide_when_off_season: "Hide the panel out of season", hide_when_none: "Hide the panel when all are None", species: "Species", max_rows: "Rows", show_tomorrow: "Tomorrow's trend", show_season: "Season strip", location: "Town / area text",
+  rose_engine: "Wind rose", show_view_buttons: "View buttons", readings_position: "Readings", chart_position: "Chart position", show_legend: "Rose legend", wr_bars: "Speed bars", wr_corners: "Corner info", wr_stats: "Min / avg / max", wr_buttons: "Buttons", wr_buttons_position: "Button position", wr_period: "Default period", wr_beaufort: "Bar scale", wr_arrow: "Direction arrow", windrose_chart: "Chart with the Wind Rose Card", compass_arrow_size: "Pointer size", compass_arrow_color: "Pointer color", wr_arrow_size: "Arrow size", wr_arrow_color: "Arrow color", wr_speed_arrows: "Speed arrows", wr_speed_arrow_size: "Speed arrow size", stats_items: "Show", stats_align: "Alignment", chart_legend: "Chart legend", dial_scale: "Size", wr_scale: "Size", corner_speed: "Speed", corner_direction: "Direction", corner_gust: "Gust", corner_label_size: "Label size", corner_value_size: "Value size", corner_color: "Text color", stats_size: "Text size", stats_weight: "Text weight", stats_color: "Text color", wr_stats: "Position", windrose_preset: "Wind Rose Card preset", windrose: "Wind Rose Card options", auto_scale: "Set scale to Auto", show_time: "Show the time", show_seconds: "Seconds", time_format: "Time format", show_date: "Show the date", date_format: "Date format", align: "Alignment", auto_size: "Auto size", time_size: "Time size", date_size: "Date size", time_weight: "Time weight", date_color: "Date color", scale: "Auto scaling", device: "Pollen location", hide_off_season: "Hide out-of-season species", hide_when_off_season: "Hide the panel out of season", hide_when_none: "Hide the panel when all are None", species: "Species", max_rows: "Rows", show_tomorrow: "Tomorrow's trend", show_season: "Season strip", location: "Town / area text",
   seasons: "Season months", entities: "Sensors", pollutants: "Pollutants", show_scale: "AQI scale", show_aqi: "Show the AQI", extra: "More readings", bar_height: "Bar height", source: "Source text", show_source: "Show the source", show_location: "Show the town / area", hide_none: "Hide species at None", show_nothing: "Show the \"nothing in the air\" text", nothing_text: "\"Nothing in the air\" text", "entities.aqi": "AQI sensor",
   "entities.pm2_5": "PM2.5 sensor", "entities.pm10": "PM10 sensor", "entities.ozone": "Ozone sensor", "entities.co2": "CO₂ sensor",
 };
@@ -286,7 +287,18 @@ class WeatherStationFlexCardEditor extends LitElement {
     </details>`;
   }
 
+  // Design-system fields (checkboxes, drop-downs, sliders, color control);
+  // ha-form only for selectors we don't draw (entity, device, icon, object …).
   _form(data, schema, onChange) {
+    return renderFields({
+      data, schema, onChange,
+      label: (f) => f.label || LABELS[f.name] || f.name,
+      helper: (f) => f.helper,
+      haForm: (d, sch, cb) => this._haForm(d, sch, cb),
+    });
+  }
+
+  _haForm(data, schema, onChange) {
     return html`<ha-form
       .hass=${this.hass}
       .data=${data}
@@ -299,6 +311,7 @@ class WeatherStationFlexCardEditor extends LitElement {
       }}
     ></ha-form>`;
   }
+
 
   _general() {
     const bg = this._config.background || "none";
@@ -620,7 +633,7 @@ class WeatherStationFlexCardEditor extends LitElement {
     </div>`;
   }
 
-  static styles = css`
+  static styles = [fieldStyles, css`
     :host {
       display: block;
       /* --ltek-* editor chrome tokens: copied verbatim from CARD_DESIGN_SYSTEM.md §1. */
@@ -727,7 +740,7 @@ class WeatherStationFlexCardEditor extends LitElement {
     .kids { margin: 0 var(--ltek-sp-2) var(--ltek-sp-2) var(--ltek-sp-6, 24px); padding-left: var(--ltek-sp-3); border-left: 2px solid var(--ltek-c-accent); display: flex; flex-direction: column; gap: var(--ltek-sp-2); }
     .nest { border-left: 2px solid var(--ltek-c-border); padding-left: var(--ltek-sp-3); display: flex; flex-direction: column; gap: var(--ltek-sp-3); }
     .flexed { border-left: 2px solid var(--ltek-c-accent-fade); padding-left: var(--ltek-sp-3); }
-  `;
+  `];
 }
 
 customElements.get("weather-station-flex-card-editor") || customElements.define("weather-station-flex-card-editor", WeatherStationFlexCardEditor);

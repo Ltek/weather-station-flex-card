@@ -98,7 +98,8 @@ export function statsBlock(c) {
   const items = (Array.isArray(c?.stats_items) && c.stats_items.length ? c.stats_items : STATS_DEFAULT).filter((k) => STATS[k]);
   // The card fills in "${name}" placeholders.
   const text = items.map((k) => STATS[k][0] + " ${" + STATS[k][1] + "}" + (STATS[k][2] || "")).join(" · ");
-  const w = c?.stats_weight && c.stats_weight !== "400" ? `<span style="font-weight:${Number(c.stats_weight)}">${text}</span>` : text;
+  const style = [c?.stats_weight && c.stats_weight !== "400" ? `font-weight:${Number(c.stats_weight)}` : "", c?.stats_align && c.stats_align !== "left" ? `text-align:${c.stats_align}` : ""].filter(Boolean).join(";");
+  const w = style ? `<div style="${style}">${text}</div>` : text;
   return { text: w, text_size: Number(c?.stats_size) || 13, text_color: c?.stats_color || "var(--secondary-text-color)" };
 }
 
@@ -109,15 +110,36 @@ export function statsBlock(c) {
  *   wr_buttons_position: top | bottom     wr_period: -1h | -8h | -1d | -7d | -30d
  *   wr_beaufort: on | off                 wr_arrow: false hides the direction arrow
  */
+const CORNERS = ["top_left", "top_right", "bottom_left", "bottom_right"];
+
+/** Corner info with each reading in its chosen corner (or hidden). */
+export function cornerInfo(c, ids, unit) {
+  const items = {
+    speed: { label: "Speed", entity: ids.speed, unit: ` ${unit}`, precision: 1 },
+    direction: { label: "Direction", entity: ids.dir, input_unit: "degrees", output_unit: "letters" },
+    gust: ids.gust ? { label: "Gust", entity: ids.gust, unit: ` ${unit}`, precision: 1 } : null,
+  };
+  const place = { speed: c?.corner_speed || "top_left", direction: c?.corner_direction || "top_right", gust: c?.corner_gust || "bottom_left" };
+  const out = {};
+  for (const [k, item] of Object.entries(items)) {
+    const at = place[k];
+    if (!item || !CORNERS.includes(at) || out[at]) continue;
+    out[at] = { ...item, ...(c?.corner_label_size ? { label_text_size: Number(c.corner_label_size) } : {}), ...(c?.corner_value_size ? { value_text_size: Number(c.corner_value_size) } : {}), ...(c?.corner_color ? { color: c.corner_color } : {}) };
+  }
+  return out;
+}
+
 export function applyOverrides(card, c, ids, unit) {
   const set = (v) => v != null && v !== "" && v !== "preset";
   if (set(c.wr_bars)) {
     if (c.wr_bars === "hidden") card.hide_windspeed_bar = true;
     else { delete card.hide_windspeed_bar; card.windspeed_bar_location = c.wr_bars; }
   }
+  // Corner placement / style also re-builds a preset's corner info.
+  if (card.corner_info && !set(c.wr_corners) && (c.corner_speed || c.corner_direction || c.corner_gust || c.corner_label_size || c.corner_value_size || c.corner_color)) card.corner_info = cornerInfo(c, ids, unit);
   if (set(c.wr_corners)) {
     if (c.wr_corners === "off") delete card.corner_info;
-    else card.corner_info = WINDROSE_PRESETS.corners.build("", ids, unit).corner_info;
+    else card.corner_info = cornerInfo(c, ids, unit);
   }
   if (set(c.wr_stats)) {
     delete card.text_blocks;

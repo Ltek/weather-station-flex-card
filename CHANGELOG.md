@@ -1,5 +1,10 @@
 # Changelog
 
+## v2026.10.22.28
+
+- **Editor controls follow the design guide, everywhere:** on/off settings are checkboxes (not switches), choices are drop-downs (not radio lists), sizes and percentages are sliders with a bold value, and every color is the four-mode control (Not set / Theme color / Custom swatch / CSS). Sub-settings of a feature that's turned off are hidden (e.g. chart position while the chart is off, glow color while glow is off). Entity, device and icon pickers are unchanged.
+- **Wind panel:** chart legend on/off; size sliders for the compass / built-in rose and for the Wind Rose Card; statistics alignment (left, center, right); corner info placement for speed, direction and gust (any corner or hidden) with label and value size and text color.
+
 ## v2026.10.22.27
 
 - **Wind panel settings in groups** by what they change: View, Readings, Chart, Compass, Wind rose, and the Wind Rose Card's speed bars, corner info, statistics, buttons and advanced options, then Sensors.

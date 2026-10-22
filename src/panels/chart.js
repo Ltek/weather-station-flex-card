@@ -10,6 +10,7 @@ import {
   BarElement,
   Filler,
   Tooltip,
+  Legend,
 } from "chart.js";
 
 // Only controllers/elements/scales are registered globally. Plugins are passed
@@ -19,6 +20,8 @@ import {
 // which baseOptions() switches off for our charts.
 Chart.register(LineController, LineElement, PointElement, LinearScale, BarController, BarElement);
 export const INLINE_PLUGINS = [Filler, Tooltip];
+// For charts that show a legend (per chart, like the others).
+export const LEGEND_PLUGINS = [Filler, Tooltip, Legend];
 
 export { Chart };
 

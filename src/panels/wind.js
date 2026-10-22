@@ -2,7 +2,7 @@
 // the last 24h of the station's own direction + speed history, plus one merged
 // speed/gust chart underneath.
 import { LitElement, html, svg, css } from "lit";
-import { Chart, baseOptions, withAlpha, INLINE_PLUGINS } from "./chart.js";
+import { Chart, baseOptions, withAlpha, INLINE_PLUGINS, LEGEND_PLUGINS } from "./chart.js";
 import { panelStyles, seg, reading, fmt, head } from "./shared.js";
 import { cardinal } from "../card/metrics.js";
 import { pick, metricValue } from "../card/resolve.js";
@@ -85,11 +85,13 @@ class WsfcWind extends LitElement {
       if (ids.dir && ids.speed) {
         this._ensureRose(windroseCard(c, ids, unit));
         if (this._wrEl) this._wrEl.hass = this.hass;
-        main = this._wrErr ? html`<div class="note">${this._wrErr}</div>` : html`<div class="wr">${this._wrEl || ""}</div>`;
+        const sc = Math.max(30, Math.min(150, Number(c.wr_scale ?? 100)));
+        main = this._wrErr ? html`<div class="note">${this._wrErr}</div>` : html`<div class="wr" style=${sc !== 100 ? `width:${sc}%;margin:0 auto` : ""}>${this._wrEl || ""}</div>`;
       }
     }
     if (!main) {
-      const dial = html`<div class="dial">${view === "rose" ? this._roseSvg(unit) : this._compassSvg(sp?.value, unit, di?.value)}</div>`;
+      const ds = Math.max(50, Math.min(250, Number(c.dial_scale ?? 100))) / 100;
+      const dial = html`<div class="dial" style=${ds !== 1 ? `width:min(${Math.round(180 * ds)}px, ${Math.round(42 * ds)}%);` : ""}>${view === "rose" ? this._roseSvg(unit) : this._compassSvg(sp?.value, unit, di?.value)}</div>`;
       main = rp === "side"
         ? html`<div class="top">${dial}<div class="side">${readings}${legend}</div></div>`
         : html`<div class="top center">${dial}</div>${legend ? html`<div class="side">${legend}</div>` : ""}`;
@@ -227,13 +229,14 @@ class WsfcWind extends LitElement {
     const wind = cs.getPropertyValue("--wsfc-wind").trim() || "#42a5f5";
     const gust = cs.getPropertyValue("--wsfc-gust").trim() || "#ff9800";
     const opts = baseOptions(this, 24, this.hass?.locale?.language);
+    if (this.config?.chart_legend) opts.plugins.legend = { display: true, position: "top", align: "end", labels: { color: opts._text, boxWidth: 10, boxHeight: 10, font: { size: 11 } } };
     opts.scales.y = { min: 0, grid: { color: opts._grid }, ticks: { color: opts._text, callback: (v) => `${v} ${d.unit}`, maxTicksLimit: 4 } };
     const datasets = [
       { label: "Gust", data: d.gust, borderColor: gust, borderWidth: 1.25, order: 2 },
       { label: "Speed", data: d.speed, borderColor: wind, backgroundColor: withAlpha(wind, 0.18), fill: "origin", order: 1 },
     ];
     this._chart?.destroy();
-    this._chart = new Chart(canvas, { type: "line", data: { datasets }, options: opts, plugins: INLINE_PLUGINS });
+    this._chart = new Chart(canvas, { type: "line", data: { datasets }, options: opts, plugins: this.config?.chart_legend ? LEGEND_PLUGINS : INLINE_PLUGINS });
   }
 }
 
