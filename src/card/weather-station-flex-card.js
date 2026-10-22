@@ -10,6 +10,7 @@ import { chipStyles, tileStyles } from "../panels/shared.js";
 import { panelMeta, rowsOf, inBarOf, normalizePanels, layoutOf, opensPopup } from "./panels.js";
 import { watchForecast } from "./forecast.js";
 import { isUnsaved } from "./unsaved.js";
+import { setDetected } from "./detected.js";
 import "../../vendor/weather-forecast-card/src/components/animation/wfc-animation-provider";
 import "../panels/flex.js";
 import "../panels/graph.js";
@@ -212,7 +213,23 @@ class WeatherStationFlexCard extends LitElement {
     });
   }
 
+  // Report what Auto resolved to (for the editor's readouts).
+  _reportDetected() {
+    const grid = this.renderRoot?.querySelector(".grid");
+    const tile = grid?.querySelector("section.tile:not(.bare):not(.stack):not(.hero)") || grid?.querySelector("section.tile");
+    if (!grid || !tile) return;
+    const cs = getComputedStyle(grid);
+    const px = (v) => (v ? `${Math.round(parseFloat(v))}px` : "");
+    setDetected(this.preview ? "preview" : "dashboard", {
+      radius: px(getComputedStyle(tile).borderTopLeftRadius),
+      row: px(grid.style.getPropertyValue("--wsfc-row") || cs.getPropertyValue("--wsfc-row")),
+      gap: px(cs.rowGap),
+      theme: this.hass?.themes?.theme || "",
+    });
+  }
+
   _fit() {
+    queueMicrotask(() => this._reportDetected());
     const grid = this.renderRoot?.querySelector(".grid");
     const scroller = this.renderRoot?.querySelector(".scroller");
     if (!grid || !scroller) return;

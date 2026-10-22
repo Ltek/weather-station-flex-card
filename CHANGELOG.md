@@ -1,5 +1,9 @@
 # Changelog
 
+## v2026.10.22.31
+
+- **Appearance shows what Auto means:** under Corner radius, Row height and Gap, the editor shows the value Auto resolved to, e.g. "Auto: 12px (from the theme's card corner radius)" or "Auto: 96px (calculated to fit the screen)". When the dashboard's theme gives a different value than the editor preview (Home Assistant can use a different theme for each), both are shown. At Auto the slider sits on that value instead of at the left end.
+
 ## v2026.10.22.30
 
 - **Wind panel fits its height** ("Fit to the panel", on by default): the compass or rose shrinks so the readings, bars, statistics, buttons and chart all fit the panel's height. Before, a tall Wind panel stretched its rows, so the panels beside it (e.g. a half-height Sky Tracker and Daily forecast) got empty space at the bottom. In fit mode the chart is a fixed strip. Turn it off per panel with `fit: false`.

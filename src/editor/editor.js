@@ -20,6 +20,7 @@ import { METRICS, metricEntity } from "../card/metrics.js";
 import "./layout-map.js";
 import { renderFields, fieldStyles } from "./fields.js";
 import { setUnsaved } from "../card/unsaved.js";
+import { detected } from "../card/detected.js";
 import { metricSensor, entityValue, integrationOf } from "../card/resolve.js";
 import "./sources.js";
 import "./series-editor.js";
@@ -44,7 +45,7 @@ const APPEARANCE_GROUPS = [
   ["Panels", [
     { name: "panel_opacity", selector: { number: { min: 0, max: 1, step: 0.05, mode: "slider" } }, helper: "With a card background: panel opacity (0 = fully transparent, 1 = solid). Default 0.55." },
     { name: "panel_blur", selector: { number: { min: 0, max: 30, step: 1, mode: "slider", unit_of_measurement: "px" } }, helper: "With a card background: blur behind panels. Default 6." },
-    { name: "panel_radius", selector: { number: { min: 0, max: 40, step: 1, mode: "slider", unit_of_measurement: "px" } }, helper: "Corner radius (default: the theme's card radius)." },
+    { name: "panel_radius", selector: { number: { min: 0, max: 40, step: 1, mode: "slider", unit_of_measurement: "px" } }, helper: "Auto: your theme's card corner radius (shown above). Move the slider to set your own; × goes back to Auto." },
     { name: "panel_shadow", selector: { select: { options: [{ value: "none", label: "None" }, { value: "soft", label: "Soft" }, { value: "medium", label: "Medium" }, { value: "strong", label: "Strong" }] } }, default: "none" },
     { name: "panel_border_width", selector: { number: { min: 0, max: 6, step: 0.5, mode: "slider", unit_of_measurement: "px" } }, helper: "Border (default none)." },
     { name: "panel_border_color", selector: { text: {} }, helper: "Not set: the theme's divider color." },
@@ -229,8 +230,16 @@ class WeatherStationFlexCardEditor extends LitElement {
     this._renderedAt = Date.now();
   }
 
+  connectedCallback() {
+    super.connectedCallback();
+    // Redraw when the cards report what Auto resolved to.
+    this._onDetected ||= () => this._open === "general" && this.requestUpdate();
+    window.addEventListener("wsfc-detected", this._onDetected);
+  }
+
   disconnectedCallback() {
     super.disconnectedCallback();
+    window.removeEventListener("wsfc-detected", this._onDetected);
     clearTimeout(this._hassTimer);
     this._hassTimer = null;
     // Dialog closed (saved or cancelled): the next editor starts clean.
@@ -304,7 +313,21 @@ class WeatherStationFlexCardEditor extends LitElement {
       label: (f) => f.label || LABELS[f.name] || f.name,
       helper: (f) => f.helper,
       haForm: (d, sch, cb) => this._haForm(d, sch, cb),
+      auto: (f) => this._autoText(f),
     });
+  }
+
+  // What an Auto setting resolves to, from the preview card and the dashboard
+  // card (they can differ: the dashboard can have its own theme).
+  _autoText(f) {
+    const key = { panel_radius: "radius", row_height: "row", gap: "gap" }[f.name];
+    if (!key) return null;
+    const { preview, dashboard } = detected();
+    const here = preview?.[key], live = dashboard?.[key];
+    const src = key === "radius" ? " (from the theme's card corner radius)" : key === "row" && this._config.layout === "fullscreen" && this._config.fit_height !== false ? " (calculated to fit the screen)" : "";
+    if (here && live && here !== live) return `${here} in this preview, ${live} on the dashboard${src}`;
+    if (here || live) return `${here || live}${src}`;
+    return null;
   }
 
   _haForm(data, schema, onChange) {

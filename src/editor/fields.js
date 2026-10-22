@@ -48,7 +48,7 @@ const hex6 = (v) => (/^#[0-9a-fA-F]{6}$/.test(v || "") ? v : null);
  * object with the edited field set (undefined = cleared). `haForm(data, schema,
  * onChange)` draws the fields we don't.
  */
-export function renderFields({ data, schema, onChange, label, helper, haForm }) {
+export function renderFields({ data, schema, onChange, label, helper, haForm, auto }) {
   const out = [];
   let run = [];
   const flush = () => {
@@ -62,13 +62,13 @@ export function renderFields({ data, schema, onChange, label, helper, haForm }) 
     if (typeof f.when === "function" && !f.when(data)) continue;
     if (!nativeField(f)) { run.push(f); continue; }
     flush();
-    out.push(field(f, data[f.name], (v) => onChange({ ...data, [f.name]: v }), label(f), helper(f)));
+    out.push(field(f, data[f.name], (v) => onChange({ ...data, [f.name]: v }), label(f), helper(f), auto?.(f)));
   }
   flush();
   return out;
 }
 
-function field(f, value, set, lab, help) {
+function field(f, value, set, lab, help, autoText) {
   const s = f.selector || {};
   const id = `f-${f.name.replace(/\W/g, "_")}`;
   const hint = help ? html`<div class="fhelp">${help}</div>` : nothing;
@@ -101,14 +101,17 @@ function field(f, value, set, lab, help) {
     if (n.mode === "slider" || isPx(n)) {
       const min = n.min ?? 0, max = n.max ?? 100, step = n.step ?? 1;
       const shown = value ?? f.default;
-      const fmt = (v) => (v == null || v === "" ? "Auto" : `${v}${unit && unit !== "%" ? unit : unit}`);
+      // At Auto the thumb sits on the detected value, not on the minimum.
+      const autoNum = parseFloat(autoText);
+      const thumb = shown ?? (Number.isFinite(autoNum) ? Math.max(min, Math.min(max, autoNum)) : min);
+      const fmt = (v) => (v == null || v === "" ? "Auto" : `${v}${unit}`);
       return html`<div class="fld"><div class="frow nowrap"><label for=${id}>${lab}</label>
-        <input id=${id} type="range" class="frange" min=${min} max=${max} step=${step} .value=${String(shown ?? min)}
+        <input id=${id} type="range" class="frange" min=${min} max=${max} step=${step} .value=${String(thumb)}
           @input=${(e) => { const o = e.target.parentElement.querySelector(".fval"); if (o) o.textContent = fmt(e.target.value); }}
           @change=${(e) => set(Number(e.target.value))} />
         <span class="fval">${fmt(shown)}</span>
-        ${value != null && f.default === undefined ? html`<button class="freset" title="Back to default" @click=${() => set(undefined)}>×</button>` : nothing}
-      </div>${hint}</div>`;
+        ${value != null && f.default === undefined ? html`<button class="freset" title="Back to Auto" @click=${() => set(undefined)}>×</button>` : nothing}
+      </div>${autoText && shown == null ? html`<div class="fauto">Auto: ${autoText}</div>` : nothing}${hint}</div>`;
     }
     return html`<div class="fld"><div class="frow"><label for=${id}>${lab}</label>
       <input id=${id} type="number" class="ftext num" min=${n.min ?? nothing} max=${n.max ?? nothing} step=${n.step ?? "any"} .value=${value ?? ""}
@@ -166,6 +169,7 @@ export const fieldStyles = css`
   .fchk { display: inline-flex; align-items: center; gap: var(--ltek-sp-2, 8px); font-size: var(--ltek-fs-label, 14px); cursor: pointer; }
   .fchk input { accent-color: var(--ltek-c-accent); width: 16px; height: 16px; margin: 0; }
   .fmulti { display: flex; flex-wrap: wrap; gap: var(--ltek-sp-1, 4px) var(--ltek-sp-4, 12px); margin-top: 4px; }
+  .fauto { color: var(--ltek-c-accent); font-size: var(--ltek-fs-small, 12px); margin-top: 2px; }
   .fhelp { color: var(--ltek-c-muted); font-size: var(--ltek-fs-small, 12px); line-height: 1.35; margin-top: 2px; }
   .fcolor { display: flex; align-items: center; gap: var(--ltek-sp-2, 8px); flex-wrap: wrap; }
   .fcolor .sel.mode { flex: 0 0 auto; }
