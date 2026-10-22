@@ -73,7 +73,9 @@ function field(f, value, set, lab, help, autoText) {
   const id = `f-${f.name.replace(/\W/g, "_")}`;
   const hint = help ? html`<div class="fhelp">${help}</div>` : nothing;
   if (s.boolean) {
-    return html`<div class="fld"><label class="fchk"><input type="checkbox" .checked=${!!value} @change=${(e) => set(e.target.checked)} />${lab}</label>${hint}</div>`;
+    // invert: the box means the opposite of the stored value ("Disable shadow" stores tile_shadow: false).
+    const on = f.invert ? value === false : !!value;
+    return html`<div class="fld"><label class="fchk"><input type="checkbox" .checked=${on} @change=${(e) => set(f.invert ? !e.target.checked : e.target.checked)} />${lab}</label>${hint}</div>`;
   }
   if (s.select && !s.select.multiple) {
     const opts = (s.select.options || []).map((o) => (typeof o === "string" ? { value: o, label: o } : o));

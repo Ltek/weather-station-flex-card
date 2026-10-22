@@ -36,6 +36,7 @@ export function factsFields(defaults = ALL_FACTS, on = false) {
   // Form data already holds the default, so the checkbox state is d.show_facts.
   const when = (d) => !!d.show_facts;
   const weights = opt([["400", "Regular"], ["500", "Medium"], ["700", "Bold"]]);
+  // `sub`: shown as a collapsible "Sun & moon facts" sub-panel in the editor.
   return [
     { name: "show_facts", label: "Show sun & moon facts", selector: { boolean: {} }, default: on },
     { name: "facts", label: "Facts", when, selector: { select: { multiple: true, options: opt(FACTS) } }, default: defaults },
@@ -49,7 +50,7 @@ export function factsFields(defaults = ALL_FACTS, on = false) {
     { name: "fact_value_size", label: "Value size", when, selector: { number: { min: 8, max: 40, mode: "slider", unit_of_measurement: "px" } }, default: 13 },
     { name: "fact_value_weight", label: "Value weight", when, selector: { select: { options: weights } }, default: "400" },
     { name: "fact_value_color", label: "Value color", when, selector: { text: {} }, helper: "Not set: primary text." },
-  ];
+  ].map((f) => ({ ...f, sub: "Sun & moon facts" }));
 }
 
 /** Values for today at the Home Assistant location (exported for tests). */

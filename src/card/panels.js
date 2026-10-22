@@ -349,12 +349,12 @@ export const COMMON_SCHEMA = [
   { name: "span", selector: { number: { min: 1, max: 12, mode: "slider" } }, helper: "Width in twelfths of the card." },
   { name: "rows", selector: { number: { min: 0, max: 10, step: 0.5, mode: "slider" } }, helper: "Height in row units, in half steps (0 = fit content, 0.5 = half height)." },
   { name: "display", selector: { select: { options: opt([["grid", "In the grid"], ["tile_popup", "In the grid — tap it to open larger"], ["popup", "Pop-up only (from its panel button)"]]) } } },
-  { name: "in_bar", selector: { boolean: {} }, helper: "Adds a button for this panel to the button menu, to show or hide it (or open its pop-up). Off: no button, and the panel is always shown (unless Shown is off)." },
-  { name: "tile_background", selector: { select: { options: opt([["default", "Default"], ["translucent", "See-through (uses Panel opacity)"], ["solid", "Solid"], ["none", "None"]]) } }, default: "default", helper: "This panel's background. Default: see-through with the animated background, the theme's otherwise; the button menu has none." },
-  { name: "tile_shadow", label: "Shadow", selector: { boolean: {} }, default: true, helper: "Off: no shadow on this panel (shadow is set under Appearance → Panels)." },
-  { name: "tile_border", label: "Border", selector: { boolean: {} }, default: true, helper: "Off: no border on this panel." },
-  { name: "tile_glow", label: "Glow", selector: { boolean: {} }, default: true, helper: "Off: no glow on this panel." },
-  { name: "show", selector: { boolean: {} }, default: true, helper: "Visible when the dashboard loads." },
+  { name: "in_bar", selector: { boolean: {} }, helper: "Adds a button for this panel to the button menu, to show or hide it (or open its pop-up). Off: no button, and the panel is always shown (unless hidden with the eye icon in the panel list)." },
+  // Turn this panel's Appearance defaults off (shown as their own group).
+  { name: "tile_background", section: "Default Overrides", label: "Panel background", selector: { select: { options: opt([["default", "Default"], ["translucent", "See-through (uses Panel opacity)"], ["solid", "Solid"], ["none", "None"]]) } }, default: "default" },
+  { name: "tile_shadow", section: "Default Overrides", label: "Disable shadow", invert: true, selector: { boolean: {} }, default: true },
+  { name: "tile_border", section: "Default Overrides", label: "Disable border", invert: true, selector: { boolean: {} }, default: true },
+  { name: "tile_glow", section: "Default Overrides", label: "Disable glow", invert: true, selector: { boolean: {} }, default: true },
 ];
 
 /** Layout fields for a panel inside a stack (it has no grid position). */
@@ -363,9 +363,9 @@ export const STACK_CHILD_SCHEMA = [
   { name: "grow", selector: { number: { min: 0, max: 12, step: 0.5, mode: "box" } }, helper: "Horizontal: relative width (default 1). Vertical: 1 = share leftover height." },
   { name: "min_width", selector: { number: { min: 80, max: 800, mode: "box", unit_of_measurement: "px" } }, helper: "Horizontal: narrowest this panel gets before wrapping." },
   { name: "rows", selector: { number: { min: 0, max: 10, step: 0.5, mode: "slider" } }, helper: "Vertical: minimum height in row units (half steps allowed)." },
-  { name: "tile_shadow", label: "Shadow", selector: { boolean: {} }, default: true },
-  { name: "tile_border", label: "Border", selector: { boolean: {} }, default: true },
-  { name: "tile_glow", label: "Glow", selector: { boolean: {} }, default: true },
+  { name: "tile_shadow", section: "Default Overrides", label: "Disable shadow", invert: true, selector: { boolean: {} }, default: true },
+  { name: "tile_border", section: "Default Overrides", label: "Disable border", invert: true, selector: { boolean: {} }, default: true },
+  { name: "tile_glow", section: "Default Overrides", label: "Disable glow", invert: true, selector: { boolean: {} }, default: true },
 ];
 
 export const panelMeta = (p) => PANEL_TYPES[p?.type] || null;

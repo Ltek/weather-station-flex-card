@@ -1,5 +1,10 @@
 # Changelog
 
+## v2026.10.22.36
+
+- **Editor, panel settings:** a **Default Overrides** group (Panel background, Disable shadow, Disable border, Disable glow) replaces the Shadow / Border / Glow checkboxes in Layout. **Sun & moon facts** is its own collapsible sub-panel in the Hero, Sky Tracker and Astronomy settings. The **Shown** checkbox is gone; the eye icon in the panel list does the same.
+- **Weather Flex editors (Chips, Hero, forecasts, Sky Tracker):** every color is now the four-mode control (Not set / Theme color / Custom / CSS) instead of a bare swatch. Sky Bar day and night colors stay swatches, because they are blended. A theme or CSS color used as a section background keeps its opacity.
+
 ## v2026.10.22.35
 
 - **Hero settings in one place:** the separate top-level Hero section is gone. Everything for the hero — Set scale to Auto, Auto scaling, sun & moon facts and its Weather Flex sections (header, metrics, clock & date …) — is in the Hero's row under **Panels**, like every other panel.

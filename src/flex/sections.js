@@ -1062,7 +1062,7 @@ import { actionHandler as iq } from "../../vendor/weather-forecast-card/src/hass
     const color = s.background_color || "";
     let bg;
     if (color) {
-      bg = wfcHexToRgba(color, alpha) || color;
+      bg = wfcHexToRgba(color, alpha) || `color-mix(in srgb, ${color} ${fillPct}%, transparent)`;
     } else {
       // Theme card color at the requested fill. color-mix keeps the theme
       // variable (works in all evergreen browsers HA targets).
@@ -4519,6 +4519,34 @@ import { actionHandler as iq } from "../../vendor/weather-forecast-card/src/hass
   // the theme/default by firing onChange with an empty value (callers read
   // e.target.value, so a synthetic event with value:"" is enough).
   edProto._wfcColorField = function (label, value, onChange) {
+    // Weather Station: the four-mode color control (design system §3) —
+    // Not set / Theme color / Custom swatch / CSS. Sky Bar day and night
+    // colors are blended in JS, so they stay hex swatches (the one exception).
+    if (/^(Day|Night) color$/.test(label)) return this._wfcColorFieldHex(label, value, onChange);
+    const THEME = [["var(--primary-color)", "Primary"], ["var(--accent-color)", "Accent"], ["var(--primary-text-color)", "Primary text"], ["var(--secondary-text-color)", "Secondary text"], ["var(--disabled-text-color)", "Disabled text"], ["var(--state-active-color)", "State active"], ["var(--error-color)", "Error"], ["var(--warning-color)", "Warning"], ["var(--success-color)", "Success"], ["var(--info-color)", "Info"]];
+    const v = value == null ? "" : String(value);
+    const mode = v === "" ? "default" : /^#[0-9a-fA-F]{3,8}$/.test(v) ? "custom" : /^var\(/.test(v) && THEME.some(([x]) => x === v) ? "theme" : "css";
+    const hex6 = /^#[0-9a-fA-F]{6}$/.test(v) ? v : "#4fc3f7";
+    const set = (x) => onChange({ target: { value: x } });
+    const switchMode = (m) => set(m === "default" ? "" : m === "theme" ? (THEME.some(([x]) => x === v) ? v : THEME[0][0]) : m === "custom" ? hex6 : v || hex6);
+    return eq`
+      <div class="wfc-color-field wsfc-color4">
+        <span class="wfc-field-label wfc-color-label">${label}</span>
+        <select class="wfc-native-select" style="flex:0 0 auto;width:auto" @change=${(e) => switchMode(e.target.value)}>
+          ${[["default", "Not set"], ["theme", "Theme color"], ["custom", "Custom"], ["css", "CSS"]].map(([m, l]) => eq`<option value=${m} ?selected=${m === mode}>${l}</option>`)}
+        </select>
+        ${mode === "theme"
+          ? eq`<select class="wfc-native-select" style="flex:1 1 120px;width:auto" @change=${(e) => set(e.target.value)}>${THEME.map(([x, l]) => eq`<option value=${x} ?selected=${x === v}>${l}</option>`)}</select>`
+          : mode === "custom"
+            ? eq`<input type="color" class="wfc-color-input" .value=${hex6} @change=${(e) => set(e.target.value)} />`
+            : mode === "css"
+              ? eq`<input type="text" class="wfc-native-select" style="flex:1 1 120px;width:auto" .value=${v} @change=${(e) => set(e.target.value)} />`
+              : eY}
+        ${mode !== "default" ? eq`<span style="width:16px;height:16px;border-radius:50%;flex:0 0 auto;border:1px solid var(--divider-color);background:${v}"></span>` : eY}
+      </div>
+    `;
+  };
+  edProto._wfcColorFieldHex = function (label, value, onChange) {
     const val = value || "#888888";
     const isSet = !!value;
     // One horizontal row: label on the left, then swatch, readout and reset.

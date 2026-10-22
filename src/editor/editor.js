@@ -173,7 +173,7 @@ export function unstack(panels, s, j) {
 
 function panelDefaults(p) {
   const m = panelMeta(p);
-  return { span: m.span, rows: m.rows, display: "grid", in_bar: inBarOf({ ...p, in_bar: undefined }), show: true, show_title: TITLE_WHEN_SET.has(p.type) ? !!p.title : true };
+  return { span: m.span, rows: m.rows, display: "grid", in_bar: inBarOf({ ...p, in_bar: undefined }), show_title: TITLE_WHEN_SET.has(p.type) ? !!p.title : true };
 }
 
 function panelName(p) {
@@ -613,6 +613,31 @@ class WeatherStationFlexCardEditor extends LitElement {
     </div>`;
   }
 
+  // A panel's fields under a heading, split into their `section` headings
+  // and collapsible `sub` panels (e.g. "Default Overrides", "Sun & moon facts").
+  _sections(p, fields, defs, update, title) {
+    const parts = [];
+    for (const f of fields) {
+      const k = f.sub ? `sub:${f.sub}` : f.section ? `sec:${f.section}` : `sec:${title}`;
+      let last = parts[parts.length - 1];
+      if (!last || last.k !== k) parts.push((last = { k, f: [] }));
+      last.f.push(f);
+    }
+    const form = (f) => this._form(formData(p, f, defs), f, (v) => update({ ...applyForm(p, f, v, defs), type: p.type }));
+    return parts.map(({ k, f }) => {
+      const name = k.slice(4);
+      if (k.startsWith("sub:")) {
+        const id = `${p.type}:${name}`;
+        const open = (this._subOpen ||= new Set()).has(id);
+        return html`<details class="sub psub" ?open=${open} @toggle=${(e) => { e.target.open ? this._subOpen.add(id) : this._subOpen.delete(id); this.requestUpdate(); }}>
+          <summary><ha-icon icon="mdi:weather-sunset"></ha-icon><span>${name}</span></summary>
+          ${open ? html`<div class="psub-body">${form(f)}</div>` : nothing}
+        </details>`;
+      }
+      return html`<div class="grp">${name}</div>${form(f)}`;
+    });
+  }
+
   _panelBody(p, key, update, nested) {
     const m = panelMeta(p);
     const defs = nested ? { show_title: TITLE_WHEN_SET.has(p.type) ? !!p.title : true } : panelDefaults(p);
@@ -635,14 +660,11 @@ class WeatherStationFlexCardEditor extends LitElement {
         ? html`<div class="grp first">Series</div>
             <wsfc-series-editor .hass=${this.hass} .panel=${p} .station=${this._station} @panel-changed=${(e) => update(e.detail.panel)}></wsfc-series-editor>`
         : nothing}
-      <div class="grp">Layout</div>
-      ${this._form(formData(p, common, defs), common, (v) => update({ type: p.type, ...applyForm(p, common, v, defs) }))}
+      ${this._sections(p, common, defs, update, "Layout")}
       ${m.groups
-        ? m.groups.map(([title, f]) => html`<div class="grp">${title}</div>
-            ${this._form(formData(p, f), f, (v) => update({ ...applyForm(p, f, v), type: p.type }))}`)
+        ? m.groups.map(([title, f]) => this._sections(p, f, {}, update, title))
         : m.schema.length
-          ? html`<div class="grp">${m.label} options</div>
-              ${this._form(formData(p, m.schema), m.schema, (v) => update({ type: p.type, ...applyForm(p, m.schema, v) }))}`
+          ? this._sections(p, m.schema, {}, update, `${m.label} options`)
           : nothing}
       ${m.flex
         ? html`${p.type === "sky_tracker" ? html`<div class="grp">Arc & sky details</div>` : nothing}
@@ -739,6 +761,8 @@ class WeatherStationFlexCardEditor extends LitElement {
     details.sub > summary ha-icon { --mdc-icon-size: var(--ltek-icon-sm); }
     details.sub > summary .cnt { margin-left: auto; font-size: var(--ltek-fs-small); font-weight: var(--ltek-fw-normal); color: var(--ltek-c-muted); }
     details.sub > :not(summary) { margin: 0 var(--ltek-sp-4) var(--ltek-sp-4); }
+    /* A panel's own sub-panels (e.g. Sun & moon facts). */
+    details.psub { margin-top: var(--ltek-sp-3); }
     .map .h { font-size: var(--ltek-fs-tiny); text-transform: uppercase; letter-spacing: 0.04em; color: var(--ltek-c-muted); }
     .map .i { color: var(--ltek-c-accent); white-space: nowrap; }
     .map { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; gap: 2px var(--ltek-sp-4); font-size: var(--ltek-fs-small); align-items: baseline; }
