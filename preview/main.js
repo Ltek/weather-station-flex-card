@@ -227,6 +227,8 @@ const config = () => ({
   metric_sources: { sources: [{ ref: `device:${DEVICE_ID}` }, { ref: "weather.openweathermap" }] },
   layout: params.get("layout") || "auto",
   remember: false,
+  ...(params.get("style") ? { panel_radius: 10, panel_shadow: "medium", panel_border_width: 1, panel_border_color: "#4fc3f7", panel_glow: true, panel_glow_size: 8 } : {}),
+  ...(params.get("img") ? { background: "image", background_image_url: params.get("img") } : {}),
   ...(params.get("bg") ? { background: "animated", panel_opacity: Number(params.get("op") || 0.55) } : {}),
   ...(params.get("panels") === "stats" ? { panels: [
     { type: "statistics", preset: "temps", span: 6, rows: 3, colors: { temperature: "#00ff00", dew_point: "#ff00ff" } },

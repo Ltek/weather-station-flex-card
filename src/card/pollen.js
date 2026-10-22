@@ -186,6 +186,7 @@ export function pollenModel(config, hass, now = new Date()) {
     rows,
     total: all.length,
     outOfSeason: all.length > 0 && !anyIn,
+    allNone: all.length > 0 && all.every(none),
     strip,
     month,
     entities: [...ids, ...Object.values(summary)],

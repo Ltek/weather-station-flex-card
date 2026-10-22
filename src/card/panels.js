@@ -172,14 +172,18 @@ export const PANEL_TYPES = {
   pollen: {
     tag: "wsfc-panel-pollen", label: "Pollen", icon: "mdi:flower-pollen", span: 4, rows: 0,
     // Out of season: no tile in the grid (its button still opens it).
-    hideWhen: (p, hass) => p.hide_when_off_season !== false && pollenModel(p, hass).outOfSeason,
+    hideWhen: (p, hass) => {
+      const m = pollenModel(p, hass);
+      return (p.hide_when_off_season === true && m.outOfSeason) || (p.hide_when_none === true && m.allNone);
+    },
     schema: [
       { name: "device", selector: { device: { integration: "pollenlevels" } }, helper: "Pollen Levels location (default: the first one)." },
       { name: "view", selector: { select: { options: opt([["plants", "Species (oak, juniper, ragweed …)"], ["types", "Types (tree, grass, weed)"]]) } }, default: "plants" },
       { name: "species", selector: { text: { multiple: true } }, helper: "Species to show, in order, by Google code or name (e.g. JUNIPER, OAK, GRAMINALES). Blank shows the busiest." },
       { name: "max_rows", selector: { number: { min: 0, max: 20, mode: "box" } }, default: 6, helper: "Rows when no species are listed (0 = all)." },
       { name: "hide_off_season", selector: { boolean: {} }, default: true, helper: "Hide species that are out of season." },
-      { name: "hide_when_off_season", selector: { boolean: {} }, default: true, helper: "Hide the whole panel when no species is in season (its panel button still opens it)." },
+      { name: "hide_when_off_season", selector: { boolean: {} }, default: false, helper: "Hide the whole panel when no species is in season (its panel button still opens it)." },
+      { name: "hide_when_none", selector: { boolean: {} }, default: false, helper: "Hide the whole panel when every species is at None today (its panel button still opens it)." },
       { name: "show_tomorrow", selector: { boolean: {} }, default: true },
       { name: "show_season", selector: { boolean: {} }, default: true, helper: "12-month strip: how many of the shown species are in season each month." },
       { name: "hide_none", selector: { boolean: {} }, default: true, helper: "Hide species with nothing in the air today (level None)." },
@@ -242,7 +246,7 @@ export const COMMON_SCHEMA = [
   { name: "title", selector: { text: {} } },
   { name: "icon", selector: { icon: {} } },
   { name: "span", selector: { number: { min: 1, max: 12, mode: "slider" } }, helper: "Width in twelfths of the card." },
-  { name: "rows", selector: { number: { min: 0, max: 10, mode: "slider" } }, helper: "Height in row units (0 = fit content)." },
+  { name: "rows", selector: { number: { min: 0, max: 10, step: 0.5, mode: "slider" } }, helper: "Height in row units, in half steps (0 = fit content, 0.5 = half height)." },
   { name: "display", selector: { select: { options: opt([["grid", "In the grid"], ["tile_popup", "In the grid — tap it to open larger"], ["popup", "Pop-up only (from its panel button)"]]) } } },
   { name: "in_bar", selector: { boolean: {} }, helper: "Adds a button for this panel to the button menu, to show or hide it (or open its pop-up). Off: no button, and the panel is always shown (unless Shown is off)." },
   { name: "tile_background", selector: { select: { options: opt([["default", "Default"], ["translucent", "See-through (uses Panel opacity)"], ["solid", "Solid"], ["none", "None"]]) } }, default: "default", helper: "This panel's background. Default: see-through with the animated background, the theme's otherwise; the button menu has none." },
@@ -255,7 +259,7 @@ export const STACK_CHILD_SCHEMA = [
   { name: "icon", selector: { icon: {} } },
   { name: "grow", selector: { number: { min: 0, max: 12, step: 0.5, mode: "box" } }, helper: "Horizontal: relative width (default 1). Vertical: 1 = share leftover height." },
   { name: "min_width", selector: { number: { min: 80, max: 800, mode: "box", unit_of_measurement: "px" } }, helper: "Horizontal: narrowest this panel gets before wrapping." },
-  { name: "rows", selector: { number: { min: 0, max: 10, mode: "slider" } }, helper: "Vertical: minimum height in row units." },
+  { name: "rows", selector: { number: { min: 0, max: 10, step: 0.5, mode: "slider" } }, helper: "Vertical: minimum height in row units (half steps allowed)." },
 ];
 
 export const panelMeta = (p) => PANEL_TYPES[p?.type] || null;

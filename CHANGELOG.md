@@ -1,5 +1,13 @@
 # Changelog
 
+## v2026.10.22.19
+
+- **Half-height panels:** panel height now goes in half steps (0.5, 1, 1.5 …), in the panel's Height slider and the layout map (drag or Shift+↑/↓). Two half-height panels stacked fill exactly one row, e.g. Pollen above Air quality next to a one-row panel.
+- **Pollen:** new **Hide the panel when all are None** (`hide_when_none`, off by default). **Hide the panel out of season** is now off by default too (set `hide_when_off_season: true` for the old behaviour).
+- **General is now Appearance**, in groups: Card, Background, Panels, Layout & behaviour.
+- **Image background:** Background → Image, then upload a PNG/JPG/WEBP (or pick from your media) or give a URL. Fill / Fit / Tile and a Darken slider. Panels turn see-through over it, like the animated background.
+- **Panel style** for all panels: corner radius, shadow (soft / medium / strong), border width and color, and a glow with its own color and size.
+
 ## v2026.10.21.18
 
 - **Pollen:** "Nothing in the air today" was shown twice: in the header line and again as a note when every row was hidden. The note is gone; the header line says it once. New options: `show_nothing: false` hides that text, and `nothing_text` replaces it (e.g. "All clear").

@@ -51,7 +51,8 @@ class WsfcLayoutMap extends LitElement {
     const sz = this._size?.index === i ? this._size : null;
     const span = sz ? sz.span : spanOf(p);
     const rows = sz ? sz.rows : rowsOf(p);
-    const style = `grid-column: span ${span}; grid-row: span ${Math.max(1, rows)};`;
+    // Half-row tracks: a 1-row panel spans 2, a half-height panel 1.
+    const style = `grid-column: span ${span}; grid-row: span ${rows ? Math.max(1, Math.round(rows * 2)) : 2};`;
     const cls = ["blk", p.show === false ? "hidden" : "", this._drag?.index === i ? "dragging" : "", sz ? "sizing" : "", p.type].join(" ");
     return html`<div class=${cls} style=${style} data-i=${i} tabindex="0" role="button"
         aria-label=${`${nameOf(p)}, width ${span} of 12, height ${rows || "auto"}. Arrow keys move; Shift+arrows resize.`}
@@ -141,8 +142,9 @@ class WsfcLayoutMap extends LitElement {
       const span = axis === "y" ? s0 : Math.max(1, Math.min(12, s0 + Math.round((ev.clientX - x0) / colW)));
       // Rows: 0 means "fit content"; shown as one row in the map.
       const base = r0 || 1;
-      let rows = axis === "x" ? r0 : Math.max(0, Math.min(MAX_ROWS, base + Math.round((ev.clientY - y0) / (MAP_ROW + MAP_GAP))));
-      if (axis !== "x" && r0 === 0 && rows === 1 && Math.abs(ev.clientY - y0) < (MAP_ROW + MAP_GAP) / 2) rows = 0;
+      // Half-row steps.
+      let rows = axis === "x" ? r0 : Math.max(0.5, Math.min(MAX_ROWS, base + Math.round((2 * (ev.clientY - y0)) / (MAP_ROW + MAP_GAP)) / 2));
+      if (axis !== "x" && r0 === 0 && rows === 1 && Math.abs(ev.clientY - y0) < (MAP_ROW + MAP_GAP) / 4) rows = 0;
       if (span !== this._size.span || rows !== this._size.rows) this._size = { index: i, span, rows };
     };
     const up = () => {
@@ -178,7 +180,7 @@ class WsfcLayoutMap extends LitElement {
       const d = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[e.key];
       if (!d) return;
       e.preventDefault();
-      this._commitSize(i, Math.max(1, Math.min(12, spanOf(p) + d[0])), Math.max(0, Math.min(MAX_ROWS, rowsOf(p) + d[1])));
+      this._commitSize(i, Math.max(1, Math.min(12, spanOf(p) + d[0])), Math.max(0, Math.min(MAX_ROWS, rowsOf(p) + d[1] / 2)));
     } else if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
       e.preventDefault();
       const to = at + (e.key === "ArrowLeft" ? -1 : 1);
@@ -199,7 +201,7 @@ class WsfcLayoutMap extends LitElement {
     .grid {
       display: grid;
       grid-template-columns: repeat(12, minmax(0, 1fr));
-      grid-auto-rows: var(--row);
+      grid-auto-rows: calc((var(--row) - var(--gap)) / 2);
       gap: var(--gap);
       padding: 6px;
       border-radius: 10px;

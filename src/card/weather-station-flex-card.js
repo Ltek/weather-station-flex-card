@@ -29,6 +29,24 @@ import "../editor/editor.js";
 const NARROW_PX = 720;
 const MEDIUM_PX = 1100;
 
+/** CSS variables for the Appearance → Panels settings (only those that are set). */
+export function panelStyleVars(c) {
+  const out = [];
+  if (c.panel_radius != null) out.push(`--wsfc-radius:${Number(c.panel_radius)}px`);
+  const shadows = { soft: "0 2px 6px rgba(0,0,0,.25)", medium: "0 4px 14px rgba(0,0,0,.35)", strong: "0 8px 28px rgba(0,0,0,.5)" };
+  const sh = [];
+  if (shadows[c.panel_shadow]) sh.push(shadows[c.panel_shadow]);
+  if (c.panel_glow) {
+    const col = c.panel_glow_color || c.panel_border_color || "var(--primary-color)";
+    sh.push(`0 0 ${Number(c.panel_glow_size ?? 10)}px ${col}`);
+  }
+  if (sh.length) out.push(`--wsfc-tile-shadow:${sh.join(",")}`);
+  if (c.panel_border_width != null || c.panel_border_color) {
+    out.push(`--wsfc-tile-border:${Number(c.panel_border_width ?? 1)}px solid ${c.panel_border_color || "var(--divider-color, rgba(127,127,127,.3))"}`);
+  }
+  return out;
+}
+
 class WeatherStationFlexCard extends LitElement {
   static properties = {
     hass: { attribute: false },
@@ -213,11 +231,12 @@ class WeatherStationFlexCard extends LitElement {
       c.gap != null ? `--wsfc-gap:${c.gap}px` : "",
       bg ? `--wsfc-panel-opacity:${c.panel_opacity ?? 0.55}` : "",
       bg ? `--wsfc-panel-blur:${c.panel_blur ?? 6}px` : "",
+      ...panelStyleVars(c),
     ].join(";");
     const barInHeading = c.panels.some((p) => p.type === "heading" && p.show_bar);
     return html`
       <ha-card class=${`wsfc ${full ? "full" : ""} ${this._layoutSize} ${bg ? "animated" : ""} ${lite ? "lite" : ""}`} style=${style}>
-        ${bg && !lite ? this._renderBackground() : nothing}
+        ${c.background === "image" ? this._renderImage() : bg && !lite ? this._renderBackground() : nothing}
         ${c.title ? this._renderTitle() : nothing}
         ${c.panel_bar === false || barInHeading ? nothing : html`<div class="topbar">${this._renderBar()}</div>`}
         <div class="scroller"><div class="grid">${this._renderPanels()}</div></div>
@@ -234,9 +253,48 @@ class WeatherStationFlexCard extends LitElement {
     return !!(this.preview || this.editMode || /[?&]edit=1(&|$)/.test(globalThis.location?.search || ""));
   }
 
-  // Card-wide animated background (the hero's weather animation, behind every panel).
+  // True for any card-wide background (animated weather or an image): panels
+  // turn see-through and the hero stops drawing its own background.
   get _animatedBg() {
-    return this._config?.background === "animated";
+    const b = this._config?.background;
+    return b === "animated" || (b === "image" && !!this._bgSource());
+  }
+
+  // Background image source: a typed URL wins, else the uploaded / media-browser
+  // image (a media-source id or an /api/image/serve URL).
+  _bgSource() {
+    const c = this._config || {};
+    if (c.background_image_url) return String(c.background_image_url);
+    const m = c.background_image;
+    return (typeof m === "object" ? m?.media_content_id : m) || "";
+  }
+
+  // Custom background image, with an optional dim layer.
+  _renderImage() {
+    const c = this._config;
+    let src = this._bgSource();
+    if (!src) return nothing;
+    if (src.startsWith("media-source://")) {
+      // Resolve once per id; resolved URLs are signed for 24 h.
+      const hit = this._bgResolved;
+      if (hit?.id === src && Date.now() - hit.at < 23 * 3600e3) src = hit.url;
+      else {
+        if (this._bgPending !== src) {
+          this._bgPending = src;
+          const id = src;
+          this.hass.callWS({ type: "media_source/resolve_media", media_content_id: id })
+            .then((r) => { this._bgResolved = { id, url: r.url, at: Date.now() }; this.requestUpdate(); })
+            .catch(() => {})
+            .finally(() => { if (this._bgPending === id) this._bgPending = null; });
+        }
+        return nothing;
+      }
+    }
+    if (src.startsWith("/") && this.hass?.hassUrl) src = this.hass.hassUrl(src);
+    const url = src.replace(/["\\()]/g, (ch) => encodeURIComponent(ch));
+    const fit = c.background_image_fit || "cover";
+    const dim = Number(c.background_dim ?? 0.25);
+    return html`<div class="bg bgimg" style="background-image:url(&quot;${url}&quot;);background-size:${fit === "tile" ? "auto" : fit};background-repeat:${fit === "tile" ? "repeat" : "no-repeat"};--dim:${dim}"></div>`;
   }
 
   _renderBackground() {
@@ -253,7 +311,6 @@ class WeatherStationFlexCard extends LitElement {
     ></wsfc-animation-provider>`;
   }
 
-  // Rain/snow intensity and wind drift come from the current hourly forecast.
   _watchHourly() {
     const eid = this._config.entity;
     if (this._hourlyFor === eid) return;
@@ -348,7 +405,9 @@ class WeatherStationFlexCard extends LitElement {
       const span = this._focus != null ? 12 : lay.span;
       const rows = this._focus != null ? Math.max(rowsOf(p), 5) : lay.rows;
       // Tracks are content-sized; a panel spanning N rows gets the height of N row units.
-      const style = `grid-column: span ${span};${rows ? `grid-row: span ${rows};min-height:calc(${rows} * var(--wsfc-row) + ${rows - 1} * var(--wsfc-gap));` : ""}`;
+      // Grid tracks are half a row unit, so heights can be 0.5, 1, 1.5 …; a
+      // half row is (row − gap) / 2, so two half panels plus their gap fill one row.
+      const style = `grid-column: span ${span};grid-row: span ${rows ? Math.max(1, Math.round(rows * 2)) : 2};${rows ? `min-height:calc(${rows} * var(--wsfc-row) + ${rows - 1} * var(--wsfc-gap));` : ""}`;
       const bare = meta.bare || p.type === "hero";
       const tapToOpen = p.display === "tile_popup";
       const expandable = !bare && !tapToOpen && !["metric", "stack"].includes(p.type) && size !== "narrow";
@@ -447,6 +506,8 @@ class WeatherStationFlexCard extends LitElement {
     ha-card .tile.bg-solid, ha-card .tile.bg-none { backdrop-filter: none; -webkit-backdrop-filter: none; }
     ha-card.animated .dialog { --wsfc-tile-bg: var(--ha-card-background, var(--card-background-color, #1c1c1c)); }
     .bg { z-index: 0; border-radius: inherit; }
+    .bgimg { position: absolute; inset: 0; background-position: center; pointer-events: none; }
+    .bgimg::after { content: ""; position: absolute; inset: 0; background: rgba(0, 0, 0, var(--dim, 0.25)); border-radius: inherit; }
 
     /* "Tap to open larger": the tile is a live preview; one tap opens the pop-up. */
     .tile.tap { cursor: pointer; }

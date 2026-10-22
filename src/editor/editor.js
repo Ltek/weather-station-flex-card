@@ -25,22 +25,43 @@ import "./series-editor.js";
 const MAP_KEYS = ["temperature", "apparent_temperature", "dew_point", "humidity", "pressure", "wind_speed", "wind_gust_speed", "wind_bearing", "uv_index", "solar_radiation", "illuminance", "precipitation"];
 const MAP_LABELS = { wind_bearing: "Wind direction", precipitation: "Rain rate" };
 
-const GENERAL_SCHEMA = [
-  { name: "title", selector: { text: {} }, helper: "Optional title row above the panels." },
-  { name: "subtitle", selector: { text: {} } },
-  { name: "icon", selector: { icon: {} } },
-  { name: "layout", selector: { select: { options: [{ value: "auto", label: "Size to content" }, { value: "fullscreen", label: "Full screen (fills the view below the header)" }] } } },
-  { name: "fit_height", selector: { boolean: {} }, default: true, helper: "Full screen: panels with a height share the screen height (row height is calculated)." },
-  { name: "layout_size", selector: { select: { options: [{ value: "auto", label: "Automatic (from the card's width)" }, { value: "wide", label: "Wide — desktop layout" }, { value: "medium", label: "Medium — tablet layout" }, { value: "narrow", label: "Narrow — phone layout (stacked)" }] } }, helper: "In a Sections view the card is only as wide as its section; widen the section or use a Panel view for the desktop layout." },
-  { name: "background", selector: { select: { options: [{ value: "none", label: "None (theme)" }, { value: "animated", label: "Animated weather — the hero's animation behind the whole card" }] } }, helper: "With the animated background, panels become semi-transparent and the hero stops drawing its own." },
-  { name: "panel_opacity", selector: { number: { min: 0, max: 1, step: 0.05, mode: "slider" } }, helper: "Animated background: panel opacity (0 = fully transparent, 1 = solid). Default 0.55." },
-  { name: "panel_blur", selector: { number: { min: 0, max: 30, step: 1, mode: "slider", unit_of_measurement: "px" } }, helper: "Animated background: blur behind panels. Default 6." },
-  { name: "lite_editing", selector: { boolean: {} }, default: true, helper: "While the dashboard or this card is being edited: no animated background or blur, and the radar and Windy maps show a placeholder. Keeps the editor responsive." },
-  { name: "panel_bar", selector: { boolean: {} }, default: true, helper: "Panel buttons that show/hide panels or open pop-ups." },
-  { name: "remember", selector: { boolean: {} }, default: true, helper: "Remember which panels were toggled, per browser." },
-  { name: "row_height", selector: { number: { min: 40, max: 300, mode: "box", unit_of_measurement: "px" } }, helper: "Height of one row unit (default 110)." },
-  { name: "gap", selector: { number: { min: 0, max: 32, mode: "box", unit_of_measurement: "px" } }, helper: "Space between panels (default 12)." },
+// Appearance section, in groups. GENERAL_SCHEMA is all of them (for reading and writing).
+const APPEARANCE_GROUPS = [
+  ["Card", [
+    { name: "title", selector: { text: {} }, helper: "Optional title row above the panels." },
+    { name: "subtitle", selector: { text: {} } },
+    { name: "icon", selector: { icon: {} } },
+  ]],
+  ["Background", [
+    { name: "background", selector: { select: { options: [{ value: "none", label: "None (theme)" }, { value: "animated", label: "Animated weather — the hero's animation behind the whole card" }, { value: "image", label: "Image — upload one or use a URL" }] } }, helper: "With an animated or image background, panels become see-through and the hero stops drawing its own." },
+    { name: "background_image", selector: { media: { accept: ["image/*"], image_upload: true } }, helper: "Image background: upload a PNG, JPG, WEBP… or pick one from your media." },
+    { name: "background_image_url", selector: { text: { type: "url" } }, helper: "Image background: or an image URL (wins over the upload), e.g. /local/images/sky.jpg." },
+    { name: "background_image_fit", selector: { select: { options: [{ value: "cover", label: "Fill (crop to fit)" }, { value: "contain", label: "Fit (whole image)" }, { value: "tile", label: "Tile" }] } }, default: "cover" },
+    { name: "background_dim", selector: { number: { min: 0, max: 0.9, step: 0.05, mode: "slider" } }, default: 0.25, helper: "Image background: darken it so text stays readable (0 = off)." },
+  ]],
+  ["Panels", [
+    { name: "panel_opacity", selector: { number: { min: 0, max: 1, step: 0.05, mode: "slider" } }, helper: "With a card background: panel opacity (0 = fully transparent, 1 = solid). Default 0.55." },
+    { name: "panel_blur", selector: { number: { min: 0, max: 30, step: 1, mode: "slider", unit_of_measurement: "px" } }, helper: "With a card background: blur behind panels. Default 6." },
+    { name: "panel_radius", selector: { number: { min: 0, max: 40, step: 1, mode: "slider", unit_of_measurement: "px" } }, helper: "Corner radius (default: the theme's card radius)." },
+    { name: "panel_shadow", selector: { select: { options: [{ value: "none", label: "None" }, { value: "soft", label: "Soft" }, { value: "medium", label: "Medium" }, { value: "strong", label: "Strong" }] } }, default: "none" },
+    { name: "panel_border_width", selector: { number: { min: 0, max: 6, step: 0.5, mode: "slider", unit_of_measurement: "px" } }, helper: "Border (default none)." },
+    { name: "panel_border_color", selector: { text: {} }, helper: "CSS color, e.g. #4fc3f7 or rgba(255,255,255,.2). Blank: the theme's divider color." },
+    { name: "panel_glow", selector: { boolean: {} }, default: false, helper: "A soft glow around each panel." },
+    { name: "panel_glow_color", selector: { text: {} }, helper: "Glow color (default: the border color, else the theme's primary color)." },
+    { name: "panel_glow_size", selector: { number: { min: 2, max: 40, step: 1, mode: "slider", unit_of_measurement: "px" } }, default: 10 },
+  ]],
+  ["Layout & behaviour", [
+    { name: "layout", selector: { select: { options: [{ value: "auto", label: "Size to content" }, { value: "fullscreen", label: "Full screen (fills the view below the header)" }] } } },
+    { name: "fit_height", selector: { boolean: {} }, default: true, helper: "Full screen: panels with a height share the screen height (row height is calculated)." },
+    { name: "layout_size", selector: { select: { options: [{ value: "auto", label: "Automatic (from the card's width)" }, { value: "wide", label: "Wide — desktop layout" }, { value: "medium", label: "Medium — tablet layout" }, { value: "narrow", label: "Narrow — phone layout (stacked)" }] } }, helper: "In a Sections view the card is only as wide as its section; widen the section or use a Panel view for the desktop layout." },
+    { name: "row_height", selector: { number: { min: 40, max: 300, mode: "box", unit_of_measurement: "px" } }, helper: "Height of one row unit (default 110)." },
+    { name: "gap", selector: { number: { min: 0, max: 32, mode: "box", unit_of_measurement: "px" } }, helper: "Space between panels (default 12)." },
+    { name: "panel_bar", selector: { boolean: {} }, default: true, helper: "Panel buttons that show/hide panels or open pop-ups." },
+    { name: "remember", selector: { boolean: {} }, default: true, helper: "Remember which panels were toggled, per browser." },
+    { name: "lite_editing", selector: { boolean: {} }, default: true, helper: "While the dashboard or this card is being edited: no animated background or blur, and the radar and Windy maps show a placeholder. Keeps the editor responsive." },
+  ]],
 ];
+const GENERAL_SCHEMA = APPEARANCE_GROUPS.flatMap(([, f]) => f);
 const GENERAL_DEFAULTS = { layout: "auto", panel_bar: true, remember: true, fit_height: true, layout_size: "auto", background: "none", panel_opacity: 0.55, panel_blur: 6, lite_editing: true };
 
 const LABELS = {
@@ -56,8 +77,9 @@ const LABELS = {
   owm_api_key: "OpenWeatherMap API key", owm_layers: "OpenWeatherMap layers", owm_default: "Layer shown first", owm_opacity: "Layer opacity",
   base_map_url: "Custom tile URL", base_map_attribution: "Custom tile attribution", day_offset: "Day", icon_size: "Icon size",
   show_moon: "Show moon", show_sun: "Show sun", attribute: "Text attribute", alerts_entity: "Alerts sensor", card: "Card configuration",
-  show_status: "Show station status", show_devices: "Show device names", overlay: "Layer", model: "Forecast model", level: "Altitude", wind_unit: "Wind unit", marker: "Location pin", preset: "Graph", engine: "Graph card", days_to_show: "Days", period: "Resolution", chart_type: "Chart type", stat_types: "Values", show_chart: "Altitude chart", show_arc: "Sun arc", show_sky: "Sky gradient & forecast row", timeframe: "Time window", hours: "Hours", anchor: "Now is", moon: "Moon at night", moon_phase: "Draw the moon phase", background: "Card background", panel_opacity: "Panel opacity", panel_blur: "Panel blur", sky_bar: "Sky Bar in the hero", show_facts: "Show sun times", moon_size: "Moon size", direction: "Direction", min_width: "Minimum width", grow: "Grow", show_bar: "Panel buttons here", lite_editing: "Pause animations and maps while editing",
-  device: "Pollen location", hide_off_season: "Hide out-of-season species", hide_when_off_season: "Hide the panel out of season", species: "Species", max_rows: "Rows", show_tomorrow: "Tomorrow's trend", show_season: "Season strip", location: "Town / area text",
+  show_status: "Show station status", show_devices: "Show device names", overlay: "Layer", model: "Forecast model", level: "Altitude", wind_unit: "Wind unit", marker: "Location pin", preset: "Graph", engine: "Graph card", days_to_show: "Days", period: "Resolution", chart_type: "Chart type", stat_types: "Values", show_chart: "Altitude chart", show_arc: "Sun arc", show_sky: "Sky gradient & forecast row", timeframe: "Time window", hours: "Hours", anchor: "Now is", moon: "Moon at night", moon_phase: "Draw the moon phase", background: "Card background", panel_opacity: "Panel opacity", panel_blur: "Panel blur", sky_bar: "Sky Bar in the hero", show_facts: "Show sun times", moon_size: "Moon size", direction: "Direction", min_width: "Minimum width", grow: "Grow", show_bar: "Panel buttons here", lite_editing: "Pause animations and maps while editing", background_image: "Background image", background_image_url: "Background image URL", background_image_fit: "Image fit", background_dim: "Darken image",
+  panel_radius: "Corner radius", panel_shadow: "Shadow", panel_border_width: "Border width", panel_border_color: "Border color", panel_glow: "Glow", panel_glow_color: "Glow color", panel_glow_size: "Glow size",
+  device: "Pollen location", hide_off_season: "Hide out-of-season species", hide_when_off_season: "Hide the panel out of season", hide_when_none: "Hide the panel when all are None", species: "Species", max_rows: "Rows", show_tomorrow: "Tomorrow's trend", show_season: "Season strip", location: "Town / area text",
   seasons: "Season months", entities: "Sensors", pollutants: "Pollutants", show_scale: "AQI scale", show_aqi: "Show the AQI", extra: "More readings", bar_height: "Bar height", source: "Source text", show_source: "Show the source", show_location: "Show the town / area", hide_none: "Hide species at None", show_nothing: "Show the \"nothing in the air\" text", nothing_text: "\"Nothing in the air\" text", "entities.aqi": "AQI sensor",
   "entities.pm2_5": "PM2.5 sensor", "entities.pm10": "PM10 sensor", "entities.ozone": "Ozone sensor", "entities.co2": "CO₂ sensor",
 };
@@ -195,7 +217,7 @@ class WeatherStationFlexCardEditor extends LitElement {
       <div class="ed">
         <div class="hdr"><span class="name">${CARD_NAME}</span><span class="ver">v${CARD_VERSION} · Weather Flex sections ${FLEX_SECTIONS_BUILD}</span></div>
         ${this._section("station", "mdi:weather-cloudy-clock", "Weather station", () => this._stationEditor())}
-        ${this._section("general", "mdi:cog-outline", "General", () => this._general())}
+        ${this._section("general", "mdi:palette-outline", "Appearance", () => this._general())}
         ${this._section("buttons", "mdi:gesture-tap-button", "Panel buttons", () => this._buttonsEditor())}
         ${this._section("layout", "mdi:view-dashboard-edit-outline", "Layout", () => this._layoutEditor())}
         ${this._section("hero", "mdi:weather-partly-cloudy", "Hero", () => this._heroEditor())}
@@ -230,11 +252,16 @@ class WeatherStationFlexCardEditor extends LitElement {
   }
 
   _general() {
-    return this._form(formData(this._config, GENERAL_SCHEMA, GENERAL_DEFAULTS), GENERAL_SCHEMA, (v) => {
-      const { panels: _p, ...rest } = this._config;
-      const next = applyForm(rest, GENERAL_SCHEMA, v, GENERAL_DEFAULTS);
-      if (this._config.panels) next.panels = this._config.panels;
-      this._emit(next);
+    const bg = this._config.background || "none";
+    return APPEARANCE_GROUPS.map(([title, fields]) => {
+      // Image fields only with an image background.
+      const f = fields.filter((x) => bg === "image" || !x.name.startsWith("background_"));
+      return html`<div class="agrp"><div class="agrp-t">${title}</div>${this._form(formData(this._config, f, GENERAL_DEFAULTS), f, (v) => {
+        const { panels: _p, ...rest } = this._config;
+        const next = applyForm(rest, f, v, GENERAL_DEFAULTS);
+        if (this._config.panels) next.panels = this._config.panels;
+        this._emit(next);
+      })}</div>`;
     });
   }
 
@@ -565,6 +592,8 @@ class WeatherStationFlexCardEditor extends LitElement {
     summary::-webkit-details-marker { display: none; }
     summary ha-icon { --mdc-icon-size: var(--ltek-icon-lg); color: var(--ltek-c-accent); }
     .body { padding: 0 var(--ltek-sp-5) var(--ltek-sp-5); display: flex; flex-direction: column; gap: var(--ltek-sp-3); }
+    .agrp + .agrp { margin-top: var(--ltek-sp-4, 16px); }
+    .agrp-t { font-size: var(--ltek-fs-small, 12px); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ltek-c-muted); margin: 0 0 var(--ltek-sp-2, 8px); padding-bottom: 4px; border-bottom: 1px solid var(--divider-color, rgba(127,127,127,.25)); }
     .hint { margin: 0; color: var(--ltek-c-muted); font-size: var(--ltek-fs-small); line-height: 1.4; }
     .rows { display: flex; flex-direction: column; gap: var(--ltek-sp-2); }
     .row { border: 1px solid var(--ltek-c-border-soft); border-radius: var(--ltek-r-card); background: var(--ltek-c-surface-raised); }
