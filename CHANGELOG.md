@@ -1,5 +1,10 @@
 # Changelog
 
+## v2026.10.22.32
+
+- **Sun & moon facts in the Hero, Sky Tracker and Astronomy panels**, from one list: dawn, sunrise, solar noon, sunset, dusk, length of day (with the change since yesterday), visible light, moonrise, moonset, moon phase (with a moon image), illumination, next full moon and next new moon. Each panel has **Show sun & moon facts** and a checkbox per fact (all on by default), a moon image size, and one text size, weight and color for all labels and one for all values. In the Hero they sit across the bottom over its background; in Sky Tracker under the sky (replacing the old six "sun times"); in Astronomy under the table (replacing its summary).
+- **Astronomy:** new **Sun & moon table** checkbox to hide the rise/set table.
+
 ## v2026.10.22.31
 
 - **Appearance shows what Auto means:** under Corner radius, Row height and Gap, the editor shows the value Auto resolved to, e.g. "Auto: 12px (from the theme's card corner radius)" or "Auto: 96px (calculated to fit the screen)". When the dashboard's theme gives a different value than the editor preview (Home Assistant can use a different theme for each), both are shown. At Auto the slider sits on that value instead of at the left end.

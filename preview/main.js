@@ -235,6 +235,11 @@ const config = () => ({
   layout: params.get("layout") || "auto",
   remember: false,
   ...(params.get("hero") ? { panels: [{ type: "hero", span: Number(params.get("span") || 12), rows: Number(params.get("rows") || 0), auto_scale: params.get("hero") === "auto", scale: Number(params.get("scale") || 100), flex: { wfc: { current: { clock_show_date: true } } } }, { type: "metric", metric: "temperature" }] } : {}),
+  ...(params.get("panels") === "astro" ? { panels: [
+    { type: "hero", span: 12, rows: 2, show_facts: true, facts: ["sunrise", "sunset", "day_length", "visible_light", "moon_phase", "moon_illumination"], fact_value_size: 16, fact_value_weight: "500", fact_moon_size: 30 },
+    { type: "sky_tracker", span: 12, show_facts: true, fact_label_color: "var(--primary-color)" },
+    { type: "astronomy", span: 6 }, { type: "astronomy", span: 6, show_table: false, fact_value_size: 18, fact_moon_size: 56 },
+  ] } : {}),
   ...(params.get("panels") === "fit" ? { layout: "fullscreen", panels: [
     { type: "hero", span: 8, rows: 1 }, { type: "pollen", span: 4, rows: 1 },
     { type: "sky_tracker", span: 8, rows: 0.5, show_facts: true }, { type: "wind", span: 4, rows: 1, view: "rose", wr_corners: "on", wr_stats: "bottom", wr_buttons: "periods", chart_legend: true, ...(params.get("nofit") ? { fit: false } : {}) },

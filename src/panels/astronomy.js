@@ -5,10 +5,10 @@
 import { LitElement, html, svg, css, nothing } from "lit";
 import * as SunCalc from "suncalc";
 import { panelStyles, head } from "./shared.js";
-import { moonInfo } from "../card/astro.js";
-import { moonSvg } from "./sun-moon.js";
+import { renderFacts, factStyles } from "./astro-facts.js";
 
 const DEG = 180 / Math.PI;
+
 const hm = (ms) => (ms == null || !isFinite(ms) ? "—" : `${Math.floor(ms / 3600e3)}h ${String(Math.round((ms % 3600e3) / 60e3)).padStart(2, "0")}m`);
 const valid = (d) => d instanceof Date && !isNaN(d);
 
@@ -16,6 +16,7 @@ class WsfcAstronomy extends LitElement {
   static properties = { hass: { attribute: false }, config: { attribute: false }, station: { attribute: false } };
   static styles = [
     panelStyles,
+    factStyles,
     css`
       .wrap { display: flex; gap: 16px; flex-wrap: wrap; flex: 1; align-items: flex-start; }
       .chart { flex: 1 1 260px; min-width: 220px; }
@@ -45,16 +46,9 @@ class WsfcAstronomy extends LitElement {
     const now = new Date();
     const noon = new Date(now); noon.setHours(12, 0, 0, 0);
     const t = SunCalc.getTimes(noon, lat, lon);
-    const y = new Date(noon); y.setDate(y.getDate() - 1);
-    const ty = SunCalc.getTimes(y, lat, lon);
     const mt = SunCalc.getMoonTimes(now, lat, lon);
-    const moon = moonInfo(this.hass, now);
     const tf = new Intl.DateTimeFormat(this.hass.locale?.language, { hour: "numeric", minute: "2-digit" });
     const f = (d) => (valid(d) ? tf.format(d) : "—");
-    const dayLen = valid(t.sunset) && valid(t.sunrise) ? t.sunset - t.sunrise : null;
-    const dayLenY = valid(ty.sunset) && valid(ty.sunrise) ? ty.sunset - ty.sunrise : null;
-    const delta = dayLen != null && dayLenY != null ? Math.round((dayLen - dayLenY) / 60e3) : null;
-    const visible = valid(t.dusk) && valid(t.dawn) ? t.dusk - t.dawn : null;
     const rows = [
       ["Sun", t.sunrise, t.sunset, true],
       ["Civil twilight", t.dawn, t.dusk],
@@ -68,18 +62,13 @@ class WsfcAstronomy extends LitElement {
       <div class="wrap">
         ${c.show_chart === false ? nothing : html`<div class="chart">${this._chart(lat, lon, now)}</div>`}
         <div class="side">
-          <table>
+          ${c.show_table === false ? nothing : html`<table>
             <tr><th></th><th>Rise</th><th>Set</th></tr>
             ${rows.map(([n, r, s, main]) => html`<tr class=${main ? "main" : ""}><td>${n}</td>
               <td>${n === "Moon" && mt.alwaysUp ? "up all day" : n === "Moon" && mt.alwaysDown ? "down all day" : f(r)}</td>
               <td>${n === "Moon" && (mt.alwaysUp || mt.alwaysDown) ? "" : f(s)}</td></tr>`)}
-          </table>
-          <div class="sum">
-            <div><span>Length of day</span>${hm(dayLen)}${delta != null ? html`<span class="d" style="display:inline">${delta >= 0 ? "+" : "−"}${Math.abs(delta)}m</span>` : nothing}</div>
-            <div><span>Visible light</span>${hm(visible)}</div>
-            <div><span>Solar noon</span>${f(t.solarNoon)}</div>
-            <div class="moon">${moonSvg(moon.phase)}<div><span>${moon.name}</span>${Math.round(moon.fraction * 100)}% illuminated</div></div>
-          </div>
+          </table>`}
+          ${renderFacts(this.hass, c, undefined, true)}
         </div>
       </div>
     `;

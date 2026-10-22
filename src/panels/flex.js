@@ -4,7 +4,7 @@
 import { LitElement, html, css, nothing } from "lit";
 import { panelStyles, head } from "./shared.js";
 import { CoreSlot, deepMerge } from "../card/core.js";
-import { sunInfo, timeFmt } from "../card/astro.js";
+import { renderFacts, factStyles } from "./astro-facts.js";
 
 // Bases per panel type. The editor diffs against these, so changing a base
 // changes what existing configs look like — treat them like defaults.
@@ -208,7 +208,12 @@ class WsfcHeroPanel extends WsfcFlexPanel {
   static styles = [
     panelStyles,
     coreStyles,
+    factStyles,
     css`
+      :host { position: relative; }
+      /* Sun & moon facts across the bottom of the hero, over its background. */
+      .hero-facts { position: absolute; left: 16px; right: 16px; bottom: 12px; z-index: 1; pointer-events: none; }
+      .hero-facts .facts { margin: 0; }
       .core { margin: 0; display: flex; }
       .core > * { flex: 1; height: 100%; --ha-card-border-radius: var(--wsfc-radius, 16px); --card-padding: 16px; }
     `,
@@ -267,7 +272,9 @@ class WsfcHeroPanel extends WsfcFlexPanel {
     if (!this.hass || !this.station?.entity) return nothing;
     // Values for sizes left at Auto (0) in the sections editor, e.g. the clock and date.
     const a = this._auto;
+    const facts = renderFacts(this.hass, this.config || {});
     return html`<div class="core" style="--wfc-clock-auto:${a.clock}px;--wfc-clock-date-auto:${a.date}px">${this._slot.update(this._coreConfig(), this.hass)}</div>
+      ${facts === nothing ? nothing : html`<div class="hero-facts">${facts}</div>`}
       ${this._slot.error ? html`<div class="err">${this._slot.error}</div>` : nothing}`;
   }
 }
@@ -333,13 +340,7 @@ class WsfcSkyTracker extends WsfcFlexPanel {
   type = "sky_tracker";
   defaultTitle = "Sky Tracker";
   defaultIcon = "mdi:sun-clock-outline";
-  static styles = [
-    ...WsfcFlexPanel.styles,
-    css`
-      .facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 6px 14px; margin-top: 8px; font-size: 13px; }
-      .facts div span { display: block; font-size: 11px; color: var(--wsfc-muted); }
-    `,
-  ];
+  static styles = [...WsfcFlexPanel.styles, factStyles];
   _coreConfig() {
     return trackerConfig(this.config, this.station);
   }
@@ -350,17 +351,9 @@ class WsfcSkyTracker extends WsfcFlexPanel {
     return html`${c.title || c.show_title ? head(c, this.defaultIcon, this.defaultTitle) : nothing}
       <div class="core">${this._slot.update(this._coreConfig(), this.hass)}</div>
       ${this._slot.error ? html`<div class="err">${this._slot.error}</div>` : nothing}
-      ${c.show_facts ? this._facts() : nothing}`;
+      ${renderFacts(this.hass, c)}`;
   }
-  _facts() {
-    const sun = sunInfo(this.hass);
-    if (!sun) return nothing;
-    const tf = timeFmt(this.hass);
-    const hm = (ms) => `${Math.floor(ms / 3600e3)}h ${String(Math.round((ms % 3600e3) / 60e3)).padStart(2, "0")}m`;
-    const rows = [["Dawn", tf.format(sun.dawn)], ["Sunrise", tf.format(sun.sunrise)], ["Solar noon", tf.format(sun.noon)],
-      ["Sunset", tf.format(sun.sunset)], ["Dusk", tf.format(sun.dusk)], ["Daylight", hm(sun.daylightMs)]];
-    return html`<div class="facts">${rows.map(([k, v]) => html`<div><span>${k}</span>${v}</div>`)}</div>`;
-  }
+
 }
 
 customElements.get("wsfc-panel-chips") || customElements.define("wsfc-panel-chips", WsfcChipsPanel);

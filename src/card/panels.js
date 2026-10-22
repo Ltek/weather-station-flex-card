@@ -3,6 +3,7 @@
 import { METRICS } from "./metrics.js";
 import { pollenModel } from "./pollen.js";
 import { WINDROSE_PRESETS } from "../panels/windrose.js";
+import { factsFields } from "../panels/astro-facts.js";
 
 const opt = (pairs) => pairs.map(([value, label]) => ({ value, label }));
 const RANGES = ["6h", "12h", "24h", "48h", "7d", "30d", "90d", "365d"];
@@ -19,6 +20,7 @@ export const PANEL_TYPES = {
     schema: [
       { name: "auto_scale", selector: { boolean: {} }, default: false, helper: "Size the temperature, condition, icon, clock, date and metric chips from the panel's size, over the sizes set below. Sizes left at Auto below follow the panel either way." },
       { name: "scale", selector: { number: { min: 50, max: 200, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100, helper: "Auto scaling: make the auto sizes bigger or smaller." },
+      ...factsFields(),
     ],
   },
   bulletin: {
@@ -198,12 +200,16 @@ export const PANEL_TYPES = {
       { name: "anchor", selector: { select: { options: opt([["now_center", "Now in the middle"], ["now_left", "Now at the left"]]) } }, default: "now_center" },
       { name: "moon", selector: { boolean: {} }, default: true, helper: "Show the moon on the arc at night." },
       { name: "moon_phase", selector: { boolean: {} }, default: true, helper: "Draw the moon in its current phase (off: a moon icon)." },
-      { name: "show_facts", selector: { boolean: {} }, default: false, helper: "Dawn, sunrise, solar noon, sunset, dusk and daylight under the tracker." },
+      ...factsFields(),
     ],
   },
   astronomy: {
     tag: "wsfc-panel-astronomy", label: "Astronomy", icon: "mdi:telescope", span: 6, rows: 3, rowsCompact: 0,
-    schema: [{ name: "show_chart", label: "Altitude chart", selector: { boolean: {} }, default: true, helper: "Sun and moon altitude over the day." }],
+    schema: [
+      { name: "show_chart", label: "Altitude chart", selector: { boolean: {} }, default: true, helper: "Sun and moon altitude over the day." },
+      { name: "show_table", label: "Sun & moon table", selector: { boolean: {} }, default: true, helper: "Rise and set times for the sun, the three twilights and the moon." },
+      ...factsFields(undefined, true),
+    ],
   },
   wind_map: {
     tag: "wsfc-panel-wind-map", label: "Wind map (Windy)", icon: "mdi:map-marker-radius-outline", span: 6, rows: 3,
