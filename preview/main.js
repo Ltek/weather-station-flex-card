@@ -235,6 +235,10 @@ const config = () => ({
   layout: params.get("layout") || "auto",
   remember: false,
   ...(params.get("hero") ? { panels: [{ type: "hero", span: Number(params.get("span") || 12), rows: Number(params.get("rows") || 0), auto_scale: params.get("hero") === "auto", scale: Number(params.get("scale") || 100), flex: { wfc: { current: { clock_show_date: true } } } }, { type: "metric", metric: "temperature" }] } : {}),
+  ...(params.get("panels") === "wind2" ? { panels: [
+    { type: "wind", view: "rose", span: 6, title: "Rose, readings below, stats top, bars bottom", readings_position: "below", wr_stats: "top", wr_bars: "bottom", show_chart: false },
+    { type: "wind", view: "compass", span: 6, title: "Compass, chart above, readings below", rose_engine: "builtin", chart_position: "above", readings_position: "below" },
+  ] } : {}),
   ...(params.get("panels") === "wind" ? { panels: ["standard", "periods", "beaufort", "corners", "stats", "playback"].map((windrose_preset) => ({ type: "wind", view: "rose", windrose_preset, title: `Wind · ${windrose_preset}`, span: 6, show_chart: false })) } : {}),
   ...(params.get("panels") === "clock" ? { panels: [{ type: "hero", span: 8, flex: { wfc: { current: { clock_show_time: false, clock_show_date: false } }, order: ["current"] } }, { type: "clock", span: 4, rows: 2 }, { type: "chips" },
     { type: "clock", span: 3, rows: 1, show_seconds: true, date_format: "long" }, { type: "clock", span: 3, rows: 0.5, show_date: false, align: "left" }] } : {}),

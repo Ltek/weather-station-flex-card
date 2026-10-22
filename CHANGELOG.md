@@ -1,5 +1,10 @@
 # Changelog
 
+## v2026.10.22.26
+
+- **Wind panel layout options:** where the speed / gust / direction readings go (beside the dial, above, below or hidden; by default beside our dial and hidden with the Wind Rose Card), the chart above or below (above, it's a strip so the dial keeps its room), and switches for the Compass/Rose buttons and the rose's colour legend.
+- **Wind Rose Card parts**, each "From the preset" by default or set on its own: speed bars (right, bottom, hidden), corner info (speed, direction, gust), min / average / max / P90 / calm % text (above or below the rose), buttons (period buttons, playback, none) and their position, the period shown first, Beaufort or speed-unit bars, the direction arrow, and whether the chart shows with it.
+
 ## v2026.10.22.25
 
 - **Editor, Panels list:** a stack's panels are listed indented under the stack, so it's clear what each stack holds. Open them from there; the stack's own pencil opens only the stack's settings.

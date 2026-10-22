@@ -28,6 +28,10 @@ class WsfcWind extends LitElement {
     panelStyles,
     css`
       .top { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+      .top.center { justify-content: center; }
+      /* Above the dial the chart is a strip, so the dial keeps its room. */
+      .body.above { flex: 0 0 auto; height: 120px; min-height: 0; margin: 0 0 8px; }
+      .top.center .dial { width: min(220px, 70%); }
       .dial { flex: 0 0 auto; width: min(180px, 42%); aspect-ratio: 1; }
       .dial svg { width: 100%; height: 100%; overflow: visible; }
       .side { flex: 1; min-width: 140px; display: flex; flex-direction: column; gap: 10px; }
@@ -53,40 +57,50 @@ class WsfcWind extends LitElement {
 
   render() {
     if (!this.hass) return html``;
-    const view = this._view || this.config?.view || "compass";
+    const c = this.config || {};
+    const view = this._view || c.view || "compass";
     const s = this.station, h = this.hass;
     const sp = metricValue(s, h, "wind_speed");
     const gu = metricValue(s, h, "wind_gust_speed");
     const di = metricValue(s, h, "wind_bearing");
     const unit = sp?.unit || gu?.unit || "";
-    const roseLabel = { value: "rose", label: roseEngine(this.config) === "windrose" ? "Rose" : "Rose 24h" };
-    // Rose view with the Wind Rose Card installed: it replaces our rose and readings.
-    if (view === "rose" && roseEngine(this.config) === "windrose") {
+    const wr = view === "rose" && roseEngine(c) === "windrose";
+    const roseLabel = { value: "rose", label: wr || roseEngine(c) === "windrose" ? "Rose" : "Rose 24h" };
+    const buttons = c.show_view_buttons === false ? "" : seg([{ value: "compass", label: "Compass" }, roseLabel], view, (v) => (this._view = v), "Wind view");
+    // Readings: beside the dial, above, below or hidden. Auto: beside ours, hidden
+    // with the Wind Rose Card (its corners show them).
+    let rp = c.readings_position || "auto";
+    if (rp === "auto") rp = wr ? "hidden" : "side";
+    const readings = html`<div class="readings">
+      ${reading(this, { label: "Speed", value: sp?.value, unit, digits: 1, color: "var(--wsfc-wind)", entity: sp?.entity })}
+      ${reading(this, { label: "Gust", value: gu?.value, unit: gu?.unit || unit, digits: 1, color: "var(--wsfc-gust)", entity: gu?.entity })}
+      ${reading(this, { label: `From ${cardinal(di?.value)}`, value: di?.value, unit: "°", entity: di?.entity })}
+    </div>`;
+    const legend = view === "rose" && !wr && c.show_legend !== false ? this._roseLegend(unit) : "";
+    const chartTop = c.chart_position === "above";
+    const chart = c.show_chart === false || (wr && c.windrose_chart === false) ? "" : html`<div class="body ${chartTop ? "above" : ""}"><canvas aria-label="Wind speed and gust history"></canvas></div>`;
+    let main;
+    if (wr) {
       const ids = this._ids();
       if (ids.dir && ids.speed) {
-        this._ensureRose(windroseCard(this.config, ids, unit));
+        this._ensureRose(windroseCard(c, ids, unit));
         if (this._wrEl) this._wrEl.hass = this.hass;
-        return html`
-          ${head(this.config, "mdi:weather-windy", "Wind", seg([{ value: "compass", label: "Compass" }, roseLabel], view, (v) => (this._view = v), "Wind view"))}
-          ${this._wrErr ? html`<div class="note">${this._wrErr}</div>` : html`<div class="wr">${this._wrEl || ""}</div>`}
-          ${this.config?.show_chart === false || this.config?.windrose_chart === false ? "" : html`<div class="body"><canvas aria-label="Wind speed and gust history"></canvas></div>`}
-        `;
+        main = this._wrErr ? html`<div class="note">${this._wrErr}</div>` : html`<div class="wr">${this._wrEl || ""}</div>`;
       }
     }
+    if (!main) {
+      const dial = html`<div class="dial">${view === "rose" ? this._roseSvg(unit) : this._compassSvg(sp?.value, unit, di?.value)}</div>`;
+      main = rp === "side"
+        ? html`<div class="top">${dial}<div class="side">${readings}${legend}</div></div>`
+        : html`<div class="top center">${dial}</div>${legend ? html`<div class="side">${legend}</div>` : ""}`;
+    }
     return html`
-      ${head(this.config, "mdi:weather-windy", "Wind", seg([{ value: "compass", label: "Compass" }, { value: "rose", label: "Rose 24h" }], view, (v) => (this._view = v), "Wind view"))}
-      <div class="top">
-        <div class="dial">${view === "rose" ? this._roseSvg(unit) : this._compassSvg(sp?.value, unit, di?.value)}</div>
-        <div class="side">
-          <div class="readings">
-            ${reading(this, { label: "Speed", value: sp?.value, unit, digits: 1, color: "var(--wsfc-wind)", entity: sp?.entity })}
-            ${reading(this, { label: "Gust", value: gu?.value, unit: gu?.unit || unit, digits: 1, color: "var(--wsfc-gust)", entity: gu?.entity })}
-            ${reading(this, { label: `From ${cardinal(di?.value)}`, value: di?.value, unit: "°", entity: di?.entity })}
-          </div>
-          ${view === "rose" ? this._roseLegend(unit) : ""}
-        </div>
-      </div>
-      ${this.config?.show_chart === false ? "" : html`<div class="body"><canvas aria-label="Wind speed and gust history"></canvas></div>`}
+      ${head(c, "mdi:weather-windy", "Wind", buttons)}
+      ${chartTop ? chart : ""}
+      ${rp === "above" ? readings : ""}
+      ${main}
+      ${rp === "below" || (rp === "side" && wr) ? readings : ""}
+      ${chartTop ? "" : chart}
       ${this._error ? html`<div class="note">${this._error}</div>` : ""}
     `;
   }

@@ -92,6 +92,52 @@ export const WINDROSE_PRESETS = {
   },
 };
 
+const STATS_TEXT = "Min ${min-speed} · Avg ${average-speed} · Max ${max-speed} · P90 ${p90-speed} · Calm ${calm-percentage}%";
+
+/**
+ * Panel options that override the preset ("preset" / unset = keep the preset's).
+ *   wr_bars: right | bottom | hidden      wr_corners: on | off
+ *   wr_stats: top | bottom | off          wr_buttons: periods | playback | none
+ *   wr_buttons_position: top | bottom     wr_period: -1h | -8h | -1d | -7d | -30d
+ *   wr_beaufort: on | off                 wr_arrow: false hides the direction arrow
+ */
+export function applyOverrides(card, c, ids, unit) {
+  const set = (v) => v != null && v !== "" && v !== "preset";
+  if (set(c.wr_bars)) {
+    if (c.wr_bars === "hidden") card.hide_windspeed_bar = true;
+    else { delete card.hide_windspeed_bar; card.windspeed_bar_location = c.wr_bars; }
+  }
+  if (set(c.wr_corners)) {
+    if (c.wr_corners === "off") delete card.corner_info;
+    else card.corner_info = WINDROSE_PRESETS.corners.build("", ids, unit).corner_info;
+  }
+  if (set(c.wr_stats)) {
+    delete card.text_blocks;
+    if (c.wr_stats !== "off") card.text_blocks = { [c.wr_stats]: { text: STATS_TEXT, text_size: 13, text_color: "var(--secondary-text-color)" } };
+  }
+  if (set(c.wr_buttons)) {
+    if (c.wr_buttons === "none") delete card.buttons_config;
+    else card.buttons_config = { ...WINDROSE_PRESETS[c.wr_buttons].build().buttons_config };
+  }
+  if (card.buttons_config && set(c.wr_buttons_position)) card.buttons_config = { ...card.buttons_config, location: c.wr_buttons_position };
+  if (set(c.wr_period)) {
+    // A default period: the matching period button becomes the active one.
+    const btns = card.buttons_config?.buttons;
+    const sel = btns?.filter((b) => b.type === "period_selector");
+    if (sel?.length) {
+      const hit = sel.find((b) => b.period_back === c.wr_period);
+      if (hit) card.buttons_config = { ...card.buttons_config, buttons: btns.map((b) => (b.type === "period_selector" ? { ...b, active: b === hit } : b)) };
+      else card.data_period = { period_back: c.wr_period };
+    } else card.data_period = { period_back: c.wr_period };
+  }
+  if (set(c.wr_beaufort)) {
+    const on = c.wr_beaufort === "on";
+    card.windspeed_entities = card.windspeed_entities.map((e) => ({ ...e, speed_range_beaufort: on, ...(on ? { current_speed_arrow: true } : {}) }));
+  }
+  if (c.wr_arrow === false) card.current_direction = { show_arrow: false };
+  return card;
+}
+
 /** Wind Rose Card config for a Wind panel (ids from Weather Sources). */
 export function windroseCard(c, ids, unit) {
   const out = OUT_UNIT[unit] || "mph";
@@ -111,6 +157,7 @@ export function windroseCard(c, ids, unit) {
     matching_strategy: { name: "full-time" },
     ...p,
   };
+  applyOverrides(card, c || {}, ids, unit);
   const merged = deepMerge(card, c?.windrose || {});
   // The card refuses data_period together with an active period button.
   if (merged.buttons_config?.buttons?.some((b) => b.type === "period_selector" && b.active)) delete merged.data_period;
