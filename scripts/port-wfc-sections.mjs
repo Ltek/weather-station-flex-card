@@ -223,6 +223,12 @@ const patches = [
   ['${this._wfcGroup("Timeframe")}', '${this.wsfcHide && this.wsfcHide.includes("timeframe_mode") ? eY : this._wfcGroup("Timeframe")}'],
   ['                ${this._wfcCheckbox("Use a moon icon at night (between sunset & sunrise)", !!s.night_moon, (e) =>\n                  this._wfcToggleSecField(id, "night_moon", e)\n                )}\n                ${s.night_moon\n',
    '                ${this.wsfcHide && this.wsfcHide.includes("night_moon") ? eY : this._wfcCheckbox("Use a moon icon at night (between sunset & sunrise)", !!s.night_moon, (e) =>\n                  this._wfcToggleSecField(id, "night_moon", e)\n                )}\n                ${s.night_moon && !(this.wsfcHide && this.wsfcHide.includes("night_moon"))\n'],
+  // Embedded in a Weather Station panel (wsfcMode "sections"): no editor
+  // header (name, build, auto-collapse); the panel's editor is the context.
+  ['      <div class="wfc-ed-header">\n        <div class="wfc-ed-title">',
+   '      ${this.wsfcMode === "sections" ? eY : eq`<div class="wfc-ed-header">\n        <div class="wfc-ed-title">'],
+  ['          <span>Auto Collapse setting panels when opening new panel</span>\n        </label>\n      </div>\n',
+   '          <span>Auto Collapse setting panels when opening new panel</span>\n        </label>\n      </div>`}\n'],
 ];
 for (const [from, to] of patches) {
   if (!body.includes(from)) throw new Error(`Patch target missing: ${from}`);

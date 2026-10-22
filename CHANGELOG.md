@@ -1,5 +1,10 @@
 # Changelog
 
+## v2026.10.22.34
+
+- **Sun & moon facts:** Illumination can join the moon phase — to the right of the phase name or under it — instead of being its own fact, with its % under the "Illumination" label or beside it. New **Alignment** (left, center, right) for the whole facts block.
+- **Editor:** the Weather Flex settings inside a panel (e.g. Sky Tracker's Sun Position and Sky Bar, the Hero's sections) no longer show the "Weather Flex sections · build …" header and its auto-collapse checkbox, and the extra "Weather Flex sections" subtitle above them is gone.
+
 ## v2026.10.22.33
 
 - **Hide a panel's title or its icon:** every panel with a header now has **Show the title** and **Show the title icon** checkboxes (Layout group, also for panels inside stacks). With the title off, its text and icon fields are hidden and the panel's own header controls (e.g. Wind's Compass / Rose, Radar's play button) stay. Metric tiles and the Button Menu follow them too. Chips, Sky Tracker and Home Assistant card panels still show a title only when you set one, or tick Show the title.

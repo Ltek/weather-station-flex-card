@@ -3189,7 +3189,7 @@ import { actionHandler as iq } from "../../vendor/weather-forecast-card/src/hass
     const accordion = this._wfcAccordionEnabled();
     return eq`
       ${this._wfcEditorStyle()}
-      <div class="wfc-ed-header">
+      ${this.wsfcMode === "sections" ? eY : eq`<div class="wfc-ed-header">
         <div class="wfc-ed-title">
           <span class="wfc-ed-name">${WFC_CARD_NAME}</span>
           <span class="wfc-ed-ver">build ${WFC_BUILD}</span>
@@ -3203,7 +3203,7 @@ import { actionHandler as iq } from "../../vendor/weather-forecast-card/src/hass
           />
           <span>Auto Collapse setting panels when opening new panel</span>
         </label>
-      </div>
+      </div>`}
       ${schema.length
         ? eq`<ha-form
             .hass=${this.hass}

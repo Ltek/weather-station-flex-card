@@ -238,7 +238,7 @@ const config = () => ({
   ...(params.get("panels") === "astro" ? { panels: [
     { type: "hero", span: 12, rows: 2, show_facts: true, facts: ["sunrise", "sunset", "day_length", "visible_light", "moon_phase", "moon_illumination"], fact_value_size: 16, fact_value_weight: "500", fact_moon_size: 30 },
     { type: "sky_tracker", span: 12, show_facts: true, fact_label_color: "var(--primary-color)" },
-    { type: "astronomy", span: 6 }, { type: "astronomy", span: 6, show_table: false, fact_value_size: 18, fact_moon_size: 56 },
+    { type: "astronomy", span: 6, fact_moon_illum: "right", fact_illum_value: "below", fact_align: "center" }, { type: "astronomy", span: 6, show_table: false, fact_value_size: 18, fact_moon_size: 56, fact_moon_illum: "below", fact_illum_value: "right", fact_align: "right" },
   ] } : {}),
   ...(params.get("panels") === "fit" ? { layout: "fullscreen", panels: [
     { type: "hero", span: 8, rows: 1 }, { type: "pollen", span: 4, rows: 1 },

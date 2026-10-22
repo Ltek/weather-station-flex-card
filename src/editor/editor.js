@@ -660,7 +660,7 @@ class WeatherStationFlexCardEditor extends LitElement {
               ${this._form(formData(p, m.schema), m.schema, (v) => update({ type: p.type, ...applyForm(p, m.schema, v) }))}`
           : nothing}
       ${m.flex
-        ? html`<div class="grp">${p.type === "sky_tracker" ? "Arc & sky details" : "Weather Flex sections"}</div>
+        ? html`${p.type === "sky_tracker" ? html`<div class="grp">Arc & sky details</div>` : nothing}
             ${p.type === "sky_tracker" ? html`<p class="hint">Fine-tune the arc (Sun Position) and the sky (Sky Bar): heights, colors, labels, ticks and the forecast row. Layers, time window and moon are set above and override the same options here.</p>` : nothing}
             ${p.type === "hero" && !nested ? html`<p class="hint">Also under Hero above.</p>` : this._flexEditor(key, p, update)}`
         : nothing}

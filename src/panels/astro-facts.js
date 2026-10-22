@@ -39,6 +39,9 @@ export function factsFields(defaults = ALL_FACTS, on = false) {
   return [
     { name: "show_facts", label: "Show sun & moon facts", selector: { boolean: {} }, default: on },
     { name: "facts", label: "Facts", when, selector: { select: { multiple: true, options: opt(FACTS) } }, default: defaults },
+    { name: "fact_align", label: "Alignment", when, selector: { select: { options: opt([["left", "Left"], ["center", "Center"], ["right", "Right"]]) } }, default: "left" },
+    { name: "fact_moon_illum", label: "Illumination", when: (d) => when(d) && (d.facts || defaults).includes("moon_phase"), selector: { select: { options: opt([["separate", "Its own fact"], ["right", "With the moon phase, to the right of it"], ["below", "With the moon phase, under it"]]) } }, default: "separate" },
+    { name: "fact_illum_value", label: "Illumination %", when: (d) => when(d) && (d.fact_moon_illum || "separate") !== "separate" && (d.facts || defaults).includes("moon_phase"), selector: { select: { options: opt([["below", "Under the label"], ["right", "To the right of the label"]]) } }, default: "below" },
     { name: "fact_moon_size", label: "Moon image size", when: (d) => when(d) && (d.facts || defaults).includes("moon_phase"), selector: { number: { min: 16, max: 160, step: 2, mode: "slider", unit_of_measurement: "px" } }, default: 36 },
     { name: "fact_label_size", label: "Label size", when, selector: { number: { min: 8, max: 32, mode: "slider", unit_of_measurement: "px" } }, default: 11 },
     { name: "fact_label_weight", label: "Label weight", when, selector: { select: { options: weights } }, default: "400" },
@@ -88,7 +91,10 @@ export function renderFacts(hass, c, defaults = ALL_FACTS, on = false) {
   if (!(on ? c?.show_facts !== false : c?.show_facts === true)) return nothing;
   const v = factValues(hass);
   if (!v) return nothing;
-  const keys = (Array.isArray(c?.facts) ? c.facts : defaults).filter((k) => FACTS.some(([x]) => x === k));
+  // Illumination can ride along with the moon phase instead of being its own fact.
+  const couple = c?.fact_moon_illum === "right" || c?.fact_moon_illum === "below" ? c.fact_moon_illum : null;
+  let keys = (Array.isArray(c?.facts) ? c.facts : defaults).filter((k) => FACTS.some(([x]) => x === k));
+  if (couple && keys.includes("moon_phase")) keys = keys.filter((k) => k !== "moon_illumination");
   if (!keys.length) return nothing;
   const label = Object.fromEntries(FACTS);
   const style = [
@@ -99,16 +105,19 @@ export function renderFacts(hass, c, defaults = ALL_FACTS, on = false) {
     c.fact_value_weight ? `--fv-weight:${c.fact_value_weight}` : "",
     c.fact_value_color ? `--fv-color:${c.fact_value_color}` : "",
     `--moon-img:${Number(c.fact_moon_size) || 36}px`,
+    `--f-align:${c.fact_align || "left"}`,
   ].filter(Boolean).join(";");
+  const illum = html`<div class="illum ${c.fact_illum_value === "right" ? "inline" : ""}"><span class="fl">${label.moon_illumination}</span><span class="fv">${v.moon_illumination}</span></div>`;
   return html`<div class="facts" style=${style}>${keys.map((k) =>
     k === "moon_phase"
-      ? html`<div class="fact moon"><span class="mi">${moonSvg(v.moon_phase_value)}</span><div><span class="fl">${label[k]}</span><span class="fv">${v.moon_phase}</span></div></div>`
+      ? html`<div class="fact moon"><span class="mi">${moonSvg(v.moon_phase_value)}</span>
+          <div class="mt ${couple === "right" ? "row" : ""}"><div><span class="fl">${label[k]}</span><span class="fv">${v.moon_phase}</span></div>${couple ? illum : nothing}</div></div>`
       : html`<div class="fact"><span class="fl">${label[k]}</span><span class="fv">${v[k]}${k === "day_length" && v.day_change ? html` <small class="fd">${v.day_change}</small>` : nothing}</span></div>`
   )}</div>`;
 }
 
 export const factStyles = css`
-  .facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 6px 14px; margin-top: 8px; }
+  .facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 6px 14px; margin-top: 8px; text-align: var(--f-align, left); }
   .fact { min-width: 0; }
   .fact .fl { display: block; font-size: var(--fl-size, 11px); font-weight: var(--fl-weight, 400); color: var(--fl-color, var(--secondary-text-color)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .fact .fv { display: block; font-size: var(--fv-size, 13px); font-weight: var(--fv-weight, 400); color: var(--fv-color, var(--primary-text-color)); white-space: nowrap; font-variant-numeric: tabular-nums; }
@@ -118,5 +127,11 @@ export const factStyles = css`
   .fact.moon > div { min-width: 0; }
   .fact.moon .fv { overflow: hidden; text-overflow: ellipsis; }
   .fact.moon .mi { flex: 0 0 auto; line-height: 0; }
+  .facts[style*="--f-align:center"] .fact.moon { justify-content: center; }
+  .facts[style*="--f-align:right"] .fact.moon { justify-content: flex-end; }
+  .fact.moon .mt { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+  .fact.moon .mt.row { flex-direction: row; align-items: flex-start; gap: 14px; }
+  .illum .fl, .illum .fv { display: block; }
+  .illum.inline { display: flex; align-items: baseline; gap: 6px; }
   .fact.moon .mi svg { width: var(--moon-img, 36px); height: var(--moon-img, 36px); display: block; }
 `;
