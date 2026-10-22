@@ -143,6 +143,16 @@ export function stackWithNext(panels, i) {
   return list;
 }
 
+/** Move top-level panel `from` into the stack at index s (at the end). */
+export function moveIntoStack(panels, s, from) {
+  const c = { ...panels[from] };
+  for (const k of GRID_ONLY) delete c[k];
+  const list = panels.slice();
+  list[s] = { ...list[s], panels: [...(list[s].panels || []), c] };
+  list.splice(from, 1);
+  return list;
+}
+
 /** Move child j out of the stack at top-level index s, placing it after the stack. */
 export function unstack(panels, s, j) {
   const st = panels[s];
@@ -411,7 +421,7 @@ class WeatherStationFlexCardEditor extends LitElement {
 
   _panelList() {
     return html`
-      <p class="hint">Edit, show/hide, duplicate, delete and add panels. Arrange them under <b>Layout</b>. To keep panels side by side on every screen, put them in a <b>Stack</b>.</p>
+      <p class="hint">Edit, show/hide, duplicate, delete and add panels. Arrange them under <b>Layout</b>. To keep panels together (side by side, or one above the other filling in for hidden ones), add a <b>Stack</b> panel, then use <b>Move into stack</b> under it.</p>
       ${this._list(this._panels, (list, extra) => this._setPanels(list, extra), "")}
     `;
   }
@@ -482,14 +492,16 @@ class WeatherStationFlexCardEditor extends LitElement {
           if (p.type === "stack") p.panels = [{ type: "metric", metric: "temperature" }, { type: "metric", metric: "humidity" }];
           setList([...panels, p]);
           this._openPanel = prefix ? `${prefix}.${panels.length}` : `${panels.length}`;
-        }}><ha-icon icon="mdi:plus"></ha-icon>${nested ? "Add to stack" : "Add panel"}</button>
+        }}><ha-icon icon="mdi:plus"></ha-icon>${nested ? "Add new to stack" : "Add panel"}</button>
       </div>
     `;
   }
 
   _panelRow(p, i, panels, setList, key, nested) {
     const m = panelMeta(p);
-    const open = this._openPanel === key || String(this._openPanel || "").startsWith(`${key}.`);
+    // A stack's children are listed under it (not inside its settings), so a
+    // stack row is open only for its own settings.
+    const open = this._openPanel === key || (p.type !== "stack" && String(this._openPanel || "").startsWith(`${key}.`));
     const hidden = p.show === false;
     const reset = () => this._flexEds.clear();
     const move = (d) => {
@@ -522,19 +534,12 @@ class WeatherStationFlexCardEditor extends LitElement {
           ? nothing
           : html`<button class="ib" title=${hidden ? "Show when the dashboard loads" : "Hide when the dashboard loads"} @click=${() => update(prune({ ...p, show: hidden ? undefined : false }))}>
               <ha-icon icon=${hidden ? "mdi:eye-off" : "mdi:eye"}></ha-icon></button>`}
-        ${!nested && p.type !== "hero" && p.type !== "stack" && i < panels.length - 1 && panels[i + 1].type !== "hero"
-          ? html`<button class="ib" title="Stack with the next panel (one above the other; when one is hidden the other fills the space)" @click=${() => {
-              reset();
-              this._openPanel = null;
-              setList(stackWithNext(panels, i));
-            }}><ha-icon icon="mdi:view-split-horizontal"></ha-icon></button>`
-          : nothing}
         ${nested && /^\d+\.\d+$/.test(key)
-          ? html`<button class="ib" title="Move out of the stack" @click=${() => {
+          ? html`<button class="ib" title="Move out of the stack (back into the grid, after the stack)" @click=${() => {
               reset();
               this._openPanel = null;
               this._setPanels(unstack(this._panels, Number(key.split(".")[0]), i));
-            }}><ha-icon icon="mdi:arrow-collapse-right"></ha-icon></button>`
+            }}><ha-icon icon="mdi:view-split-horizontal"></ha-icon></button>`
           : nothing}
         <button class="ib" title="Edit" @click=${() => (this._openPanel = this._openPanel === key ? null : key)}><ha-icon icon=${open ? "mdi:chevron-up" : "mdi:pencil"}></ha-icon></button>
         <button class="ib" title="Duplicate" @click=${() => {
@@ -552,6 +557,29 @@ class WeatherStationFlexCardEditor extends LitElement {
         }}><ha-icon icon="mdi:delete-outline"></ha-icon></button>
       </div>
       ${open ? this._panelBody(p, key, update, nested) : nothing}
+      ${p.type === "stack" ? this._stackKids(p, i, key, update, nested) : nothing}
+    </div>`;
+  }
+
+  // A stack's panels, indented under it, plus adding new or existing panels.
+  _stackKids(p, i, key, update, nested) {
+    const top = !nested;
+    const others = top ? this._panels.map((q, k) => [q, k]).filter(([q, k]) => k !== i && q.type !== "hero" && q.type !== "stack") : [];
+    const pick = (this._moveIn ||= {})[key] ?? (others[0]?.[1] ?? "");
+    return html`<div class="kids">
+      ${this._list(p.panels || [], (list, extra) => update({ ...p, panels: list }, extra), key)}
+      ${others.length
+        ? html`<div class="add">
+            <select class="sel" aria-label="Panel to move into this stack" @change=${(e) => { this._moveIn[key] = Number(e.target.value); this.requestUpdate(); }}>
+              ${others.map(([q, k]) => html`<option value=${k} ?selected=${k === pick}>${panelName(q)}</option>`)}
+            </select>
+            <button class="btn" @click=${() => {
+              this._flexEds.clear();
+              this._openPanel = null;
+              this._setPanels(moveIntoStack(this._panels, i, Number(pick)));
+            }}><ha-icon icon="mdi:view-split-horizontal"></ha-icon>Move into stack</button>
+          </div>`
+        : nothing}
     </div>`;
   }
 
@@ -580,10 +608,6 @@ class WeatherStationFlexCardEditor extends LitElement {
       ${m.schema.length
         ? html`<div class="grp">${m.label} options</div>
             ${this._form(formData(p, m.schema), m.schema, (v) => update({ type: p.type, ...applyForm(p, m.schema, v) }))}`
-        : nothing}
-      ${p.type === "stack"
-        ? html`<div class="grp">Panels in this stack</div>
-            <div class="nest">${this._list(p.panels || [], (list, extra) => update({ ...p, panels: list }, extra), key)}</div>`
         : nothing}
       ${m.flex
         ? html`<div class="grp">${p.type === "sky_tracker" ? "Arc & sky details" : "Weather Flex sections"}</div>
@@ -696,6 +720,8 @@ class WeatherStationFlexCardEditor extends LitElement {
     .chk span:not(.tag) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .chk ha-icon { --mdc-icon-size: var(--ltek-icon-sm); color: var(--ltek-c-icon); flex: 0 0 auto; }
     .chk .tag { font-size: var(--ltek-fs-tiny); color: var(--ltek-c-muted); white-space: nowrap; }
+    /* A stack's panels, indented under its row. */
+    .kids { margin: 0 var(--ltek-sp-2) var(--ltek-sp-2) var(--ltek-sp-6, 24px); padding-left: var(--ltek-sp-3); border-left: 2px solid var(--ltek-c-accent); display: flex; flex-direction: column; gap: var(--ltek-sp-2); }
     .nest { border-left: 2px solid var(--ltek-c-border); padding-left: var(--ltek-sp-3); display: flex; flex-direction: column; gap: var(--ltek-sp-3); }
     .flexed { border-left: 2px solid var(--ltek-c-accent-fade); padding-left: var(--ltek-sp-3); }
   `;
@@ -704,4 +730,4 @@ class WeatherStationFlexCardEditor extends LitElement {
 customElements.get("weather-station-flex-card-editor") || customElements.define("weather-station-flex-card-editor", WeatherStationFlexCardEditor);
 
 // For tests.
-globalThis.__wsfcEditorHelpers = { stackWithNext, unstack };
+globalThis.__wsfcEditorHelpers = { stackWithNext, unstack, moveIntoStack };

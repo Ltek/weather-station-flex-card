@@ -1,5 +1,10 @@
 # Changelog
 
+## v2026.10.22.25
+
+- **Editor, Panels list:** a stack's panels are listed indented under the stack, so it's clear what each stack holds. Open them from there; the stack's own pencil opens only the stack's settings.
+- **Putting panels into a stack** is done from the stack: under its panels, **Add new to stack** adds a new panel, and **Move into stack** moves an existing panel in (any panel except the hero or another stack). The stack button (≡) appears only on panels inside a stack, and moves the panel back out into the grid. The "Stack with the next panel" button, which created a new stack, is gone.
+
 ## v2026.10.22.24
 
 - **New Chips panel** (`chips`): the hero's current-condition chips (feels like, humidity, dew point, wind, pressure, UV …) on their own, with all of Weather Flex's Current Weather Metrics options (which chips and their order, chips or plain rows, columns, sizes with Auto, colours).
