@@ -227,6 +227,7 @@ const config = () => ({
   metric_sources: { sources: [{ ref: `device:${DEVICE_ID}` }, { ref: "weather.openweathermap" }] },
   layout: params.get("layout") || "auto",
   remember: false,
+  ...(params.get("hero") ? { panels: [{ type: "hero", span: Number(params.get("span") || 12), rows: Number(params.get("rows") || 0), auto_scale: params.get("hero") === "auto", scale: Number(params.get("scale") || 100), flex: { wfc: { current: { clock_show_date: true } } } }, { type: "metric", metric: "temperature" }] } : {}),
   ...(params.get("style") ? { panel_radius: 10, panel_shadow: "medium", panel_border_width: 1, panel_border_color: "#4fc3f7", panel_glow: true, panel_glow_size: 8 } : {}),
   ...(params.get("img") ? { background: "image", background_image_url: params.get("img") } : {}),
   ...(params.get("bg") ? { background: "animated", panel_opacity: Number(params.get("op") || 0.55) } : {}),

@@ -4,7 +4,7 @@ A weather-station dashboard in one Home Assistant card. Panels sit in a 12-colum
 
 Built around an Ecowitt WS90 / GW2000B; works with any station whose sensors are in Home Assistant — including all three Ecowitt integrations (Home Assistant's Ecowitt, Ecowitt Local, Ecowitt Official), alone or combined. See [docs/ECOWITT_INTEGRATIONS.md](docs/ECOWITT_INTEGRATIONS.md).
 
-Current build: **v2026.10.22.20** · full history in [CHANGELOG.md](CHANGELOG.md)
+Current build: **v2026.10.22.21** · full history in [CHANGELOG.md](CHANGELOG.md)
 
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Ltek&repository=weather-station-flex-card&category=plugin)
 
@@ -47,7 +47,7 @@ Only what you change is saved, so the YAML stays short.
 
 | Type | What it shows |
 |---|---|
-| `hero` | Weather Flex header, chips and clock over the animated weather background. Larger text on wide tiles, compact on narrow ones. |
+| `hero` | Weather Flex header, chips and clock over the animated weather background. Larger text on wide tiles, compact on narrow ones. `auto_scale: true` sizes everything from the panel (with `scale`, 50–200 %). |
 | `bulletin` | Generated summary of current conditions, sun and moon times; optional text sensor and NWS Alerts sensor. |
 | `heading` | **Button Menu**: a title with station status (online / partial / offline) and, with `show_bar`, the panel buttons. |
 | `metric` | One value: today's min/max, a 24h sparkline (line or hourly bars), UV level, pressure trend. `metric:` temperature, apparent_temperature, dew_point, humidity, pressure, wind_speed, wind_gust_speed, uv_index, solar_radiation, illuminance, rain_rate, rain_today, rain_24h, rain_event, vpd, indoor_temperature, indoor_humidity — or any `entity`. |

@@ -1271,7 +1271,7 @@ import { actionHandler as iq } from "../../vendor/weather-forecast-card/src/hass
     const dark = !!(this.hass && this.hass.themes && this.hass.themes.darkMode);
     const shadow = wfcClockShadow(cc.clock_contrast, dark);
     const timeStyle =
-      `font-size:${clamp(Number(cc.clock_font_size) || 28, 8, 100)}px;` +
+      `font-size:${Number(cc.clock_font_size) > 0 ? clamp(Number(cc.clock_font_size), 8, 100) + "px" : "var(--wfc-clock-auto, 28px)"};` +
       `font-weight:${cc.clock_font_weight || "500"};` +
       (cc.clock_color ? `color:${cc.clock_color};` : "") +
       (cc.clock_font_family ? `font-family:${cc.clock_font_family};` : "") +
@@ -1316,7 +1316,7 @@ import { actionHandler as iq } from "../../vendor/weather-forecast-card/src/hass
     const dateContrast = cc.clock_date_contrast != null ? cc.clock_date_contrast : cc.clock_contrast;
     const shadow = wfcClockShadow(dateContrast, dark);
     const dStyle =
-      `font-size:${clamp(Number(cc.clock_date_font_size) || 12, 8, 100)}px;` +
+      `font-size:${Number(cc.clock_date_font_size) > 0 ? clamp(Number(cc.clock_date_font_size), 8, 100) + "px" : "var(--wfc-clock-date-auto, 12px)"};` +
       (cc.clock_date_color ? `color:${cc.clock_date_color};` : "") +
       (shadow ? `text-shadow:${shadow};` : "");
     return eq`<div class="wfc-clock-date" style=${dStyle}>${dateStr}</div>`;
@@ -4579,6 +4579,7 @@ import { actionHandler as iq } from "../../vendor/weather-forecast-card/src/hass
     if (/chip_columns/.test(field)) return { min: 1, max: 6, step: 1 };
     if (/^columns$|\.columns$/.test(field)) return { min: 1, max: 4, step: 1 };
     if (/chip_text_size|chip_icon_size/.test(field)) return { min: 0, max: 48, step: 1 };
+    if (/clock_font_size|clock_date_font_size/.test(field)) return { min: 0, max: 100, step: 1 };
     if (/header_icon_size/.test(field)) return { min: 0, max: 140, step: 2 };
     if (/header_state_size|header_temp_size/.test(field)) return { min: 0, max: 64, step: 1 };
     if (/global_icon_size|global_text_size/.test(field)) return { min: 0, max: 48, step: 1 };
@@ -6050,7 +6051,7 @@ import { actionHandler as iq } from "../../vendor/weather-forecast-card/src/hass
                         this._wfcToggleSecField(id, "clock_show_seconds", e)
                       )}
                       <div class="wfc-row">
-                        ${this._wfcNumField(id, "clock_font_size", "Size", "px", s.clock_font_size, 28)}
+                        ${this._wfcAutoSizeField(id, "clock_font_size", "Time size")}
                         ${this._wfcSelect(
                           id,
                           "clock_font_weight",
@@ -6117,7 +6118,7 @@ import { actionHandler as iq } from "../../vendor/weather-forecast-card/src/hass
                             : s.clock_date_placement,
                           "with_time"
                         )}
-                        ${this._wfcNumField(id, "clock_date_font_size", "Size", "px", s.clock_date_font_size, 12)}
+                        ${this._wfcAutoSizeField(id, "clock_date_font_size", "Date size")}
                         ${this._wfcColorField("Date color", s.clock_date_color, (e) =>
                           this._wfcSetSecField(id, "clock_date_color", e.target.value)
                         )}

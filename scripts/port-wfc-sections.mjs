@@ -200,6 +200,19 @@ const patches = [
    "        const d = `M${c} ${c - r} A${r} ${r} 0 0 ${lit} ${c} ${c + r} A${rx} ${r} 0 0 ${f > 0 ? 1 - lit : lit} ${c} ${c - r} Z`;\n" +
    "        marker = eq`<span class=\"${cls} wfc-sunarc-sun-icon wfc-sunarc-moon-icon\" style=${style}><svg viewBox=\"0 0 22 22\" width=\"22\" height=\"22\" style=\"display:block\"><circle cx=\"11\" cy=\"11\" r=\"10\" fill=\"#2b2f36\" stroke=\"rgba(255,255,255,.35)\" stroke-width=\".8\"></circle><path d=${d} fill=\"#e9e6d6\"></path></svg></span>`;\n" +
    "      } else if (!isDay && cfg.night_moon) {\n        const moon = cfg.moon_icon || \"mdi:weather-night\";"],
+  // Auto size for the clock time and date (0 = Auto): the host sets
+  // --wfc-clock-auto / --wfc-clock-date-auto (the Weather Station hero scales
+  // them with the tile); standalone they fall back to the old defaults.
+  ["      `font-size:${clamp(Number(cc.clock_font_size) || 28, 8, 100)}px;` +\n",
+   "      `font-size:${Number(cc.clock_font_size) > 0 ? clamp(Number(cc.clock_font_size), 8, 100) + \"px\" : \"var(--wfc-clock-auto, 28px)\"};` +\n"],
+  ["      `font-size:${clamp(Number(cc.clock_date_font_size) || 12, 8, 100)}px;` +\n",
+   "      `font-size:${Number(cc.clock_date_font_size) > 0 ? clamp(Number(cc.clock_date_font_size), 8, 100) + \"px\" : \"var(--wfc-clock-date-auto, 12px)\"};` +\n"],
+  ['${this._wfcNumField(id, "clock_font_size", "Size", "px", s.clock_font_size, 28)}',
+   '${this._wfcAutoSizeField(id, "clock_font_size", "Time size")}'],
+  ['${this._wfcNumField(id, "clock_date_font_size", "Size", "px", s.clock_date_font_size, 12)}',
+   '${this._wfcAutoSizeField(id, "clock_date_font_size", "Date size")}'],
+  ["    if (/chip_text_size|chip_icon_size/.test(field)) return { min: 0, max: 48, step: 1 };\n",
+   "    if (/chip_text_size|chip_icon_size/.test(field)) return { min: 0, max: 48, step: 1 };\n    if (/clock_font_size|clock_date_font_size/.test(field)) return { min: 0, max: 100, step: 1 };\n"],
 ];
 for (const [from, to] of patches) {
   if (!body.includes(from)) throw new Error(`Patch target missing: ${from}`);

@@ -116,6 +116,25 @@ const HERO_NARROW = {
   wfc: { current: { clock_placement: "below-right", clock_font_size: 26, clock_date_font_size: 12 } },
 };
 
+/**
+ * Hero sizes (px) for a tile of width w and height h (0 = sized to content),
+ * times `scale` (1 = 100 %). The temperature leads; everything else follows it.
+ */
+export function heroAutoSizes(w, h, scale = 1) {
+  let temp = Math.max(30, Math.min(120, w * 0.07));
+  if (h > 0) temp = Math.min(temp, Math.max(30, h * 0.36));
+  temp *= scale;
+  const r = (x) => Math.round(x);
+  return {
+    header_temp_size: r(temp),
+    header_state_size: r(Math.max(12, temp * 0.33)),
+    header_icon_size: r(temp * 1.3),
+    clock: r(temp * 0.78),
+    date: r(Math.max(10, temp * 0.25)),
+    chip_scale: Math.round(Math.max(0.6, Math.min(2.5, (temp / 64) * 1.05)) * 100) / 100,
+  };
+}
+
 // Weather Flex sizes its ha-card to its sections (height:auto !important).
 // In a hero tile the card should fill the tile so its animated background
 // does too. Adopted sheets come after the card's own <style> in cascade order.
@@ -194,6 +213,10 @@ class WsfcHeroPanel extends WsfcFlexPanel {
       const w = e.contentRect.width;
       const size = w >= 900 ? "large" : w < 560 ? "narrow" : "normal";
       if (size !== this._size) this._size = size;
+      // Auto sizes follow the tile; re-render only when they change.
+      const h = this.parentElement?.classList.contains("auto") ? 0 : e.contentRect.height;
+      const key = `${Math.round(w / 8)}:${Math.round(h / 8)}`;
+      if (key !== this._dimKey) { this._dimKey = key; this._dims = { w, h }; this.requestUpdate(); }
     });
     this._ro.observe(this);
   }
@@ -202,11 +225,25 @@ class WsfcHeroPanel extends WsfcFlexPanel {
     this._ro?.disconnect();
   }
 
+  get _auto() {
+    const { w = 0, h = 0 } = this._dims || {};
+    return heroAutoSizes(w || 700, h, Math.max(0.3, Math.min(3, Number(this.config?.scale ?? 100) / 100)));
+  }
+
   _coreConfig() {
     let cfg = flexBase("hero", this.station);
     if (this._size === "large") cfg = deepMerge(cfg, HERO_LARGE);
     if (this._size === "narrow") cfg = deepMerge(cfg, HERO_NARROW);
     cfg = deepMerge(cfg, this.config?.flex || {});
+    // "Set scale to Auto": every size follows the tile (and the scale %), over
+    // any size set in the sections editor.
+    if (this.config?.auto_scale) {
+      const a = this._auto;
+      cfg = deepMerge(cfg, { wfc: {
+        current: { header_temp_size: a.header_temp_size, header_state_size: a.header_state_size, header_icon_size: a.header_icon_size, clock_font_size: 0, clock_date_font_size: 0 },
+        details: { chip_scale: a.chip_scale, chip_text_size: "", chip_icon_size: "", global_icon_size: Math.round(22 * a.chip_scale), global_text_size: Math.round(14 * a.chip_scale) },
+      } });
+    }
     // The card draws the animated background behind every panel: the hero
     // becomes transparent and stops animating on its own.
     if (this.cardBg) cfg = deepMerge(cfg, { show_condition_effects: false, wfc: { card: { bg_color: "transparent" } } });
@@ -221,7 +258,9 @@ class WsfcHeroPanel extends WsfcFlexPanel {
 
   render() {
     if (!this.hass || !this.station?.entity) return nothing;
-    return html`<div class="core">${this._slot.update(this._coreConfig(), this.hass)}</div>
+    // Values for sizes left at Auto (0) in the sections editor, e.g. the clock and date.
+    const a = this._auto;
+    return html`<div class="core" style="--wfc-clock-auto:${a.clock}px;--wfc-clock-date-auto:${a.date}px">${this._slot.update(this._coreConfig(), this.hass)}</div>
       ${this._slot.error ? html`<div class="err">${this._slot.error}</div>` : nothing}`;
   }
 }

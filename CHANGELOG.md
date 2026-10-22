@@ -1,5 +1,11 @@
 # Changelog
 
+## v2026.10.22.21
+
+- **Hero: Set scale to Auto** (`auto_scale: true`, at the top of the Hero section). The temperature, condition text, icon, clock, date and metric chips are sized from the hero panel's width and height, over the sizes set in the sections editor, so they stay in proportion when the panel or screen changes size.
+- **Hero: Auto scaling** (`scale`, 50–200 %, default 100) makes the auto sizes bigger or smaller.
+- **Clock and date sizes can be Auto:** in Clock & Date, the time and date sizes are now sliders with Auto at 0 (like the header sizes). At Auto they follow the hero panel's size, even with Set scale to Auto off.
+
 ## v2026.10.22.20
 
 - **Radar:** the loop time and a round play/pause button are now in the panel's header (with the overlay picker, if set), instead of a bar under the map, so the map gets the full height.
