@@ -1,5 +1,9 @@
 # Changelog
 
+## v2026.10.22.30
+
+- **Wind panel fits its height** ("Fit to the panel", on by default): the compass or rose shrinks so the readings, bars, statistics, buttons and chart all fit the panel's height. Before, a tall Wind panel stretched its rows, so the panels beside it (e.g. a half-height Sky Tracker and Daily forecast) got empty space at the bottom. In fit mode the chart is a fixed strip. Turn it off per panel with `fit: false`.
+
 ## v2026.10.22.29
 
 - **"Unsaved changes" banner** on the card editor's preview (like AlertTicker's test-mode banner): it appears at the top once you change something, goes away if you change it back, and clears when the editor closes. It never shows on the dashboard itself.

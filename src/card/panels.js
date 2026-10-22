@@ -87,10 +87,11 @@ export const PANEL_TYPES = {
     ],
   },
   wind: {
-    tag: "wsfc-panel-wind", label: "Wind", icon: "mdi:weather-windy", span: 6, rows: 4,
+    tag: "wsfc-panel-wind", label: "Wind", icon: "mdi:weather-windy", span: 6, rows: 4, fit: true,
     // Settings grouped by what they change (the editor shows a heading per group).
     groups: [
       ["View", [
+        { name: "fit", selector: { boolean: {} }, default: true, helper: "Shrink the compass or rose so everything fits the panel's height (instead of the panel growing and stretching its row)." },
         { name: "view", selector: { select: { options: opt([["compass", "Compass"], ["rose", "Wind rose"]]) } } },
         { name: "show_view_buttons", selector: { boolean: {} }, default: true, helper: "Compass / Rose buttons in the header." },
       ]],

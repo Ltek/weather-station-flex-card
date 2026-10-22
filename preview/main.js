@@ -235,6 +235,12 @@ const config = () => ({
   layout: params.get("layout") || "auto",
   remember: false,
   ...(params.get("hero") ? { panels: [{ type: "hero", span: Number(params.get("span") || 12), rows: Number(params.get("rows") || 0), auto_scale: params.get("hero") === "auto", scale: Number(params.get("scale") || 100), flex: { wfc: { current: { clock_show_date: true } } } }, { type: "metric", metric: "temperature" }] } : {}),
+  ...(params.get("panels") === "fit" ? { layout: "fullscreen", panels: [
+    { type: "hero", span: 8, rows: 1 }, { type: "pollen", span: 4, rows: 1 },
+    { type: "sky_tracker", span: 8, rows: 0.5, show_facts: true }, { type: "wind", span: 4, rows: 1, view: "rose", wr_corners: "on", wr_stats: "bottom", wr_buttons: "periods", chart_legend: true, ...(params.get("nofit") ? { fit: false } : {}) },
+    { type: "daily", span: 8, rows: 0.5 },
+    { type: "temp_humidity", span: 6, rows: 1 }, { type: "uv_solar", span: 6, rows: 1 },
+  ] } : {}),
   ...(params.get("panels") === "wind2" ? { panels: [
     { type: "wind", view: "rose", span: 6, title: "Rose, readings below, stats top, bars bottom", readings_position: "below", wr_stats: "top", wr_bars: "bottom", show_chart: false,
       stats_items: ["min", "avg", "max", "calm"], stats_size: 15, stats_weight: "700", stats_color: "#4fc3f7", wr_arrow_size: 70, wr_arrow_color: "#ffca28", wr_speed_arrows: "on",

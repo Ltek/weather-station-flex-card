@@ -20,6 +20,8 @@ class WsfcWind extends LitElement {
     hass: { attribute: false },
     config: { attribute: false },
     station: { attribute: false },
+    fit: { attribute: false }, // set by the card: the panel has a fixed height to fit into
+    _fitPx: { state: true }, // fitted rose / dial width in px (null = not limited)
     _view: { state: true },
     _rose: { state: true },
     _error: { state: true },
@@ -45,7 +47,9 @@ class WsfcWind extends LitElement {
       .spd { fill: var(--primary-text-color); font-size: 26px; font-weight: 500; text-anchor: middle; }
       .unit { fill: var(--secondary-text-color); font-size: 11px; text-anchor: middle; }
       .ptr { fill: var(--wsfc-wind); transition: transform .8s ease; }
-      .wr { min-height: 200px; }
+      .wr { min-height: 0; }
+      /* Fit mode: the chart is a fixed strip and the rose / dial takes what's left. */
+      :host([fit]) .body { flex: 0 0 auto; height: var(--wsfc-wind-chart-h, 110px); min-height: 0; }
       .wr > * { --ha-card-background: transparent; --ha-card-box-shadow: none; --ha-card-border-width: 0; display: block; }
     `,
   ];
@@ -86,12 +90,14 @@ class WsfcWind extends LitElement {
         this._ensureRose(windroseCard(c, ids, unit));
         if (this._wrEl) this._wrEl.hass = this.hass;
         const sc = Math.max(30, Math.min(150, Number(c.wr_scale ?? 100)));
-        main = this._wrErr ? html`<div class="note">${this._wrErr}</div>` : html`<div class="wr" style=${sc !== 100 ? `width:${sc}%;margin:0 auto` : ""}>${this._wrEl || ""}</div>`;
+        const w = this.fit && this._fitPx ? `width:min(${sc}%, ${this._fitPx}px);margin:0 auto` : sc !== 100 ? `width:${sc}%;margin:0 auto` : "";
+        main = this._wrErr ? html`<div class="note">${this._wrErr}</div>` : html`<div class="wr fitmain" style=${w}>${this._wrEl || ""}</div>`;
       }
     }
     if (!main) {
       const ds = Math.max(50, Math.min(250, Number(c.dial_scale ?? 100))) / 100;
-      const dial = html`<div class="dial" style=${ds !== 1 ? `width:min(${Math.round(180 * ds)}px, ${Math.round(42 * ds)}%);` : ""}>${view === "rose" ? this._roseSvg(unit) : this._compassSvg(sp?.value, unit, di?.value)}</div>`;
+      const dw = `min(${Math.round(180 * ds)}px, ${Math.round(42 * ds)}%${this.fit && this._fitPx ? `, ${this._fitPx}px` : ""})`;
+      const dial = html`<div class="dial fitmain" style=${ds !== 1 || (this.fit && this._fitPx) ? `width:${dw};` : ""}>${view === "rose" ? this._roseSvg(unit) : this._compassSvg(sp?.value, unit, di?.value)}</div>`;
       main = rp === "side"
         ? html`<div class="top">${dial}<div class="side">${readings}${legend}</div></div>`
         : html`<div class="top center">${dial}</div>${legend ? html`<div class="side">${legend}</div>` : ""}`;
@@ -190,7 +196,10 @@ class WsfcWind extends LitElement {
       <text class="unit" x="100" y="196">calm ${Math.round(rose.calm * 100)}% · peak ${Math.round(max * 100)}%</text></svg>`;
   }
 
-  updated() {
+  updated(changed) {
+    if (changed.has("fit")) this.toggleAttribute("fit", !!this.fit);
+    if (this.fit) this._watchFit();
+    else if (this._fitRo) { this._fitRo.disconnect(); this._fitRo = null; this._fitPx = null; }
     const ids = this._ids();
     const key = `${ids.speed}|${ids.gust}|${ids.dir}|${this.hass?.themes?.darkMode}`;
     if (key !== this._loadedKey || Date.now() - (this._loadedAt || 0) > 5 * 60e3) {
@@ -201,8 +210,52 @@ class WsfcWind extends LitElement {
     if (this._pendingDraw && this.renderRoot.querySelector("canvas")) this._drawChart(this._pendingDraw);
   }
 
+  // Fit mode: the panel has a fixed height. Size the rose / dial (it sizes from
+  // its width) so the whole panel's content fits that height.
+  _watchFit() {
+    if (!this._fitRo) {
+      this._fitRo = new ResizeObserver(() => this._refit());
+      this._fitRo.observe(this);
+    }
+    // The Wind Rose Card renders asynchronously; watch it too.
+    const main = this.renderRoot.querySelector(".fitmain");
+    if (main && main !== this._fitObserved) {
+      if (this._fitObserved) this._fitRo.unobserve(this._fitObserved);
+      this._fitRo.observe(main);
+      this._fitObserved = main;
+    }
+    requestAnimationFrame(() => this._refit());
+  }
+
+  _refit() {
+    const main = this.renderRoot.querySelector(".fitmain");
+    const kids = [...this.renderRoot.children].filter((k) => k.getBoundingClientRect().height > 0 && getComputedStyle(k).position !== "absolute");
+    if (!main || !kids.length) return;
+    const hostH = this.clientHeight;
+    const mh = main.getBoundingClientRect().height, mw = main.getBoundingClientRect().width;
+    if (!hostH || !mh || !mw) return;
+    const top = kids[0].getBoundingClientRect().top, bottom = Math.max(...kids.map((k) => k.getBoundingClientRect().bottom));
+    const used = bottom - top;
+    const extra = used - hostH; // > 0: too tall; < 0: room to grow
+    if (Math.abs(extra) < 3) return;
+    // The rose / dial is about as tall as it is wide (plus fixed parts), so
+    // changing its width by Δ changes its height by about Δ × (mh / mw).
+    const ratio = Math.max(0.5, mh / mw);
+    let next = mw - extra / ratio;
+    const maxW = main.parentElement?.clientWidth || this.clientWidth;
+    next = Math.max(80, Math.min(maxW, next));
+    if (extra < 0 && this._fitPx == null) return; // fits already at full size
+    if (next >= maxW - 1) next = null; // no limit needed
+    if (next != null) next = Math.round(next);
+    if (next === this._fitPx || (next != null && this._fitPx != null && Math.abs(next - this._fitPx) < 2)) return;
+    this._fitPx = next;
+  }
+
   disconnectedCallback() {
     super.disconnectedCallback();
+    this._fitRo?.disconnect();
+    this._fitRo = null;
+    this._fitObserved = null;
     this._chart?.destroy();
     this._chart = null;
     this._loadedKey = "";

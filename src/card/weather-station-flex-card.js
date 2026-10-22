@@ -438,12 +438,16 @@ class WeatherStationFlexCard extends LitElement {
       // Tracks are content-sized; a panel spanning N rows gets the height of N row units.
       // Grid tracks are half a row unit, so heights can be 0.5, 1, 1.5 …; a
       // half row is (row − gap) / 2, so two half panels plus their gap fill one row.
-      const style = `grid-column: span ${span};grid-row: span ${rows ? Math.max(1, Math.round(rows * 2)) : 2};${rows ? `min-height:calc(${rows} * var(--wsfc-row) + ${rows - 1} * var(--wsfc-gap));` : ""}`;
+      // Panels that fit their content to the panel (Wind) get a fixed height, so
+      // a tall rose shrinks instead of stretching the row and its neighbours.
+      const fit = !!meta.fit && rows > 0 && p.fit !== false && this._focus == null;
+      const h = `calc(${rows} * var(--wsfc-row) + ${rows - 1} * var(--wsfc-gap))`;
+      const style = `grid-column: span ${span};grid-row: span ${rows ? Math.max(1, Math.round(rows * 2)) : 2};${rows ? `min-height:${h};` : ""}`;
       const bare = meta.bare || p.type === "hero";
       const tapToOpen = p.display === "tile_popup";
       const expandable = !bare && !tapToOpen && !["metric", "stack", "clock", "chips"].includes(p.type) && size !== "narrow";
       const bg = p.tile_background && p.tile_background !== "default" ? `bg-${p.tile_background}` : "";
-      return html`<section class="tile ${p.type} ${meta.bare ? "bare" : ""} ${bg} ${rows ? "" : "auto"} ${tapToOpen ? "tap" : ""}" style=${style}>
+      return html`<section class="tile ${p.type} ${meta.bare ? "bare" : ""} ${bg} ${rows ? "" : "auto"} ${fit ? "fit" : ""} ${tapToOpen ? "tap" : ""}" style=${style}>
         ${tapToOpen
           ? html`<button class="tap-open" type="button" aria-haspopup="dialog" aria-label=${`Open ${p.title || this._autoTitle(p)}`}
               @click=${() => (this._popup = i)}><span><ha-icon icon="mdi:arrow-expand"></ha-icon></span></button>`
@@ -488,6 +492,7 @@ class WeatherStationFlexCard extends LitElement {
     el.station = this._station;
     el.cardBg = this._animatedBg;
     el.lite = this._lite;
+    el.fit = !popup && !!panelMeta(p)?.fit && rowsOf(p) > 0 && p.fit !== false && this._focus == null;
     el.hass = this.hass;
     if (p.type === "heading") el.bar = p.show_bar && this._config.panel_bar !== false ? this._renderBar() : null;
     // A stack skips children that are toggled off or hiding themselves; the others fill the space.
@@ -549,6 +554,11 @@ class WeatherStationFlexCard extends LitElement {
     .bgimg::after { content: ""; position: absolute; inset: 0; background: rgba(0, 0, 0, var(--dim, 0.25)); border-radius: inherit; }
 
     /* "Tap to open larger": the tile is a live preview; one tap opens the pop-up. */
+    /* Fit-to-panel tiles: their content doesn't size the rows (contain: size);
+       the tile fills its rows (at least its own height) and the panel shrinks
+       its content to fit. */
+    .tile.fit { overflow: hidden; contain: size; }
+    .tile.fit > :not(.expand):not(.tap-open) { flex: 1 1 0; min-height: 0; }
     .tile.tap { cursor: pointer; }
     /* The live preview never takes the pointer (a map would swallow taps), and
        its own stacking (Leaflet panes) stays under the open button. */
