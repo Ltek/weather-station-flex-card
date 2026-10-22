@@ -79,7 +79,7 @@ const LABELS = {
   show_moon: "Show moon", show_sun: "Show sun", attribute: "Text attribute", alerts_entity: "Alerts sensor", card: "Card configuration",
   show_status: "Show station status", show_devices: "Show device names", overlay: "Layer", model: "Forecast model", level: "Altitude", wind_unit: "Wind unit", marker: "Location pin", preset: "Graph", engine: "Graph card", days_to_show: "Days", period: "Resolution", chart_type: "Chart type", stat_types: "Values", show_chart: "Altitude chart", show_arc: "Sun arc", show_sky: "Sky gradient & forecast row", timeframe: "Time window", hours: "Hours", anchor: "Now is", moon: "Moon at night", moon_phase: "Draw the moon phase", background: "Card background", panel_opacity: "Panel opacity", panel_blur: "Panel blur", sky_bar: "Sky Bar in the hero", show_facts: "Show sun times", moon_size: "Moon size", direction: "Direction", min_width: "Minimum width", grow: "Grow", show_bar: "Panel buttons here", lite_editing: "Pause animations and maps while editing", background_image: "Background image", background_image_url: "Background image URL", background_image_fit: "Image fit", background_dim: "Darken image",
   panel_radius: "Corner radius", panel_shadow: "Shadow", panel_border_width: "Border width", panel_border_color: "Border color", panel_glow: "Glow", panel_glow_color: "Glow color", panel_glow_size: "Glow size",
-  rose_engine: "Wind rose", windrose_preset: "Wind Rose Card preset", windrose: "Wind Rose Card options", auto_scale: "Set scale to Auto", scale: "Auto scaling", device: "Pollen location", hide_off_season: "Hide out-of-season species", hide_when_off_season: "Hide the panel out of season", hide_when_none: "Hide the panel when all are None", species: "Species", max_rows: "Rows", show_tomorrow: "Tomorrow's trend", show_season: "Season strip", location: "Town / area text",
+  rose_engine: "Wind rose", windrose_preset: "Wind Rose Card preset", windrose: "Wind Rose Card options", auto_scale: "Set scale to Auto", show_time: "Show the time", show_seconds: "Seconds", time_format: "Time format", show_date: "Show the date", date_format: "Date format", align: "Alignment", auto_size: "Auto size", time_size: "Time size", date_size: "Date size", time_weight: "Time weight", date_color: "Date color", scale: "Auto scaling", device: "Pollen location", hide_off_season: "Hide out-of-season species", hide_when_off_season: "Hide the panel out of season", hide_when_none: "Hide the panel when all are None", species: "Species", max_rows: "Rows", show_tomorrow: "Tomorrow's trend", show_season: "Season strip", location: "Town / area text",
   seasons: "Season months", entities: "Sensors", pollutants: "Pollutants", show_scale: "AQI scale", show_aqi: "Show the AQI", extra: "More readings", bar_height: "Bar height", source: "Source text", show_source: "Show the source", show_location: "Show the town / area", hide_none: "Hide species at None", show_nothing: "Show the \"nothing in the air\" text", nothing_text: "\"Nothing in the air\" text", "entities.aqi": "AQI sensor",
   "entities.pm2_5": "PM2.5 sensor", "entities.pm10": "PM10 sensor", "entities.ozone": "Ozone sensor", "entities.co2": "CO₂ sensor",
 };
@@ -380,6 +380,7 @@ class WeatherStationFlexCardEditor extends LitElement {
     // difference from the panel without `flex:` is stored.
     const effective = (q) => (q.type === "sky_tracker" ? trackerConfig(q, this._station) : deepMerge(flexBase(q.type, this._station), q.flex || {}));
     ed.wsfcPanels = panelMeta(p)?.flexPanels || null;
+    ed.wsfcHide = panelMeta(p)?.flexHide || null;
     ed._wsfcOnChange = (emitted) => {
       const np = clone(p);
       const override = flexOverride(emitted, effective({ ...p, flex: undefined }));
@@ -465,7 +466,7 @@ class WeatherStationFlexCardEditor extends LitElement {
     const nested = !!prefix;
     // Hero first, then the rest alphabetically.
     const types = Object.entries(PANEL_TYPES)
-      .filter(([k]) => k !== "map" && !(nested && k === "hero"))
+      .filter(([k]) => !(nested && k === "hero"))
       .sort(([a, x], [b, y]) => (a === "hero" ? -1 : b === "hero" ? 1 : x.label.localeCompare(y.label)));
     const addKey = prefix || "top";
     const addType = (this._addTypes ||= {})[addKey] || (nested ? "metric" : this._addType);

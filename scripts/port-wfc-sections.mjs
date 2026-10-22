@@ -213,6 +213,16 @@ const patches = [
    '${this._wfcAutoSizeField(id, "clock_date_font_size", "Date size")}'],
   ["    if (/chip_text_size|chip_icon_size/.test(field)) return { min: 0, max: 48, step: 1 };\n",
    "    if (/chip_text_size|chip_icon_size/.test(field)) return { min: 0, max: 48, step: 1 };\n    if (/clock_font_size|clock_date_font_size/.test(field)) return { min: 0, max: 100, step: 1 };\n"],
+  // wsfcHide (set by the Weather Station editor): fields that panel options
+  // control instead (e.g. Sky Tracker's time window and moon), hidden here.
+  ["  edProto._wfcSelect = function (id, field, label, options, current, dflt) {\n",
+   "  edProto._wfcSelect = function (id, field, label, options, current, dflt) {\n    if (this.wsfcHide && this.wsfcHide.includes(field)) return eY;\n"],
+  ["  edProto._wfcNumField = function (id, field, label, suffix, value, dflt) {\n",
+   "  edProto._wfcNumField = function (id, field, label, suffix, value, dflt) {\n    if (this.wsfcHide && this.wsfcHide.includes(field)) return eY;\n"],
+  ['${this._wfcGroup("Timeframe")}', '${this.wsfcHide && this.wsfcHide.includes("timeframe_mode") ? eY : this._wfcGroup("Timeframe")}'],
+  ['${this._wfcGroup("Timeframe")}', '${this.wsfcHide && this.wsfcHide.includes("timeframe_mode") ? eY : this._wfcGroup("Timeframe")}'],
+  ['                ${this._wfcCheckbox("Use a moon icon at night (between sunset & sunrise)", !!s.night_moon, (e) =>\n                  this._wfcToggleSecField(id, "night_moon", e)\n                )}\n                ${s.night_moon\n',
+   '                ${this.wsfcHide && this.wsfcHide.includes("night_moon") ? eY : this._wfcCheckbox("Use a moon icon at night (between sunset & sunrise)", !!s.night_moon, (e) =>\n                  this._wfcToggleSecField(id, "night_moon", e)\n                )}\n                ${s.night_moon && !(this.wsfcHide && this.wsfcHide.includes("night_moon"))\n'],
 ];
 for (const [from, to] of patches) {
   if (!body.includes(from)) throw new Error(`Patch target missing: ${from}`);

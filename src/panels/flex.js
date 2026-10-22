@@ -1,5 +1,5 @@
-// Panels that render Weather Flex sections: hero, flex (any Weather Flex
-// config), forecast and sun_moon. A panel's `flex:` holds Weather Flex config
+// Panels that render Weather Flex sections: hero, chips, forecast, hourly,
+// daily and sky_tracker. A panel's `flex:` holds Weather Flex config
 // (exactly what Weather Flex Card takes) deep-merged over the type's base.
 import { LitElement, html, css, nothing } from "lit";
 import { panelStyles, head } from "./shared.js";
@@ -102,8 +102,15 @@ export const FLEX_BASES = {
       },
     },
   },
-  // Generic: Weather Flex Card's own defaults (current header + daily forecast).
-  flex: {},
+};
+// Chips: the hero's Current Weather Metrics section on its own.
+FLEX_BASES.chips = {
+  wfc: {
+    order: ["details"],
+    current: { show: false },
+    details: { ...FLEX_BASES.hero.wfc.details, items: FLEX_BASES.hero.wfc.details.items.map((x) => ({ ...x })) },
+    hourly: { show: false }, daily: { show: false }, sun_position: { show: false }, sun_arc: { show: false },
+  },
 };
 
 // Hero size presets by tile width (applied under the user's own settings).
@@ -164,7 +171,7 @@ const coreStyles = css`
 class WsfcFlexPanel extends LitElement {
   static properties = { hass: { attribute: false }, config: { attribute: false }, station: { attribute: false }, _size: { state: true } };
   static styles = [panelStyles, coreStyles];
-  type = "flex";
+  type = "";
   defaultTitle = "Weather";
   defaultIcon = "mdi:weather-partly-cloudy";
 
@@ -181,7 +188,7 @@ class WsfcFlexPanel extends LitElement {
     if (!this.hass || !this.station?.entity) return nothing;
     const core = this._slot.update(this._coreConfig(), this.hass);
     // Generic flex panels show a title only when one is set.
-    const showHead = this.type === "flex" ? !!this.config?.title : this.config?.show_title !== false;
+    const showHead = this.titleOnlyWhenSet ? !!this.config?.title : this.config?.show_title !== false;
     return html`
       ${showHead ? head(this.config, this.defaultIcon, this.defaultTitle) : nothing}
       <div class="core">${core}</div>
@@ -315,6 +322,13 @@ export function trackerConfig(p, station) {
   return cfg;
 }
 
+class WsfcChipsPanel extends WsfcFlexPanel {
+  type = "chips";
+  defaultTitle = "Current conditions";
+  defaultIcon = "mdi:format-list-bulleted-square";
+  titleOnlyWhenSet = true;
+}
+
 class WsfcSkyTracker extends WsfcFlexPanel {
   type = "sky_tracker";
   defaultTitle = "Sky Tracker";
@@ -349,7 +363,7 @@ class WsfcSkyTracker extends WsfcFlexPanel {
   }
 }
 
-customElements.get("wsfc-panel-flex") || customElements.define("wsfc-panel-flex", WsfcFlexPanel);
+customElements.get("wsfc-panel-chips") || customElements.define("wsfc-panel-chips", WsfcChipsPanel);
 customElements.get("wsfc-panel-hero") || customElements.define("wsfc-panel-hero", WsfcHeroPanel);
 customElements.get("wsfc-panel-forecast") || customElements.define("wsfc-panel-forecast", WsfcForecastPanel);
 customElements.get("wsfc-panel-hourly") || customElements.define("wsfc-panel-hourly", WsfcHourlyPanel);

@@ -132,6 +132,8 @@ export const PANEL_TYPES = {
   sky_tracker: {
     tag: "wsfc-panel-sky-tracker", label: "Sky Tracker", icon: "mdi:sun-clock-outline", span: 4, rows: 2, rowsCompact: 0, flex: true,
     flexPanels: ["Sun Position", "Sky Bar"],
+    // Set by the panel's own options, so hidden in the Weather Flex editor below.
+    flexHide: ["timeframe_mode", "timeframe_hours", "timeframe_anchor", "night_moon"],
     schema: [
       { name: "show_arc", selector: { boolean: {} }, default: true, helper: "Sun arc: the sun's path, its position now, sunrise and sunset; the moon at night." },
       { name: "show_sky", selector: { boolean: {} }, default: true, helper: "Sky gradient: daylight and cloud cover over time, with the forecast row (temperatures, icons, wind…)." },
@@ -236,17 +238,34 @@ export const PANEL_TYPES = {
       { name: "icon_size", selector: { number: { min: 32, max: 160, mode: "box" } } },
     ],
   },
-  flex: {
-    tag: "wsfc-panel-flex", label: "Weather Flex sections", icon: "mdi:view-agenda-outline", span: 6, rows: 0, flex: true,
+  chips: {
+    tag: "wsfc-panel-chips", label: "Chips (current conditions)", icon: "mdi:format-list-bulleted-square", span: 12, rows: 0, flex: true,
+    flexPanels: ["Current Weather Metrics"],
     schema: [],
+  },
+  clock: {
+    tag: "wsfc-panel-clock", label: "Clock", icon: "mdi:clock-outline", span: 4, rows: 1, inBar: false,
+    schema: [
+      { name: "show_time", selector: { boolean: {} }, default: true },
+      { name: "show_seconds", selector: { boolean: {} }, default: false },
+      { name: "time_format", selector: { select: { options: opt([["auto", "Home Assistant's setting"], ["12", "12-hour"], ["24", "24-hour"]]) } }, default: "auto" },
+      { name: "show_date", selector: { boolean: {} }, default: true },
+      { name: "date_format", selector: { select: { options: opt([["long", "Thursday, October 22"], ["medium", "Thu, Oct 22"], ["short", "10/22"], ["weekday", "Thursday"], ["full", "Thursday, October 22, 2026"]]) } }, default: "medium" },
+      { name: "align", selector: { select: { options: opt([["center", "Center"], ["left", "Left"], ["right", "Right"]]) } }, default: "center" },
+      { name: "auto_size", selector: { boolean: {} }, default: true, helper: "Size the time and date to fill the panel." },
+      { name: "scale", selector: { number: { min: 50, max: 200, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100, helper: "Auto size: bigger or smaller." },
+      { name: "time_size", selector: { number: { min: 12, max: 200, mode: "box", unit_of_measurement: "px" } }, helper: "Auto size off: time size (default 48)." },
+      { name: "date_size", selector: { number: { min: 8, max: 80, mode: "box", unit_of_measurement: "px" } }, helper: "Auto size off: date size (default 16)." },
+      { name: "time_weight", selector: { select: { options: opt([["300", "Light"], ["400", "Regular"], ["500", "Medium"], ["700", "Bold"]]) } }, default: "300" },
+      { name: "color", selector: { text: {} }, helper: "CSS color for the time (default: the theme's text color)." },
+      { name: "date_color", selector: { text: {} }, helper: "CSS color for the date (default: secondary text)." },
+    ],
   },
   card: {
     tag: "wsfc-panel-card", label: "Home Assistant card", icon: "mdi:card-outline", span: 6, rows: 0,
     schema: [{ name: "card", selector: { object: {} }, helper: "Any card configuration, e.g. type: statistics-graph." }],
   },
 };
-// Legacy alias.
-PANEL_TYPES.map = PANEL_TYPES.radar;
 
 /** Fields every panel has (editor "Layout" group). */
 export const COMMON_SCHEMA = [
@@ -388,7 +407,11 @@ export function normalizePanels(config) {
   let panels = Array.isArray(config.panels) && config.panels.length ? config.panels : DEFAULT_PANELS;
   // A hero that showed its own Sky Bar (default before v2026.10.20.7).
   const hero = panels.find((p) => p?.type === "hero");
-  const heroWasSky = !!hero && hero.sky_bar !== false && hero.flex?.wfc?.sun_position?.show !== false && panels !== DEFAULT_PANELS;
+  // Only configs that still use an old sky panel type predate the change.
+  // (old types, or a hero still carrying Sky Bar settings), so a new hero
+  // doesn't get a Sky Tracker added.
+  const legacy = panels.some((p) => p && SKY_TYPES.has(p.type)) || (!!hero && ("sky_bar" in hero || !!hero.flex?.wfc?.sun_position));
+  const heroWasSky = !!hero && legacy && hero.sky_bar !== false && hero.flex?.wfc?.sun_position?.show !== false && panels !== DEFAULT_PANELS;
   panels = migrateSky(panels, heroWasSky).map((p) => (p?.type === "stack" ? { ...p, panels: migrateSky(p.panels || [], false) } : p));
   panels = panels.filter((p) => p && PANEL_TYPES[p.type]);
   // Configs from the first build had no hero panel; the hero was implied (and

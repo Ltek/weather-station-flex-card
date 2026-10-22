@@ -4,7 +4,7 @@ A weather-station dashboard in one Home Assistant card. Panels sit in a 12-colum
 
 Built around an Ecowitt WS90 / GW2000B; works with any station whose sensors are in Home Assistant — including all three Ecowitt integrations (Home Assistant's Ecowitt, Ecowitt Local, Ecowitt Official), alone or combined. See [docs/ECOWITT_INTEGRATIONS.md](docs/ECOWITT_INTEGRATIONS.md).
 
-Current build: **v2026.10.22.23** · full history in [CHANGELOG.md](CHANGELOG.md)
+Current build: **v2026.10.22.24** · full history in [CHANGELOG.md](CHANGELOG.md)
 
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Ltek&repository=weather-station-flex-card&category=plugin)
 
@@ -54,6 +54,8 @@ Only what you change is saved, so the YAML stays short.
 | `graph` | Any series on two axes; 6h–48h from history, 7d–365d from long-term statistics with min–max bands. |
 | `temp_humidity` | Graph preset: temperature, dew point and humidity. |
 | `uv_solar` | Graph preset: UV index (left axis, shaded) and solar radiation (right axis). |
+| `chips` | The hero's current-condition chips on their own, with Weather Flex's Current Weather Metrics options. |
+| `clock` | Time and date that size themselves to the panel; seconds, 12/24-hour, date formats, alignment, colours. |
 | `stack` | Child panels side by side (`direction: horizontal`, wraps only below `min_width`) or one above another (`vertical`). Children take `grow` (relative width), `min_width` and `rows`. Hidden children (toggled off or hiding themselves) leave the stack and the others fill their space; children get their own panel buttons. |
 | `wind` | Compass or wind rose, plus a speed/gust chart. The rose view uses the [Wind Rose Card](https://github.com/aukedejong/lovelace-windrose-card) when it is installed (`windrose_preset`: standard, periods, beaufort, corners, stats, playback, minimal; extra options under `windrose:`), else a built-in 24 h rose. |
 | `radar` | RainViewer radar loop on a choice of base maps (gray, streets, topo, satellite imagery, OSM or a custom URL), optional OpenWeatherMap layers. `radar: false` gives a plain map — add several with different zooms and layers. |
@@ -69,7 +71,6 @@ Only what you change is saved, so the YAML stays short.
 | `air_quality` | US AQI and EPA category with PM2.5, PM10, ozone and CO₂, from the station's own air sensors or Home Assistant's [AirNow](https://www.home-assistant.io/integrations/airnow/) integration (free key). Layouts: scale (default, in the Pollen panel's style), rows, vertical bars or tiles, all on the EPA AQI colours; `extra:` adds other readings (benzene, VOCs…) with health-standard thresholds. |
 | `moon` | Moon phase, illumination, moonrise/moonset, next full and new moon. |
 | `sky_tracker` | **Sky Tracker**: the sun arc over the sky gradient (daylight, cloud cover) with the forecast row under it, and the moon — in its current phase — on the arc at night. `show_arc`, `show_sky`, `timeframe` (`hours` / `day` / `sunrise_sunset`), `hours`, `anchor` (`now_center` / `now_left`), `moon`, `moon_phase`, `show_facts`; fine-tune under Arc & sky details. Two trackers with one layer each show them separately. |
-| `flex` | Any Weather Flex Card configuration under `flex:` — every Weather Flex feature. |
 | `card` | Any Home Assistant card under `card:` (e.g. `statistics-graph`). |
 
 Every panel takes `title`, `icon`, `span` (width in twelfths), `rows` (height in row units in half steps, 0.5 = half height, 0 = fit content), `display` (`grid`, `tile_popup` = in the grid and tap to open larger, or `popup` = button only), `in_bar` (a button in the Button Menu to show/hide it; without one the panel always follows `show`), `tile_background` (`default`, `translucent` = uses Panel opacity, `solid`, `none`), `show` (shown on load) and optional `span_medium`, `span_narrow`, `rows_compact` for tablet and phone widths. On tablets small tiles stay side by side and wide panels go full width; on phones tiles pair up and everything else is full width.

@@ -24,6 +24,7 @@ import "../panels/statistics.js";
 import "../panels/health.js";
 import "../panels/pollen.js";
 import "../panels/air-quality.js";
+import "../panels/clock.js";
 import "../editor/editor.js";
 
 const NARROW_PX = 720;
@@ -435,7 +436,7 @@ class WeatherStationFlexCard extends LitElement {
       const style = `grid-column: span ${span};grid-row: span ${rows ? Math.max(1, Math.round(rows * 2)) : 2};${rows ? `min-height:calc(${rows} * var(--wsfc-row) + ${rows - 1} * var(--wsfc-gap));` : ""}`;
       const bare = meta.bare || p.type === "hero";
       const tapToOpen = p.display === "tile_popup";
-      const expandable = !bare && !tapToOpen && !["metric", "stack"].includes(p.type) && size !== "narrow";
+      const expandable = !bare && !tapToOpen && !["metric", "stack", "clock", "chips"].includes(p.type) && size !== "narrow";
       const bg = p.tile_background && p.tile_background !== "default" ? `bg-${p.tile_background}` : "";
       return html`<section class="tile ${p.type} ${meta.bare ? "bare" : ""} ${bg} ${rows ? "" : "auto"} ${tapToOpen ? "tap" : ""}" style=${style}>
         ${tapToOpen

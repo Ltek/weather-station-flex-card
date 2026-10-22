@@ -4550,6 +4550,7 @@ import { actionHandler as iq } from "../../vendor/weather-forecast-card/src/hass
   // is unreliable and selections silently don't commit. Native + change is
   // bulletproof and matches how our other cards do it.
   edProto._wfcSelect = function (id, field, label, options, current, dflt) {
+    if (this.wsfcHide && this.wsfcHide.includes(field)) return eY;
     const cur = String(current != null ? current : dflt);
     return eq`
       <label class="wfc-select-field">
@@ -4607,6 +4608,7 @@ import { actionHandler as iq } from "../../vendor/weather-forecast-card/src/hass
 
   // A labeled slider wired to a per-section field (seed-style range + readout).
   edProto._wfcNumField = function (id, field, label, suffix, value, dflt) {
+    if (this.wsfcHide && this.wsfcHide.includes(field)) return eY;
     const r = wfcRangeFor(field, suffix || "");
     const cur = value != null ? Number(value) : Number(dflt);
     return this._wfcSliderTpl(label, suffix, r, cur, (e) => this._wfcNumSecField(id, field, e, dflt));
@@ -5137,7 +5139,7 @@ import { actionHandler as iq } from "../../vendor/weather-forecast-card/src/hass
                 ${this._wfcSubPanel(
                   "Time",
                   eq`
-                    ${this._wfcGroup("Timeframe")}
+                    ${this.wsfcHide && this.wsfcHide.includes("timeframe_mode") ? eY : this._wfcGroup("Timeframe")}
                     <div class="wfc-row">
                       ${this._wfcSelect(
                         id,
@@ -5336,7 +5338,7 @@ import { actionHandler as iq } from "../../vendor/weather-forecast-card/src/hass
                   )}
                 </div>
 
-                ${this._wfcGroup("Timeframe")}
+                ${this.wsfcHide && this.wsfcHide.includes("timeframe_mode") ? eY : this._wfcGroup("Timeframe")}
                 <div class="wfc-row">
                   ${this._wfcSelect(
                     id,
@@ -5384,10 +5386,10 @@ import { actionHandler as iq } from "../../vendor/weather-forecast-card/src/hass
                   .value=${s.sun_icon || ""}
                   @value-changed=${(e) => this._wfcSetSecField(id, "sun_icon", (e.detail && e.detail.value) || "")}
                 ></ha-icon-picker>
-                ${this._wfcCheckbox("Use a moon icon at night (between sunset & sunrise)", !!s.night_moon, (e) =>
+                ${this.wsfcHide && this.wsfcHide.includes("night_moon") ? eY : this._wfcCheckbox("Use a moon icon at night (between sunset & sunrise)", !!s.night_moon, (e) =>
                   this._wfcToggleSecField(id, "night_moon", e)
                 )}
-                ${s.night_moon
+                ${s.night_moon && !(this.wsfcHide && this.wsfcHide.includes("night_moon"))
                   ? eq`<ha-icon-picker
                       label="Moon icon"
                       .value=${s.moon_icon || "mdi:weather-night"}

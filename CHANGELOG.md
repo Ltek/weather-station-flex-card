@@ -1,5 +1,13 @@
 # Changelog
 
+## v2026.10.22.24
+
+- **New Chips panel** (`chips`): the hero's current-condition chips (feels like, humidity, dew point, wind, pressure, UV …) on their own, with all of Weather Flex's Current Weather Metrics options (which chips and their order, chips or plain rows, columns, sizes with Auto, colours).
+- **New Clock panel** (`clock`): time and date that size themselves to fill the panel (with a scale %), or fixed sizes. Seconds, 12/24-hour or Home Assistant's setting, five date formats, alignment, weight and colours. It updates once a minute (or each second with seconds on) and doesn't redraw on Home Assistant state changes.
+- **Removed the Weather Flex sections panel** (`flex`): every Weather Flex section now has its own panel (Hero, Chips, Hourly, Daily, Forecast, Sky Tracker). The old `map` alias for Radar is gone too.
+- **Sky Tracker:** its embedded Weather Flex editor no longer shows the time-window, anchor and night-moon settings, which the panel's own options control (changing them there had no effect).
+- Fix: a new hero panel no longer gets a Sky Tracker added under it automatically (that migration now only runs for configs from before Sky Tracker).
+
 ## v2026.10.22.23
 
 - **Stacks fill the space of hidden panels.** A panel inside a stack that is toggled off, or hiding itself (e.g. Pollen out of season or all at None), leaves the stack, and the other panels grow into its space. In a vertical stack with a height, children now share that height by default. A stack whose panels are all hidden leaves the grid.
