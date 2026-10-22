@@ -1,5 +1,10 @@
 # Changelog
 
+## v2026.10.22.35
+
+- **Hero settings in one place:** the separate top-level Hero section is gone. Everything for the hero — Set scale to Auto, Auto scaling, sun & moon facts and its Weather Flex sections (header, metrics, clock & date …) — is in the Hero's row under **Panels**, like every other panel.
+- **Per panel: Shadow, Border, Glow** checkboxes (Layout group, also inside stacks). Untick one to turn the Appearance shadow, border or glow off for just that panel. Shadow and glow are now separate layers, so either can be turned off alone.
+
 ## v2026.10.22.34
 
 - **Sun & moon facts:** Illumination can join the moon phase — to the right of the phase name or under it — instead of being its own fact, with its % under the "Illumination" label or beside it. New **Alignment** (left, center, right) for the whole facts block.

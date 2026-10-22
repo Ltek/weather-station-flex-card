@@ -1,11 +1,14 @@
 // Visual editor for Weather Station Flex Card.
 //
-//   General            entity, title, layout, panel buttons, grid sizing
-//   Hero & Weather Sources   Weather Flex Card's full editor, bound to the hero
-//   Panels             ordered list: reorder, show/hide, duplicate, delete, add;
-//                      each opens Layout + its type's options, and flex-based
-//                      panels (hero, forecast, sun & moon, Weather Flex sections)
-//                      embed Weather Flex Card's editor for their sections.
+//   Weather station    the weather entity and Weather Sources
+//   Appearance         title, background, panel style, layout & behaviour
+//   Panel buttons      the button menu
+//   Layout             drag-and-drop layout map
+//   Panels             ordered list (stack children indented): reorder,
+//                      show/hide, duplicate, delete, add; each opens Layout and
+//                      its type's options, and flex-based panels (hero,
+//                      chips, forecasts, sky tracker) embed Weather Flex
+//                      Card's editor for their sections.
 //
 // Weather Flex's editor emits a full resolved config; flexOverride() diffs it
 // against the panel's base so only the user's changes are saved under `flex:`.
@@ -288,7 +291,6 @@ class WeatherStationFlexCardEditor extends LitElement {
         ${this._section("general", "mdi:palette-outline", "Appearance", () => this._general())}
         ${this._section("buttons", "mdi:gesture-tap-button", "Panel buttons", () => this._buttonsEditor())}
         ${this._section("layout", "mdi:view-dashboard-edit-outline", "Layout", () => this._layoutEditor())}
-        ${this._section("hero", "mdi:weather-partly-cloudy", "Hero", () => this._heroEditor())}
         ${this._section("panels", "mdi:view-list-outline", `Panels (${this._panels.length})`, () => this._panelList())}
       </div>
     `;
@@ -399,24 +401,7 @@ class WeatherStationFlexCardEditor extends LitElement {
     `;
   }
 
-  _heroEditor() {
-    const panels = this._panels;
-    const i = panels.findIndex((p) => p.type === "hero");
-    if (i < 0) {
-      return html`<p class="hint">There is no hero panel. Add one here, or set the station under <b>Weather station</b>.</p>
-        <button class="btn" @click=${() => this._setPanels([{ type: "hero" }, ...panels])}><ha-icon icon="mdi:plus"></ha-icon>Add hero panel</button>`;
-    }
-    const update = (np, extra) => {
-      const list = panels.slice();
-      list[i] = np;
-      this._setPanels(list, extra);
-    };
-    const hs = PANEL_TYPES.hero.schema;
-    return html`
-      ${this._form(formData(panels[i], hs), hs, (v) => update({ ...applyForm(panels[i], hs, v), type: "hero" }))}
-      <p class="hint">Weather Flex Card's editor for the hero's sections. Weather Sources are under <b>Weather station</b>. Sizes at Auto follow the panel's size.</p>
-      ${this._flexEditor(`${i}`, panels[i], update)}`;
-  }
+
 
   // One embedded Weather Flex editor per panel slot (key = path, e.g. "3" or "5.1").
   _flexEditor(key, p, update) {
@@ -637,7 +622,7 @@ class WeatherStationFlexCardEditor extends LitElement {
     if (NO_TITLE.has(p.type)) common = common.filter((f) => !["show_title", "title", "show_icon", "icon"].includes(f.name) || (p.type !== "clock" && f.name === "title"));
     const isGraph = ["graph", "temp_humidity", "uv_solar", "statistics"].includes(p.type);
     // Reset keeps the panel's type, place and size; everything else returns to defaults.
-    const KEEP = ["type", "span", "rows", "display", "in_bar", "tile_background", "show", "id", "span_medium", "span_narrow", "rows_compact", "grow", "min_width",
+    const KEEP = ["type", "span", "rows", "display", "in_bar", "tile_background", "tile_shadow", "tile_border", "tile_glow", "show", "id", "span_medium", "span_narrow", "rows_compact", "grow", "min_width",
       ...(p.type === "metric" ? ["metric"] : []), ...(p.type === "statistics" ? ["preset"] : []), ...(p.type === "stack" ? ["panels", "direction"] : [])];
     const customized = Object.keys(p).some((k) => !KEEP.includes(k));
     const reset = () => update(Object.fromEntries(Object.entries(p).filter(([k]) => KEEP.includes(k))));
@@ -662,7 +647,7 @@ class WeatherStationFlexCardEditor extends LitElement {
       ${m.flex
         ? html`${p.type === "sky_tracker" ? html`<div class="grp">Arc & sky details</div>` : nothing}
             ${p.type === "sky_tracker" ? html`<p class="hint">Fine-tune the arc (Sun Position) and the sky (Sky Bar): heights, colors, labels, ticks and the forecast row. Layers, time window and moon are set above and override the same options here.</p>` : nothing}
-            ${p.type === "hero" && !nested ? html`<p class="hint">Also under Hero above.</p>` : this._flexEditor(key, p, update)}`
+            ${this._flexEditor(key, p, update)}`
         : nothing}
     </div>`;
   }

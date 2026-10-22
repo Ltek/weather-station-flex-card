@@ -32,18 +32,20 @@ import "../editor/editor.js";
 const NARROW_PX = 720;
 const MEDIUM_PX = 1100;
 
+/** Classes that turn off the Appearance shadow / border / glow for one panel. */
+export const tileFx = (p) => [p.tile_shadow === false ? "no-shadow" : "", p.tile_border === false ? "no-border" : "", p.tile_glow === false ? "no-glow" : ""].filter(Boolean).join(" ");
+
 /** CSS variables for the Appearance → Panels settings (only those that are set). */
 export function panelStyleVars(c) {
   const out = [];
   if (c.panel_radius != null) out.push(`--wsfc-radius:${Number(c.panel_radius)}px`);
   const shadows = { soft: "0 2px 6px rgba(0,0,0,.25)", medium: "0 4px 14px rgba(0,0,0,.35)", strong: "0 8px 28px rgba(0,0,0,.5)" };
-  const sh = [];
-  if (shadows[c.panel_shadow]) sh.push(shadows[c.panel_shadow]);
+  // Shadow and glow are separate layers so a panel can turn either off.
+  if (shadows[c.panel_shadow]) out.push(`--wsfc-tile-drop:${shadows[c.panel_shadow]}`);
   if (c.panel_glow) {
     const col = c.panel_glow_color || c.panel_border_color || "var(--primary-color)";
-    sh.push(`0 0 ${Number(c.panel_glow_size ?? 10)}px ${col}`);
+    out.push(`--wsfc-tile-glow:0 0 ${Number(c.panel_glow_size ?? 10)}px ${col}`);
   }
-  if (sh.length) out.push(`--wsfc-tile-shadow:${sh.join(",")}`);
   if (c.panel_border_width != null || c.panel_border_color) {
     out.push(`--wsfc-tile-border:${Number(c.panel_border_width ?? 1)}px solid ${c.panel_border_color || "var(--divider-color, rgba(127,127,127,.3))"}`);
   }
@@ -464,7 +466,7 @@ class WeatherStationFlexCard extends LitElement {
       const tapToOpen = p.display === "tile_popup";
       const expandable = !bare && !tapToOpen && !["metric", "stack", "clock", "chips"].includes(p.type) && size !== "narrow";
       const bg = p.tile_background && p.tile_background !== "default" ? `bg-${p.tile_background}` : "";
-      return html`<section class="tile ${p.type} ${meta.bare ? "bare" : ""} ${bg} ${rows ? "" : "auto"} ${fit ? "fit" : ""} ${tapToOpen ? "tap" : ""}" style=${style}>
+      return html`<section class="tile ${p.type} ${meta.bare ? "bare" : ""} ${bg} ${tileFx(p)} ${rows ? "" : "auto"} ${fit ? "fit" : ""} ${tapToOpen ? "tap" : ""}" style=${style}>
         ${tapToOpen
           ? html`<button class="tap-open" type="button" aria-haspopup="dialog" aria-label=${`Open ${p.title || this._autoTitle(p)}`}
               @click=${() => (this._popup = i)}><span><ha-icon icon="mdi:arrow-expand"></ha-icon></span></button>`

@@ -61,7 +61,8 @@ class WsfcStack extends LitElement {
       const style = [`--grow:${grow}`, p.min_width ? `--basis:${p.min_width}px` : "",
         vertical && rows ? `min-height:calc(${rows} * var(--wsfc-row, 110px) + ${rows - 1} * var(--wsfc-gap, 12px))` : ""].join(";");
       const bare = meta.bare || p.type === "stack";
-      return html`<section class="tile ${p.type} ${bare ? "bare" : ""}" style=${style}>${this._el(p, i)}</section>`;
+      const fx = [p.tile_shadow === false ? "no-shadow" : "", p.tile_border === false ? "no-border" : "", p.tile_glow === false ? "no-glow" : ""].join(" ");
+      return html`<section class="tile ${p.type} ${bare ? "bare" : ""} ${fx}" style=${style}>${this._el(p, i)}</section>`;
     });
   }
 

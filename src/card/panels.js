@@ -351,6 +351,9 @@ export const COMMON_SCHEMA = [
   { name: "display", selector: { select: { options: opt([["grid", "In the grid"], ["tile_popup", "In the grid — tap it to open larger"], ["popup", "Pop-up only (from its panel button)"]]) } } },
   { name: "in_bar", selector: { boolean: {} }, helper: "Adds a button for this panel to the button menu, to show or hide it (or open its pop-up). Off: no button, and the panel is always shown (unless Shown is off)." },
   { name: "tile_background", selector: { select: { options: opt([["default", "Default"], ["translucent", "See-through (uses Panel opacity)"], ["solid", "Solid"], ["none", "None"]]) } }, default: "default", helper: "This panel's background. Default: see-through with the animated background, the theme's otherwise; the button menu has none." },
+  { name: "tile_shadow", label: "Shadow", selector: { boolean: {} }, default: true, helper: "Off: no shadow on this panel (shadow is set under Appearance → Panels)." },
+  { name: "tile_border", label: "Border", selector: { boolean: {} }, default: true, helper: "Off: no border on this panel." },
+  { name: "tile_glow", label: "Glow", selector: { boolean: {} }, default: true, helper: "Off: no glow on this panel." },
   { name: "show", selector: { boolean: {} }, default: true, helper: "Visible when the dashboard loads." },
 ];
 
@@ -360,6 +363,9 @@ export const STACK_CHILD_SCHEMA = [
   { name: "grow", selector: { number: { min: 0, max: 12, step: 0.5, mode: "box" } }, helper: "Horizontal: relative width (default 1). Vertical: 1 = share leftover height." },
   { name: "min_width", selector: { number: { min: 80, max: 800, mode: "box", unit_of_measurement: "px" } }, helper: "Horizontal: narrowest this panel gets before wrapping." },
   { name: "rows", selector: { number: { min: 0, max: 10, step: 0.5, mode: "slider" } }, helper: "Vertical: minimum height in row units (half steps allowed)." },
+  { name: "tile_shadow", label: "Shadow", selector: { boolean: {} }, default: true },
+  { name: "tile_border", label: "Border", selector: { boolean: {} }, default: true },
+  { name: "tile_glow", label: "Glow", selector: { boolean: {} }, default: true },
 ];
 
 export const panelMeta = (p) => PANEL_TYPES[p?.type] || null;

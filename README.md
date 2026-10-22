@@ -4,7 +4,7 @@ A weather-station dashboard in one Home Assistant card. Panels sit in a 12-colum
 
 Built around an Ecowitt WS90 / GW2000B; works with any station whose sensors are in Home Assistant — including all three Ecowitt integrations (Home Assistant's Ecowitt, Ecowitt Local, Ecowitt Official), alone or combined. See [docs/ECOWITT_INTEGRATIONS.md](docs/ECOWITT_INTEGRATIONS.md).
 
-Current build: **v2026.10.22.34** · full history in [CHANGELOG.md](CHANGELOG.md)
+Current build: **v2026.10.22.35** · full history in [CHANGELOG.md](CHANGELOG.md)
 
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Ltek&repository=weather-station-flex-card&category=plugin)
 
@@ -35,11 +35,10 @@ For a full-screen dashboard put the card in a **Panel** view and set `layout: fu
 ## The editor
 
 - **Weather station** — the Weather Sources list: add your station device (e.g. the Ecowitt GW2000B) and a weather entity for the forecast, set their priority and per-value overrides, and see which sensor is used for each value. Applies to every panel.
-- **General** — title, layout, layout size, full-screen fit, panel buttons, row height and gap.
-- **Panel buttons** — above the panels, in the heading panel, or hidden; one checkbox per panel, All / None.
+- **Appearance** — title, background (animated or an image), panel opacity, blur, corner radius, shadow, border and glow, layout, layout size, full-screen fit, row height and gap. Auto values show what they resolve to.
+- **Panel buttons** — above the panels, in the Button Menu panel, or hidden; one checkbox per panel, All / None.
 - **Layout** — a map of the grid: drag panels to move them and drag their edges to resize (arrow keys work too).
-- **Hero** — Weather Flex Card's editor for the hero (card appearance, header, metrics/chips, clock, actions).
-- **Panels** — the panel list: edit, show/hide, duplicate, delete and add panels. Each panel has **Layout** (title, icon, width, height, grid or pop-up, panel button, shown on load) and its own options. Forecast, Sun & Moon and Weather Flex sections panels also embed Weather Flex Card's editor for their sections.
+- **Panels** — the panel list (a stack's panels indented under it): edit, show/hide, duplicate, delete and add panels. Each panel has **Layout** (title and icon on/off, width, height, grid or pop-up, panel button, background, shadow / border / glow, shown on load) and its own options. The Hero, Chips, forecast and Sky Tracker panels also embed Weather Flex Card's editor for their sections.
 
 Only what you change is saved, so the YAML stays short.
 
@@ -73,7 +72,7 @@ Only what you change is saved, so the YAML stays short.
 | `sky_tracker` | **Sky Tracker**: the sun arc over the sky gradient (daylight, cloud cover) with the forecast row under it, and the moon — in its current phase — on the arc at night. `show_arc`, `show_sky`, `timeframe` (`hours` / `day` / `sunrise_sunset`), `hours`, `anchor` (`now_center` / `now_left`), `moon`, `moon_phase`, `show_facts`; fine-tune under Arc & sky details. Two trackers with one layer each show them separately. |
 | `card` | Any Home Assistant card under `card:` (e.g. `statistics-graph`). |
 
-Every panel takes `title`, `icon`, `show_title` / `show_icon` (false hides them), `span` (width in twelfths), `rows` (height in row units in half steps, 0.5 = half height, 0 = fit content), `display` (`grid`, `tile_popup` = in the grid and tap to open larger, or `popup` = button only), `in_bar` (a button in the Button Menu to show/hide it; without one the panel always follows `show`), `tile_background` (`default`, `translucent` = uses Panel opacity, `solid`, `none`), `show` (shown on load) and optional `span_medium`, `span_narrow`, `rows_compact` for tablet and phone widths. On tablets small tiles stay side by side and wide panels go full width; on phones tiles pair up and everything else is full width.
+Every panel takes `title`, `icon`, `show_title` / `show_icon` (false hides them), `span` (width in twelfths), `rows` (height in row units in half steps, 0.5 = half height, 0 = fit content), `display` (`grid`, `tile_popup` = in the grid and tap to open larger, or `popup` = button only), `in_bar` (a button in the Button Menu to show/hide it; without one the panel always follows `show`), `tile_background` (`default`, `translucent` = uses Panel opacity, `solid`, `none`), `tile_shadow` / `tile_border` / `tile_glow` (false turns the Appearance one off for that panel), `show` (shown on load) and optional `span_medium`, `span_narrow`, `rows_compact` for tablet and phone widths. On tablets small tiles stay side by side and wide panels go full width; on phones tiles pair up and everything else is full width.
 
 ```yaml
 panels:

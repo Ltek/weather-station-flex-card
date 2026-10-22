@@ -63,7 +63,7 @@ export const tileStyles = css`
       position: relative;
       background: var(--wsfc-tile-bg, rgba(127, 127, 127, 0.08));
       border-radius: var(--wsfc-radius, 16px);
-      box-shadow: var(--wsfc-tile-shadow, none);
+      box-shadow: var(--wsfc-tile-drop, 0 0 0 transparent), var(--wsfc-tile-glow, 0 0 0 transparent);
       border: var(--wsfc-tile-border, 0 solid transparent);
       padding: 12px 14px;
       min-width: 0;
@@ -79,6 +79,10 @@ export const tileStyles = css`
     .tile.hero { background: transparent; padding: 0; }
     .tile.bare { background: transparent; padding: 4px 2px; overflow: visible; }
     .tile.stack { background: transparent; padding: 0; overflow: visible; }
+    /* Per panel: no shadow / border / glow (Layout → Shadow, Border, Glow). */
+    .tile.no-shadow { --wsfc-tile-drop: 0 0 0 transparent; }
+    .tile.no-glow { --wsfc-tile-glow: 0 0 0 transparent; }
+    .tile.no-border { --wsfc-tile-border: 0 solid transparent; }
     /* Panels without a tile of their own get no border or shadow. */
     .tile.bare:not(.bg-translucent):not(.bg-solid), .tile.stack { border: 0; box-shadow: none; }
     /* Children fill the tile but never shrink below their content. */
