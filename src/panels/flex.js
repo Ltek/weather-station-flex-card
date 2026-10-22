@@ -188,7 +188,8 @@ class WsfcFlexPanel extends LitElement {
     if (!this.hass || !this.station?.entity) return nothing;
     const core = this._slot.update(this._coreConfig(), this.hass);
     // Generic flex panels show a title only when one is set.
-    const showHead = this.titleOnlyWhenSet ? !!this.config?.title : this.config?.show_title !== false;
+    // Chips show a title only when one is set (or show_title is on).
+    const showHead = this.config?.show_title ?? (this.titleOnlyWhenSet ? !!this.config?.title : true);
     return html`
       ${showHead ? head(this.config, this.defaultIcon, this.defaultTitle) : nothing}
       <div class="core">${core}</div>
@@ -348,7 +349,7 @@ class WsfcSkyTracker extends WsfcFlexPanel {
     if (!this.hass || !this.station?.entity) return nothing;
     const c = this.config || {};
     if (c.show_arc === false && c.show_sky === false) return html`${head(c, this.defaultIcon, this.defaultTitle)}<div class="note">Turn on the sun arc or the sky gradient.</div>`;
-    return html`${c.title || c.show_title ? head(c, this.defaultIcon, this.defaultTitle) : nothing}
+    return html`${(c.show_title ?? !!c.title) ? head(c, this.defaultIcon, this.defaultTitle) : nothing}
       <div class="core">${this._slot.update(this._coreConfig(), this.hass)}</div>
       ${this._slot.error ? html`<div class="err">${this._slot.error}</div>` : nothing}
       ${renderFacts(this.hass, c)}`;

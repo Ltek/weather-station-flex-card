@@ -53,8 +53,8 @@ class WsfcMetric extends LitElement {
     if (!eid) return html`<div class="note">No sensor found for ${m.label || this._metric}. Set <code>entity</code> on this tile.</div>`;
     return html`
       <div class="top" style=${`--m-color:${color}`} @click=${() => moreInfo(this, eid)}>
-        <ha-icon icon=${this.config?.icon || m.icon || "mdi:gauge"}></ha-icon>
-        <span class="name">${name}</span>
+        ${this.config?.show_icon === false ? nothing : html`<ha-icon icon=${this.config?.icon || m.icon || "mdi:gauge"}></ha-icon>`}
+        ${this.config?.show_title === false ? html`<span class="name"></span>` : html`<span class="name">${name}</span>`}
         ${this.config?.show_minmax === false || !this._today
           ? nothing
           : html`<span class="mm"><span class="lo">Min ${fmt(this._today.min, digits)}</span><br /><span class="hi">Max ${fmt(this._today.max, digits)}</span></span>`}

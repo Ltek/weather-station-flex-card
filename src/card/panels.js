@@ -333,9 +333,19 @@ export const PANEL_TYPES = {
 for (const m of Object.values(PANEL_TYPES)) if (m.groups && !m.schema) m.schema = m.groups.flatMap(([, f]) => f);
 
 /** Fields every panel has (editor "Layout" group). */
+// Title and its icon, with checkboxes to hide them (panels without a header skip these).
+const TITLE_FIELDS = [
+  { name: "show_title", label: "Show the title", selector: { boolean: {} }, default: true },
+  { name: "title", when: (d) => d.show_title !== false, selector: { text: {} } },
+  { name: "show_icon", label: "Show the title icon", when: (d) => d.show_title !== false, selector: { boolean: {} }, default: true },
+  { name: "icon", when: (d) => d.show_title !== false && d.show_icon !== false, selector: { icon: {} } },
+];
+export const NO_TITLE = new Set(["hero", "stack", "clock"]);
+// Types that show a title only when one is set.
+export const TITLE_WHEN_SET = new Set(["chips", "sky_tracker", "card"]);
+
 export const COMMON_SCHEMA = [
-  { name: "title", selector: { text: {} } },
-  { name: "icon", selector: { icon: {} } },
+  ...TITLE_FIELDS,
   { name: "span", selector: { number: { min: 1, max: 12, mode: "slider" } }, helper: "Width in twelfths of the card." },
   { name: "rows", selector: { number: { min: 0, max: 10, step: 0.5, mode: "slider" } }, helper: "Height in row units, in half steps (0 = fit content, 0.5 = half height)." },
   { name: "display", selector: { select: { options: opt([["grid", "In the grid"], ["tile_popup", "In the grid — tap it to open larger"], ["popup", "Pop-up only (from its panel button)"]]) } } },
@@ -346,8 +356,7 @@ export const COMMON_SCHEMA = [
 
 /** Layout fields for a panel inside a stack (it has no grid position). */
 export const STACK_CHILD_SCHEMA = [
-  { name: "title", selector: { text: {} } },
-  { name: "icon", selector: { icon: {} } },
+  ...TITLE_FIELDS,
   { name: "grow", selector: { number: { min: 0, max: 12, step: 0.5, mode: "box" } }, helper: "Horizontal: relative width (default 1). Vertical: 1 = share leftover height." },
   { name: "min_width", selector: { number: { min: 80, max: 800, mode: "box", unit_of_measurement: "px" } }, helper: "Horizontal: narrowest this panel gets before wrapping." },
   { name: "rows", selector: { number: { min: 0, max: 10, step: 0.5, mode: "slider" } }, helper: "Vertical: minimum height in row units (half steps allowed)." },

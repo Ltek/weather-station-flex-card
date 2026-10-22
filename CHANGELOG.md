@@ -1,5 +1,9 @@
 # Changelog
 
+## v2026.10.22.33
+
+- **Hide a panel's title or its icon:** every panel with a header now has **Show the title** and **Show the title icon** checkboxes (Layout group, also for panels inside stacks). With the title off, its text and icon fields are hidden and the panel's own header controls (e.g. Wind's Compass / Rose, Radar's play button) stay. Metric tiles and the Button Menu follow them too. Chips, Sky Tracker and Home Assistant card panels still show a title only when you set one, or tick Show the title.
+
 ## v2026.10.22.32
 
 - **Sun & moon facts in the Hero, Sky Tracker and Astronomy panels**, from one list: dawn, sunrise, solar noon, sunset, dusk, length of day (with the change since yesterday), visible light, moonrise, moonset, moon phase (with a moon image), illumination, next full moon and next new moon. Each panel has **Show sun & moon facts** and a checkbox per fact (all on by default), a moon image size, and one text size, weight and color for all labels and one for all values. In the Hero they sit across the bottom over its background; in Sky Tracker under the sky (replacing the old six "sun times"); in Astronomy under the table (replacing its summary).

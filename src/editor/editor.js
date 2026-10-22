@@ -12,7 +12,7 @@
 // Its entity/metric_sources edits are global and go to the card's top level.
 import { LitElement, html, css, nothing } from "lit";
 import { CARD_VERSION, CARD_NAME } from "../card/constants.js";
-import { PANEL_TYPES, COMMON_SCHEMA, STACK_CHILD_SCHEMA, panelMeta, spanOf, rowsOf, inBarOf, normalizePanels } from "../card/panels.js";
+import { PANEL_TYPES, COMMON_SCHEMA, STACK_CHILD_SCHEMA, NO_TITLE, TITLE_WHEN_SET, panelMeta, spanOf, rowsOf, inBarOf, normalizePanels } from "../card/panels.js";
 import { CORE_EDITOR_TAG, FLEX_SECTIONS_BUILD, flexOverride, deepMerge } from "../card/core.js";
 import { flexBase, trackerConfig } from "../panels/flex.js";
 import { prune, clone } from "../card/config.js";
@@ -170,7 +170,7 @@ export function unstack(panels, s, j) {
 
 function panelDefaults(p) {
   const m = panelMeta(p);
-  return { span: m.span, rows: m.rows, display: "grid", in_bar: inBarOf({ ...p, in_bar: undefined }), show: true };
+  return { span: m.span, rows: m.rows, display: "grid", in_bar: inBarOf({ ...p, in_bar: undefined }), show: true, show_title: TITLE_WHEN_SET.has(p.type) ? !!p.title : true };
 }
 
 function panelName(p) {
@@ -630,9 +630,11 @@ class WeatherStationFlexCardEditor extends LitElement {
 
   _panelBody(p, key, update, nested) {
     const m = panelMeta(p);
-    const defs = nested ? {} : panelDefaults(p);
+    const defs = nested ? { show_title: TITLE_WHEN_SET.has(p.type) ? !!p.title : true } : panelDefaults(p);
     let common = nested ? STACK_CHILD_SCHEMA : COMMON_SCHEMA;
     if (p.type === "hero") common = common.filter((f) => !["icon", "display", "in_bar"].includes(f.name));
+    // Panels without a header have no title options.
+    if (NO_TITLE.has(p.type)) common = common.filter((f) => !["show_title", "title", "show_icon", "icon"].includes(f.name) || (p.type !== "clock" && f.name === "title"));
     const isGraph = ["graph", "temp_humidity", "uv_solar", "statistics"].includes(p.type);
     // Reset keeps the panel's type, place and size; everything else returns to defaults.
     const KEEP = ["type", "span", "rows", "display", "in_bar", "tile_background", "show", "id", "span_medium", "span_narrow", "rows_compact", "grow", "min_width",

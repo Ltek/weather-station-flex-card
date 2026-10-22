@@ -121,11 +121,14 @@ export function moreInfo(host, entityId) {
   if (entityId) host.dispatchEvent(new CustomEvent("hass-more-info", { detail: { entityId }, bubbles: true, composed: true }));
 }
 
-/** Panel header: icon + title + optional right-side controls. */
+/**
+ * Panel header: icon + title + optional right-side controls.
+ * show_title: false hides the title (and icon); show_icon: false hides just the icon.
+ */
 export function head(config, icon, defTitle, right = nothing) {
   if (config?.show_title === false) return right === nothing ? nothing : html`<div class="head"><span class="title"></span>${right}</div>`;
   return html`<div class="head">
-    <ha-icon icon=${config?.icon || icon}></ha-icon>
+    ${config?.show_icon === false ? nothing : html`<ha-icon icon=${config?.icon || icon}></ha-icon>`}
     <span class="title">${config?.title || defTitle}</span>${right}
   </div>`;
 }

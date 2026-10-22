@@ -213,8 +213,8 @@ class WsfcHeading extends LitElement {
     const status = c.show_status ? stationStatus(this.station, this.hass) : null;
     const S = { online: ["Station online", "#43a047"], partial: ["Some readings unavailable", "#ffa600"], offline: ["Station offline", "#db4437"], unconfigured: ["No station sensors", "#9e9e9e"] };
     return html`
-      ${c.icon === "" ? nothing : html`<ha-icon class="lead" icon=${c.icon || "mdi:chart-box-outline"}></ha-icon>`}
-      <div><div class="t">${c.title || "Local measurements"}</div>${c.subtitle ? html`<div class="sub">${c.subtitle}</div>` : nothing}</div>
+      ${c.icon === "" || c.show_icon === false || c.show_title === false ? nothing : html`<ha-icon class="lead" icon=${c.icon || "mdi:chart-box-outline"}></ha-icon>`}
+      ${c.show_title === false ? nothing : html`<div><div class="t">${c.title || "Local measurements"}</div>${c.subtitle ? html`<div class="sub">${c.subtitle}</div>` : nothing}</div>`}
       ${status ? html`<span class="status" style="--c:${S[status][1]}"><span class="dot"></span>${S[status][0]}</span>` : nothing}
       <span class="grow"></span>
       ${this.bar ? html`<div class="bar">${this.bar}</div>` : nothing}
@@ -231,7 +231,7 @@ class WsfcCardHost extends LitElement {
     if (!cfg?.type) return html`${head(this.config, "mdi:card-outline", "Card")}<div class="note">Set <code>card:</code> to any Home Assistant card configuration.</div>`;
     this._ensure(cfg);
     if (this._el && this.hass) this._el.hass = this.hass;
-    return html`${this.config?.title ? head(this.config, "mdi:card-outline", "") : nothing}
+    return html`${(this.config?.show_title ?? !!this.config?.title) ? head(this.config, "mdi:card-outline", "") : nothing}
       ${this._err ? html`<div class="note">${this._err}</div>` : html`<div class="host">${this._el || nothing}</div>`}`;
   }
   async _ensure(cfg) {
