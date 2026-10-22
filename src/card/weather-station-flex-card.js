@@ -9,6 +9,7 @@ import { CARD_VERSION, CARD_TYPE, CARD_NAME } from "./constants.js";
 import { chipStyles, tileStyles } from "../panels/shared.js";
 import { panelMeta, rowsOf, inBarOf, normalizePanels, layoutOf, opensPopup } from "./panels.js";
 import { watchForecast } from "./forecast.js";
+import { isUnsaved } from "./unsaved.js";
 import "../../vendor/weather-forecast-card/src/components/animation/wfc-animation-provider";
 import "../panels/flex.js";
 import "../panels/graph.js";
@@ -149,6 +150,8 @@ class WeatherStationFlexCard extends LitElement {
   }
 
   connectedCallback() {
+    this._onUnsaved ||= () => this.preview && this.requestUpdate();
+    window.addEventListener("wsfc-unsaved", this._onUnsaved);
     super.connectedCallback();
     this._ro = new ResizeObserver(([e]) => {
       const w = e.contentRect.width;
@@ -169,6 +172,7 @@ class WeatherStationFlexCard extends LitElement {
 
   disconnectedCallback() {
     super.disconnectedCallback();
+    window.removeEventListener("wsfc-unsaved", this._onUnsaved);
     this._unwatchHourly?.();
     this._unwatchHourly = null;
     this._hourlyFor = null;
@@ -256,6 +260,7 @@ class WeatherStationFlexCard extends LitElement {
     const barInHeading = c.panels.some((p) => p.type === "heading" && p.show_bar);
     return html`
       <ha-card class=${`wsfc ${full ? "full" : ""} ${this._layoutSize} ${bg ? "animated" : ""} ${lite ? "lite" : ""}`} style=${style}>
+        ${this.preview && isUnsaved() ? html`<div class="unsaved" role="status">✎ Unsaved changes — press Save in the editor to keep them</div>` : nothing}
         ${c.background === "image" ? this._renderImage() : bg && !lite ? this._renderBackground() : nothing}
         ${c.title ? this._renderTitle() : nothing}
         ${c.panel_bar === false || barInHeading ? nothing : html`<div class="topbar">${this._renderBar()}</div>`}
@@ -536,6 +541,10 @@ class WeatherStationFlexCard extends LitElement {
     ha-card .tile.bg-solid, ha-card .tile.bg-none { backdrop-filter: none; -webkit-backdrop-filter: none; }
     ha-card.animated .dialog { --wsfc-tile-bg: var(--ha-card-background, var(--card-background-color, #1c1c1c)); }
     .bg { z-index: 0; border-radius: inherit; }
+    /* Editor preview only (like AlertTicker's test-mode banner). */
+    .unsaved { order: -1; align-self: center; position: relative; z-index: 2; margin: calc(-1 * var(--wsfc-gap)) 0 0; padding: 3px 12px;
+      background: rgba(255, 165, 0, 0.92); color: #000; font-size: 12px; font-weight: 700; letter-spacing: 0.03em;
+      border-radius: 0 0 10px 10px; pointer-events: none; }
     .bgimg { position: absolute; inset: 0; background-position: center; pointer-events: none; }
     .bgimg::after { content: ""; position: absolute; inset: 0; background: rgba(0, 0, 0, var(--dim, 0.25)); border-radius: inherit; }
 

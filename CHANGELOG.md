@@ -1,5 +1,9 @@
 # Changelog
 
+## v2026.10.22.29
+
+- **"Unsaved changes" banner** on the card editor's preview (like AlertTicker's test-mode banner): it appears at the top once you change something, goes away if you change it back, and clears when the editor closes. It never shows on the dashboard itself.
+
 ## v2026.10.22.28
 
 - **Editor controls follow the design guide, everywhere:** on/off settings are checkboxes (not switches), choices are drop-downs (not radio lists), sizes and percentages are sliders with a bold value, and every color is the four-mode control (Not set / Theme color / Custom swatch / CSS). Sub-settings of a feature that's turned off are hidden (e.g. chart position while the chart is off, glow color while glow is off). Entity, device and icon pickers are unchanged.

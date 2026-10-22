@@ -19,6 +19,7 @@ import { prune, clone } from "../card/config.js";
 import { METRICS, metricEntity } from "../card/metrics.js";
 import "./layout-map.js";
 import { renderFields, fieldStyles } from "./fields.js";
+import { setUnsaved } from "../card/unsaved.js";
 import { metricSensor, entityValue, integrationOf } from "../card/resolve.js";
 import "./sources.js";
 import "./series-editor.js";
@@ -198,6 +199,10 @@ class WeatherStationFlexCardEditor extends LitElement {
 
   setConfig(config) {
     this._config = config;
+    // The config the editor opened with: anything else is unsaved (shown as a
+    // banner on the editor preview until the dialog is saved or closed).
+    if (this._savedJson == null) this._savedJson = JSON.stringify(config);
+    setUnsaved(JSON.stringify(config) !== this._savedJson);
   }
 
   // Home Assistant passes the editor a new `hass` on every state change —
@@ -228,6 +233,9 @@ class WeatherStationFlexCardEditor extends LitElement {
     super.disconnectedCallback();
     clearTimeout(this._hassTimer);
     this._hassTimer = null;
+    // Dialog closed (saved or cancelled): the next editor starts clean.
+    this._savedJson = null;
+    setUnsaved(false);
   }
 
   get _panels() {
@@ -240,6 +248,7 @@ class WeatherStationFlexCardEditor extends LitElement {
 
   _emit(config) {
     this._config = config;
+    setUnsaved(JSON.stringify(config) !== this._savedJson);
     this.dispatchEvent(new CustomEvent("config-changed", { detail: { config }, bubbles: true, composed: true }));
   }
 
