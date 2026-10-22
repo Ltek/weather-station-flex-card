@@ -116,6 +116,45 @@ function applyForm(obj, schema, data, defaults = {}) {
   return prune(out);
 }
 
+// Layout fields a panel loses when it goes into a stack (the stack has the place and size).
+const GRID_ONLY = ["span", "rows", "display", "span_medium", "span_narrow", "rows_compact"];
+
+/**
+ * Put panels[i] and panels[i + 1] in a vertical stack at i's place. If the next
+ * panel is already a vertical stack, panel i joins it at the top. The stack
+ * gets the wider span and the two heights added up.
+ */
+export function stackWithNext(panels, i) {
+  const a = panels[i], b = panels[i + 1];
+  const child = (p) => {
+    const c = { ...p };
+    for (const k of GRID_ONLY) delete c[k];
+    return c;
+  };
+  const list = panels.slice();
+  if (b.type === "stack" && b.direction === "vertical") {
+    const rows = rowsOf(a) + rowsOf(b);
+    list.splice(i, 2, prune({ ...b, span: Math.max(spanOf(a), spanOf(b)), rows: rows || undefined, panels: [child(a), ...(b.panels || [])] }));
+    return list;
+  }
+  const rows = rowsOf(a) + rowsOf(b);
+  // Two half-height panels make one row (their gap is inside the stack now).
+  list.splice(i, 2, prune({ type: "stack", direction: "vertical", span: Math.max(spanOf(a), spanOf(b)), rows: rows || undefined, panels: [child(a), child(b)] }));
+  return list;
+}
+
+/** Move child j out of the stack at top-level index s, placing it after the stack. */
+export function unstack(panels, s, j) {
+  const st = panels[s];
+  const kids = (st.panels || []).slice();
+  const [c] = kids.splice(j, 1);
+  const list = panels.slice();
+  const out = prune({ ...c, span: spanOf(st), rows: undefined });
+  if (kids.length) list.splice(s, 1, { ...st, panels: kids }, out);
+  else list.splice(s, 1, out);
+  return list;
+}
+
 function panelDefaults(p) {
   const m = panelMeta(p);
   return { span: m.span, rows: m.rows, display: "grid", in_bar: inBarOf({ ...p, in_bar: undefined }), show: true };
@@ -482,6 +521,20 @@ class WeatherStationFlexCardEditor extends LitElement {
           ? nothing
           : html`<button class="ib" title=${hidden ? "Show when the dashboard loads" : "Hide when the dashboard loads"} @click=${() => update(prune({ ...p, show: hidden ? undefined : false }))}>
               <ha-icon icon=${hidden ? "mdi:eye-off" : "mdi:eye"}></ha-icon></button>`}
+        ${!nested && p.type !== "hero" && p.type !== "stack" && i < panels.length - 1 && panels[i + 1].type !== "hero"
+          ? html`<button class="ib" title="Stack with the next panel (one above the other; when one is hidden the other fills the space)" @click=${() => {
+              reset();
+              this._openPanel = null;
+              setList(stackWithNext(panels, i));
+            }}><ha-icon icon="mdi:view-split-horizontal"></ha-icon></button>`
+          : nothing}
+        ${nested && /^\d+\.\d+$/.test(key)
+          ? html`<button class="ib" title="Move out of the stack" @click=${() => {
+              reset();
+              this._openPanel = null;
+              this._setPanels(unstack(this._panels, Number(key.split(".")[0]), i));
+            }}><ha-icon icon="mdi:arrow-collapse-right"></ha-icon></button>`
+          : nothing}
         <button class="ib" title="Edit" @click=${() => (this._openPanel = this._openPanel === key ? null : key)}><ha-icon icon=${open ? "mdi:chevron-up" : "mdi:pencil"}></ha-icon></button>
         <button class="ib" title="Duplicate" @click=${() => {
           const list = panels.slice();
@@ -648,3 +701,6 @@ class WeatherStationFlexCardEditor extends LitElement {
 }
 
 customElements.get("weather-station-flex-card-editor") || customElements.define("weather-station-flex-card-editor", WeatherStationFlexCardEditor);
+
+// For tests.
+globalThis.__wsfcEditorHelpers = { stackWithNext, unstack };

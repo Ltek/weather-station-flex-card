@@ -84,9 +84,28 @@ class WeatherStationFlexCard extends LitElement {
     this._hidden = this._loadHidden(panels);
   }
 
-  // A panel's identity for remembering its toggle: explicit id, else type + position.
+  // A panel's identity for remembering its toggle: explicit id, else type +
+  // position. `i` is its path: an index, or "stack.child" for a panel in a stack.
   _key(p, i) {
     return p.id || `${i}:${p.type}`;
+  }
+
+  /** Every panel with its path: top-level panels, then each stack's children after it. */
+  _entries(panels = this._config.panels) {
+    const out = [];
+    panels.forEach((p, i) => {
+      out.push([p, i]);
+      if (p.type === "stack") (p.panels || []).forEach((c, j) => c && out.push([c, `${i}.${j}`]));
+    });
+    return out;
+  }
+
+  /** Panel at a path (index or "i.j"). */
+  _at(path) {
+    const panels = this._config.panels;
+    if (typeof path === "number") return panels[path];
+    const [a, b] = String(path).split(".").map(Number);
+    return b == null ? panels[a] : panels[a]?.panels?.[b];
   }
 
   _storageKey() {
@@ -95,7 +114,7 @@ class WeatherStationFlexCard extends LitElement {
   }
 
   _loadHidden(panels) {
-    const def = new Set(panels.map((p, i) => (p.show === false ? this._key(p, i) : null)).filter(Boolean));
+    const def = new Set(this._entries(panels).map(([p, i]) => (p.show === false ? this._key(p, i) : null)).filter(Boolean));
     if (this._config?.remember === false) return def;
     try {
       const saved = JSON.parse(localStorage.getItem(this._storageKey()) || "null");
@@ -108,7 +127,7 @@ class WeatherStationFlexCard extends LitElement {
 
   // Saved toggles only apply while the panel list is unchanged.
   _sig(panels) {
-    return panels.map((p, i) => this._key(p, i)).join(",");
+    return this._entries(panels).map(([p, i]) => this._key(p, i)).join(",");
   }
 
   _saveHidden() {
@@ -333,7 +352,8 @@ class WeatherStationFlexCard extends LitElement {
 
   _renderBar() {
     const panels = this._config.panels;
-    const items = panels.map((p, i) => [p, i]).filter(([p]) => inBarOf(p));
+    // Panels inside stacks get buttons too (same default per type).
+    const items = this._entries(panels).filter(([p]) => inBarOf(p));
     if (!items.length) return nothing;
     return items.map(([p, i]) => {
       const meta = panelMeta(p);
@@ -382,8 +402,13 @@ class WeatherStationFlexCard extends LitElement {
     return this._hidden.has(this._key(p, i));
   }
 
-  // Panels that hide themselves when they have nothing to show (e.g. pollen out of season).
-  _isEmpty(p) {
+  // Panels that hide themselves when they have nothing to show (e.g. pollen
+  // out of season). A stack is empty when every child is hidden or empty.
+  _isEmpty(p, path) {
+    if (p.type === "stack" && path != null && typeof path === "number") {
+      const kids = (p.panels || []).filter(Boolean);
+      return kids.length > 0 && kids.every((c, j) => this._isHidden(c, `${path}.${j}`) || this._isEmpty(c));
+    }
     const fn = panelMeta(p)?.hideWhen;
     try {
       return !!(fn && fn(p, this.hass, this._station));
@@ -394,7 +419,7 @@ class WeatherStationFlexCard extends LitElement {
 
   _renderPanels() {
     const panels = this._config.panels;
-    let idx = panels.map((p, i) => i).filter((i) => panels[i].display !== "popup" && !this._isHidden(panels[i], i) && !this._isEmpty(panels[i]));
+    let idx = panels.map((p, i) => i).filter((i) => panels[i].display !== "popup" && !this._isHidden(panels[i], i) && !this._isEmpty(panels[i], i));
     if (this._focus != null) idx = [this._focus];
     if (!idx.length) return html`<div class="empty">All panels are hidden — use the panel buttons to show one.</div>`;
     const size = this._layoutSize;
@@ -430,7 +455,7 @@ class WeatherStationFlexCard extends LitElement {
 
   _renderPopup() {
     const i = this._popup;
-    const p = this._config.panels[i];
+    const p = this._at(i);
     if (!p) return nothing;
     const close = () => (this._popup = null);
     return html`<div class="scrim" @click=${(e) => e.target === e.currentTarget && close()}>
@@ -459,6 +484,10 @@ class WeatherStationFlexCard extends LitElement {
     el.lite = this._lite;
     el.hass = this.hass;
     if (p.type === "heading") el.bar = p.show_bar && this._config.panel_bar !== false ? this._renderBar() : null;
+    // A stack skips children that are toggled off or hiding themselves; the others fill the space.
+    if (p.type === "stack" && !popup) {
+      el.hiddenKids = (p.panels || []).map((c, j) => !!c && (this._isHidden(c, `${i}.${j}`) || this._isEmpty(c))).join(",");
+    }
     return el;
   }
 

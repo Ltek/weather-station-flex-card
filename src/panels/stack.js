@@ -14,7 +14,11 @@ import { PANEL_TYPES, panelMeta } from "../card/panels.js";
 import { tileStyles } from "./shared.js";
 
 class WsfcStack extends LitElement {
-  static properties = { hass: { attribute: false }, config: { attribute: false }, station: { attribute: false }, lite: { attribute: false } };
+  static properties = {
+    hass: { attribute: false }, config: { attribute: false }, station: { attribute: false }, lite: { attribute: false },
+    // "0,1,0": which children are hidden (set by the card from toggles and auto-hide).
+    hiddenKids: { attribute: false },
+  };
   static styles = [
     tileStyles,
     css`
@@ -40,14 +44,19 @@ class WsfcStack extends LitElement {
   }
 
   render() {
-    const kids = (this.config?.panels || []).filter((p) => p && PANEL_TYPES[p.type]);
-    if (!kids.length) return html`<div class="empty">Empty stack — add panels to it in the editor.</div>`;
+    const all = this.config?.panels || [];
+    if (!all.some((p) => p && PANEL_TYPES[p.type])) return html`<div class="empty">Empty stack — add panels to it in the editor.</div>`;
     const vertical = this.config?.direction === "vertical";
-    return kids.map((p, i) => {
+    const hidden = String(this.hiddenKids || "").split(",");
+    // A vertical stack with its own height shares it among its children, so
+    // when one is hidden the others fill its space.
+    const fill = vertical && Number(this.config?.rows) > 0;
+    return all.map((p, i) => {
+      if (!p || !PANEL_TYPES[p.type] || hidden[i] === "true") return nothing;
       const meta = panelMeta(p);
       if (!meta) return nothing;
       // Horizontal: `grow` (or span) sets relative width; vertical: rows sets a minimum height.
-      const grow = Number(p.grow ?? (vertical ? (p.rows ? 1 : 0) : 1));
+      const grow = Number(p.grow ?? (vertical ? (p.rows || fill ? 1 : 0) : 1));
       const rows = Number(p.rows ?? 0);
       const style = [`--grow:${grow}`, p.min_width ? `--basis:${p.min_width}px` : "",
         vertical && rows ? `min-height:calc(${rows} * var(--wsfc-row, 110px) + ${rows - 1} * var(--wsfc-gap, 12px))` : ""].join(";");

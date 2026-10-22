@@ -1,5 +1,11 @@
 # Changelog
 
+## v2026.10.22.23
+
+- **Stacks fill the space of hidden panels.** A panel inside a stack that is toggled off, or hiding itself (e.g. Pollen out of season or all at None), leaves the stack, and the other panels grow into its space. In a vertical stack with a height, children now share that height by default. A stack whose panels are all hidden leaves the grid.
+- **Panels inside stacks get panel buttons** (same default as on their own), so Pollen keeps its button inside a stack, and opens as a pop-up when it's hiding itself.
+- **Stack with the next panel** (Panels list, ⊟ button): puts a panel and the one after it in a vertical stack in one click, with the wider width and both heights added up (two half-height panels make a one-row stack). **Move out of the stack** does the reverse.
+
 ## v2026.10.22.22
 
 - **Wind panel uses the Wind Rose Card when it's installed.** If aukedejong's [Wind Rose Card](https://github.com/aukedejong/lovelace-windrose-card) is installed (HACS), the Wind panel's Rose view shows it in place of the built-in rose, with your station's direction, speed and gust sensors filled in from Weather Sources and the bars in your unit. Without it, the built-in rose stays. `rose_engine: builtin` keeps the built-in rose either way.

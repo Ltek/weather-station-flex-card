@@ -236,6 +236,11 @@ const config = () => ({
   remember: false,
   ...(params.get("hero") ? { panels: [{ type: "hero", span: Number(params.get("span") || 12), rows: Number(params.get("rows") || 0), auto_scale: params.get("hero") === "auto", scale: Number(params.get("scale") || 100), flex: { wfc: { current: { clock_show_date: true } } } }, { type: "metric", metric: "temperature" }] } : {}),
   ...(params.get("panels") === "wind" ? { panels: ["standard", "periods", "beaufort", "corners", "stats", "playback"].map((windrose_preset) => ({ type: "wind", view: "rose", windrose_preset, title: `Wind · ${windrose_preset}`, span: 6, show_chart: false })) } : {}),
+  ...(params.get("stack") ? { panels: [{ type: "hero", span: 8, rows: 2, sky_bar: false },
+    { type: "stack", direction: "vertical", span: 4, rows: 2, panels: [
+      { type: "pollen", ...(params.get("stack") === "off" ? { species: ["RAGWEED", "GRAMINALES"], hide_when_off_season: true } : {}) },
+      { type: "air_quality" }] },
+    { type: "metric", metric: "temperature" }, { type: "metric", metric: "humidity" }] } : {}),
   ...(params.get("style") ? { panel_radius: 10, panel_shadow: "medium", panel_border_width: 1, panel_border_color: "#4fc3f7", panel_glow: true, panel_glow_size: 8 } : {}),
   ...(params.get("img") ? { background: "image", background_image_url: params.get("img") } : {}),
   ...(params.get("bg") ? { background: "animated", panel_opacity: Number(params.get("op") || 0.55) } : {}),
