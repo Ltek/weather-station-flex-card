@@ -53,10 +53,13 @@ class WsfcRadar extends LitElement {
     css`
       .map { position: relative; flex: 1; min-height: 240px; border-radius: 12px; overflow: hidden; background: #1b1f24; }
       .map > div { position: absolute; inset: 0; }
-      .bar { display: flex; align-items: center; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
-      .bar button.play { font: inherit; border: 0; background: var(--primary-color); color: var(--text-primary-color, #fff); border-radius: 999px; padding: 4px 12px; cursor: pointer; }
-      .time { font-variant-numeric: tabular-nums; color: var(--wsfc-muted); font-size: 13px; min-width: 7ch; }
-      .spacer { flex: 1; }
+      .ctl { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+      .ctl button.play { display: inline-grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 0; border-radius: 50%; cursor: pointer;
+        background: var(--primary-color); color: var(--text-primary-color, #fff); }
+      .ctl button.play ha-icon { --mdc-icon-size: 18px; }
+      .ctl button.play:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 2px; }
+      .time { font-variant-numeric: tabular-nums; color: var(--wsfc-muted); font-size: 13px; white-space: nowrap; }
+      .err { color: var(--warning-color, #ffa600); font-size: 12px; white-space: nowrap; }
       .leaflet-container { font: inherit; background: transparent; }
       .leaflet-control-attribution { font-size: 9px; }
     `,
@@ -78,18 +81,18 @@ class WsfcRadar extends LitElement {
     const overlays = this.config?.owm_layers || ["wind_new"];
     const overlay = this._overlay ?? this.config?.owm_default ?? "none";
     if (this.lite) return html`${head(this.config, this._radarOn ? "mdi:radar" : "mdi:map", this._radarOn ? "Radar" : "Map")}${paused(this._radarOn ? "mdi:radar" : "mdi:map", this._radarOn ? "Radar loop" : "Map")}`;
+    // Header: title, then the loop time and play/pause, then the overlay picker.
+    const controls = html`<span class="ctl">
+      ${this._radarOn ? html`
+        ${this._error ? html`<span class="err" title=${this._error}>Radar unavailable</span>` : html`<span class="time" aria-live="off">${this._frameLabel || ""}</span>`}
+        <button class="play" type="button" @click=${this._togglePlay} aria-label=${this._playing ? "Pause radar loop" : "Play radar loop"} title=${this._playing ? "Pause" : "Play"}>
+          <ha-icon icon=${this._playing ? "mdi:pause" : "mdi:play"}></ha-icon>
+        </button>` : ""}
+      ${key ? seg([{ value: "none", label: this._radarOn ? "Radar" : "Map" }, ...overlays.map((l) => ({ value: l, label: `${this._radarOn ? "+ " : ""}${OWM_LAYERS[l] || l}` }))], overlay, (v) => this._setOverlay(v), "Map overlay") : ""}
+    </span>`;
     return html`
-      ${head(this.config, this._radarOn ? "mdi:radar" : "mdi:map", this._radarOn ? "Radar" : "Map",
-        key ? seg([{ value: "none", label: this._radarOn ? "Radar" : "Map" }, ...overlays.map((l) => ({ value: l, label: `${this._radarOn ? "+ " : ""}${OWM_LAYERS[l] || l}` }))], overlay, (v) => this._setOverlay(v), "Map overlay") : "")}
+      ${head(this.config, this._radarOn ? "mdi:radar" : "mdi:map", this._radarOn ? "Radar" : "Map", controls)}
       <div class="map"><div id="map"></div></div>
-      ${this._radarOn ? html`<div class="bar">
-        <button class="play" type="button" @click=${this._togglePlay} aria-label=${this._playing ? "Pause radar loop" : "Play radar loop"}>
-          ${this._playing ? "❚❚ Pause" : "▶ Play"}
-        </button>
-        <span class="time" aria-live="off">${this._frameLabel || ""}</span>
-        <span class="spacer"></span>
-        ${this._error ? html`<span class="note">${this._error}</span>` : ""}
-      </div>` : ""}
     `;
   }
 

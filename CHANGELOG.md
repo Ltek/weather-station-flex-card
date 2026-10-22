@@ -1,5 +1,10 @@
 # Changelog
 
+## v2026.10.22.20
+
+- **Radar:** the loop time and a round play/pause button are now in the panel's header (with the overlay picker, if set), instead of a bar under the map, so the map gets the full height.
+- Panels that open larger when tapped show the same small expand-arrows icon in the corner as the other panels, instead of an "Open" pill.
+
 ## v2026.10.22.19
 
 - **Half-height panels:** panel height now goes in half steps (0.5, 1, 1.5 …), in the panel's Height slider and the layout map (drag or Shift+↑/↓). Two half-height panels stacked fill exactly one row, e.g. Pollen above Air quality next to a one-row panel.

@@ -415,7 +415,7 @@ class WeatherStationFlexCard extends LitElement {
       return html`<section class="tile ${p.type} ${meta.bare ? "bare" : ""} ${bg} ${rows ? "" : "auto"} ${tapToOpen ? "tap" : ""}" style=${style}>
         ${tapToOpen
           ? html`<button class="tap-open" type="button" aria-haspopup="dialog" aria-label=${`Open ${p.title || this._autoTitle(p)}`}
-              @click=${() => (this._popup = i)}><span><ha-icon icon="mdi:arrow-expand"></ha-icon>Open</span></button>`
+              @click=${() => (this._popup = i)}><span><ha-icon icon="mdi:arrow-expand"></ha-icon></span></button>`
           : nothing}
         ${expandable
           ? html`<button class="expand" type="button" @click=${() => (this._focus = this._focus == null ? i : null)}
@@ -519,12 +519,14 @@ class WeatherStationFlexCard extends LitElement {
       border: 0; padding: 0; margin: 0; background: transparent; cursor: pointer;
       border-radius: inherit; display: flex; align-items: flex-start; justify-content: flex-end;
     }
+    /* Same corner icon as the expand button on other panels. */
     .tap-open span {
-      display: inline-flex; align-items: center; gap: 4px; margin: 8px;
-      font: inherit; font-size: 12px; padding: 4px 10px; border-radius: 999px;
-      color: var(--text-primary-color, #fff); background: rgba(0, 0, 0, 0.45);
+      display: inline-flex; margin: 8px; padding: 4px; border-radius: 50%; line-height: 0;
+      color: var(--secondary-text-color);
     }
-    .tap-open ha-icon { --mdc-icon-size: 14px; }
+    .tap-open:hover span { color: var(--primary-text-color); }
+    .tap-open ha-icon { --mdc-icon-size: 18px; }
+    .tile .tap-open ~ * { --wsfc-head-pad: 28px; }
     .tap-open:focus-visible { outline: 2px solid var(--primary-color); outline-offset: -2px; }
 
     .title-row { display: flex; align-items: center; gap: 10px; }
