@@ -64,9 +64,7 @@ export const WINDROSE_PRESETS = {
       data_period: { period_back: "-1d" },
       text_blocks: {
         bottom: {
-          text: "Min ${min-speed} · Avg ${average-speed} · Max ${max-speed} · P90 ${p90-speed} · Calm ${calm-percentage}%",
-          text_size: 13,
-          text_color: "var(--secondary-text-color)",
+          ...statsBlock({}),
         },
       },
     }),
@@ -92,7 +90,17 @@ export const WINDROSE_PRESETS = {
   },
 };
 
-const STATS_TEXT = "Min ${min-speed} · Avg ${average-speed} · Max ${max-speed} · P90 ${p90-speed} · Calm ${calm-percentage}%";
+const STATS = { min: ["Min", "min-speed"], avg: ["Avg", "average-speed"], max: ["Max", "max-speed"], median: ["Median", "median-speed"], p90: ["P90", "p90-speed"], calm: ["Calm", "calm-percentage", "%"] };
+const STATS_DEFAULT = ["min", "avg", "max", "p90", "calm"];
+
+/** Statistics line for the card's text block, from the chosen parts and style. */
+export function statsBlock(c) {
+  const items = (Array.isArray(c?.stats_items) && c.stats_items.length ? c.stats_items : STATS_DEFAULT).filter((k) => STATS[k]);
+  // The card fills in "${name}" placeholders.
+  const text = items.map((k) => STATS[k][0] + " ${" + STATS[k][1] + "}" + (STATS[k][2] || "")).join(" · ");
+  const w = c?.stats_weight && c.stats_weight !== "400" ? `<span style="font-weight:${Number(c.stats_weight)}">${text}</span>` : text;
+  return { text: w, text_size: Number(c?.stats_size) || 13, text_color: c?.stats_color || "var(--secondary-text-color)" };
+}
 
 /**
  * Panel options that override the preset ("preset" / unset = keep the preset's).
@@ -113,7 +121,10 @@ export function applyOverrides(card, c, ids, unit) {
   }
   if (set(c.wr_stats)) {
     delete card.text_blocks;
-    if (c.wr_stats !== "off") card.text_blocks = { [c.wr_stats]: { text: STATS_TEXT, text_size: 13, text_color: "var(--secondary-text-color)" } };
+    if (c.wr_stats !== "off") card.text_blocks = { [c.wr_stats]: statsBlock(c) };
+  } else if (card.text_blocks) {
+    // The preset's statistics line, in the chosen parts and style.
+    for (const k of Object.keys(card.text_blocks)) card.text_blocks[k] = statsBlock(c);
   }
   if (set(c.wr_buttons)) {
     if (c.wr_buttons === "none") delete card.buttons_config;
@@ -135,6 +146,15 @@ export function applyOverrides(card, c, ids, unit) {
     card.windspeed_entities = card.windspeed_entities.map((e) => ({ ...e, speed_range_beaufort: on, ...(on ? { current_speed_arrow: true } : {}) }));
   }
   if (c.wr_arrow === false) card.current_direction = { show_arrow: false };
+  else card.current_direction = { ...(card.current_direction || {}), show_arrow: true, ...(c.wr_arrow_size != null ? { arrow_size: Number(c.wr_arrow_size) } : {}) };
+  if (c.wr_arrow_color) card.colors = { ...(card.colors || {}), rose_current_direction_arrow: c.wr_arrow_color };
+  if (set(c.wr_speed_arrows) || c.wr_speed_arrow_size != null) {
+    card.windspeed_entities = card.windspeed_entities.map((e) => ({
+      ...e,
+      ...(set(c.wr_speed_arrows) ? { current_speed_arrow: c.wr_speed_arrows === "on" } : {}),
+      ...(c.wr_speed_arrow_size != null ? { current_speed_arrow_size: Number(c.wr_speed_arrow_size) } : {}),
+    }));
+  }
   return card;
 }
 

@@ -88,29 +88,62 @@ export const PANEL_TYPES = {
   },
   wind: {
     tag: "wsfc-panel-wind", label: "Wind", icon: "mdi:weather-windy", span: 6, rows: 4,
-    schema: [
-      { name: "view", selector: { select: { options: opt([["compass", "Compass"], ["rose", "Wind rose"]]) } } },
-      { name: "show_view_buttons", selector: { boolean: {} }, default: true, helper: "Compass / Rose buttons in the header." },
-      { name: "readings_position", selector: { select: { options: opt([["auto", "Automatic — beside the dial; hidden with the Wind Rose Card"], ["side", "Beside the dial"], ["above", "Above"], ["below", "Below"], ["hidden", "Hidden"]]) } }, default: "auto", helper: "Speed, gust and direction readings." },
-      { name: "show_chart", selector: { boolean: {} }, default: true, helper: "24 h speed and gust chart." },
-      { name: "chart_position", selector: { select: { options: opt([["below", "Below"], ["above", "Above"]]) } }, default: "below" },
-      { name: "show_legend", selector: { boolean: {} }, default: true, helper: "Built-in rose: speed colour legend." },
-      { name: "rose_engine", selector: { select: { options: opt([["auto", "Automatic — Wind Rose Card when installed"], ["windrose", "Wind Rose Card (custom:windrose-card)"], ["builtin", "Built-in rose"]]) } }, default: "auto", helper: "The rose view uses aukedejong's Wind Rose Card when it is installed (HACS), with your station's sensors filled in." },
-      { name: "windrose_preset", selector: { select: { options: Object.entries(WINDROSE_PRESETS).map(([value, p]) => ({ value, label: p.label })) } }, default: "standard", helper: "Wind Rose Card starting layout; the options below change parts of it." },
-      { name: "wr_bars", selector: { select: { options: opt([["preset", "From the preset"], ["right", "Right"], ["bottom", "Bottom"], ["hidden", "Hidden"]]) } }, default: "preset", helper: "Wind Rose Card: speed and gust bars." },
-      { name: "wr_corners", selector: { select: { options: opt([["preset", "From the preset"], ["on", "Show (speed, direction, gust)"], ["off", "Hide"]]) } }, default: "preset", helper: "Wind Rose Card: corner info." },
-      { name: "wr_stats", selector: { select: { options: opt([["preset", "From the preset"], ["top", "Above the rose"], ["bottom", "Below the rose"], ["off", "Hide"]]) } }, default: "preset", helper: "Wind Rose Card: min / average / max / P90 speed and calm %." },
-      { name: "wr_buttons", selector: { select: { options: opt([["preset", "From the preset"], ["periods", "Period buttons (1 h … 7 days)"], ["playback", "Playback (±12 h, play 10 days)"], ["none", "None"]]) } }, default: "preset", helper: "Wind Rose Card: buttons." },
-      { name: "wr_buttons_position", selector: { select: { options: opt([["preset", "From the preset"], ["top", "Top"], ["bottom", "Bottom"]]) } }, default: "preset" },
-      { name: "wr_period", selector: { select: { options: opt([["preset", "From the preset"], ["-1h", "1 hour"], ["-8h", "8 hours"], ["-1d", "24 hours"], ["-7d", "7 days"], ["-30d", "30 days"]]) } }, default: "preset", helper: "Wind Rose Card: period shown first." },
-      { name: "wr_beaufort", selector: { select: { options: opt([["preset", "From the preset"], ["on", "Beaufort"], ["off", "Speed unit"]]) } }, default: "preset", helper: "Wind Rose Card: bar scale." },
-      { name: "wr_arrow", selector: { boolean: {} }, default: true, helper: "Wind Rose Card: current direction arrow." },
-      { name: "windrose_chart", selector: { boolean: {} }, default: true, helper: "Wind Rose Card: show the speed/gust chart too." },
-      { name: "windrose", selector: { object: {} }, helper: "Wind Rose Card: any of its own options, merged last, e.g. rose_config, colors or speed_ranges." },
-      { name: "entities.wind_speed", selector: ent("sensor") },
-      { name: "entities.wind_gust_speed", selector: ent("sensor") },
-      { name: "entities.wind_bearing", selector: ent("sensor") },
-      { name: "rose_bins", selector: { object: {} }, helper: "Built-in rose: speed thresholds in the sensor's unit, e.g. [1, 5, 10, 15, 25]." },
+    // Settings grouped by what they change (the editor shows a heading per group).
+    groups: [
+      ["View", [
+        { name: "view", selector: { select: { options: opt([["compass", "Compass"], ["rose", "Wind rose"]]) } } },
+        { name: "show_view_buttons", selector: { boolean: {} }, default: true, helper: "Compass / Rose buttons in the header." },
+      ]],
+      ["Readings (speed, gust, direction)", [
+        { name: "readings_position", selector: { select: { options: opt([["auto", "Automatic — beside the dial; hidden with the Wind Rose Card"], ["side", "Beside the dial"], ["above", "Above"], ["below", "Below"], ["hidden", "Hidden"]]) } }, default: "auto" },
+      ]],
+      ["Chart", [
+        { name: "show_chart", label: "Show the chart", selector: { boolean: {} }, default: true, helper: "24 h speed and gust chart." },
+        { name: "chart_position", selector: { select: { options: opt([["below", "Below"], ["above", "Above"]]) } }, default: "below" },
+        { name: "windrose_chart", selector: { boolean: {} }, default: true, helper: "Also with the Wind Rose Card." },
+      ]],
+      ["Compass", [
+        { name: "compass_arrow_size", selector: { number: { min: 50, max: 200, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100, helper: "Direction pointer size." },
+        { name: "compass_arrow_color", selector: { text: {} }, helper: "Pointer color, e.g. #ff5252 (default: the wind color)." },
+      ]],
+      ["Wind rose", [
+        { name: "rose_engine", selector: { select: { options: opt([["auto", "Automatic — Wind Rose Card when installed"], ["windrose", "Wind Rose Card (custom:windrose-card)"], ["builtin", "Built-in rose"]]) } }, default: "auto", helper: "aukedejong's Wind Rose Card (HACS) with your station's sensors filled in, or our built-in 24 h rose." },
+        { name: "show_legend", selector: { boolean: {} }, default: true, helper: "Built-in rose: speed colour legend." },
+        { name: "rose_bins", selector: { object: {} }, helper: "Built-in rose: speed thresholds in the sensor's unit, e.g. [1, 5, 10, 15, 25]." },
+        { name: "windrose_preset", selector: { select: { options: Object.entries(WINDROSE_PRESETS).map(([value, p]) => ({ value, label: p.label })) } }, default: "standard", helper: "Wind Rose Card starting layout; the settings below change parts of it." },
+        { name: "wr_period", selector: { select: { options: opt([["preset", "From the preset"], ["-1h", "1 hour"], ["-8h", "8 hours"], ["-1d", "24 hours"], ["-7d", "7 days"], ["-30d", "30 days"]]) } }, default: "preset", helper: "Period shown first." },
+        { name: "wr_arrow", selector: { boolean: {} }, default: true, helper: "Current direction arrow." },
+        { name: "wr_arrow_size", selector: { number: { min: 10, max: 120, step: 5, mode: "slider" } }, default: 50, helper: "Direction arrow size." },
+        { name: "wr_arrow_color", selector: { text: {} }, helper: "Arrow color (default red). The Wind Rose Card uses it for the speed-bar arrows too." },
+      ]],
+      ["Wind Rose Card: speed bars", [
+        { name: "wr_bars", selector: { select: { options: opt([["preset", "From the preset"], ["right", "Right"], ["bottom", "Bottom"], ["hidden", "Hidden"]]) } }, default: "preset" },
+        { name: "wr_beaufort", selector: { select: { options: opt([["preset", "From the preset"], ["on", "Beaufort"], ["off", "Speed unit"]]) } }, default: "preset" },
+        { name: "wr_speed_arrows", selector: { select: { options: opt([["preset", "From the preset"], ["on", "Show"], ["off", "Hide"]]) } }, default: "preset", helper: "Arrow on each bar at the current speed." },
+        { name: "wr_speed_arrow_size", selector: { number: { min: 10, max: 120, step: 5, mode: "slider" } }, default: 40 },
+      ]],
+      ["Wind Rose Card: corner info", [
+        { name: "wr_corners", selector: { select: { options: opt([["preset", "From the preset"], ["on", "Show (speed, direction, gust)"], ["off", "Hide"]]) } }, default: "preset" },
+      ]],
+      ["Wind Rose Card: statistics", [
+        { name: "wr_stats", selector: { select: { options: opt([["preset", "From the preset"], ["top", "Above the rose"], ["bottom", "Below the rose"], ["off", "Hide"]]) } }, default: "preset" },
+        { name: "stats_items", selector: { select: { multiple: true, options: opt([["min", "Min"], ["avg", "Average"], ["max", "Max"], ["median", "Median"], ["p90", "P90 (gust-like)"], ["calm", "Calm %"]]) } }, default: ["min", "avg", "max", "p90", "calm"] },
+        { name: "stats_size", selector: { number: { min: 8, max: 40, mode: "box", unit_of_measurement: "px" } }, default: 13 },
+        { name: "stats_weight", selector: { select: { options: opt([["400", "Regular"], ["500", "Medium"], ["700", "Bold"]]) } }, default: "400" },
+        { name: "stats_color", selector: { text: {} }, helper: "CSS color (default: secondary text)." },
+      ]],
+      ["Wind Rose Card: buttons", [
+        { name: "wr_buttons", selector: { select: { options: opt([["preset", "From the preset"], ["periods", "Period buttons (1 h … 7 days)"], ["playback", "Playback (±12 h, play 10 days)"], ["none", "None"]]) } }, default: "preset" },
+        { name: "wr_buttons_position", selector: { select: { options: opt([["preset", "From the preset"], ["top", "Top"], ["bottom", "Bottom"]]) } }, default: "preset" },
+      ]],
+      ["Wind Rose Card: advanced", [
+        { name: "windrose", selector: { object: {} }, helper: "Any of the card's own options, merged last, e.g. rose_config, colors or speed_ranges." },
+      ]],
+      ["Sensors", [
+        { name: "entities.wind_speed", selector: ent("sensor") },
+        { name: "entities.wind_gust_speed", selector: ent("sensor") },
+        { name: "entities.wind_bearing", selector: ent("sensor") },
+      ]],
     ],
   },
   radar: {
@@ -160,7 +193,7 @@ export const PANEL_TYPES = {
   },
   astronomy: {
     tag: "wsfc-panel-astronomy", label: "Astronomy", icon: "mdi:telescope", span: 6, rows: 3, rowsCompact: 0,
-    schema: [{ name: "show_chart", selector: { boolean: {} }, default: true, helper: "Sun and moon altitude over the day." }],
+    schema: [{ name: "show_chart", label: "Altitude chart", selector: { boolean: {} }, default: true, helper: "Sun and moon altitude over the day." }],
   },
   wind_map: {
     tag: "wsfc-panel-wind-map", label: "Wind map (Windy)", icon: "mdi:map-marker-radius-outline", span: 6, rows: 3,
@@ -279,6 +312,9 @@ export const PANEL_TYPES = {
     schema: [{ name: "card", selector: { object: {} }, helper: "Any card configuration, e.g. type: statistics-graph." }],
   },
 };
+
+// Grouped schemas: `schema` is all of a type's fields.
+for (const m of Object.values(PANEL_TYPES)) if (m.groups && !m.schema) m.schema = m.groups.flatMap(([, f]) => f);
 
 /** Fields every panel has (editor "Layout" group). */
 export const COMMON_SCHEMA = [

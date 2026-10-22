@@ -1,5 +1,12 @@
 # Changelog
 
+## v2026.10.22.27
+
+- **Wind panel settings in groups** by what they change: View, Readings, Chart, Compass, Wind rose, and the Wind Rose Card's speed bars, corner info, statistics, buttons and advanced options, then Sensors.
+- **Wind Rose Card statistics:** choose which values show (Min, Average, Max, Median, P90, Calm %) and their text size, weight and color.
+- **Arrows, each on its own:** compass pointer size and color; the Wind Rose Card's direction arrow size and color; its speed-bar arrows on or off and their size. The Wind Rose Card draws the speed-bar arrows in the direction arrow's color, so they share it.
+- Fix: the Wind panel's chart switch was labelled "Altitude chart".
+
 ## v2026.10.22.26
 
 - **Wind panel layout options:** where the speed / gust / direction readings go (beside the dial, above, below or hidden; by default beside our dial and hidden with the Wind Rose Card), the chart above or below (above, it's a strip so the dial keeps its room), and switches for the Compass/Rose buttons and the rose's colour legend.
