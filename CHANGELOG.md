@@ -1,5 +1,9 @@
 # Changelog
 
+## v2026.10.23.41
+
+- **Fix: Temperature sub-header metric.** "High / Low Temperature" (the default) showed humidity in a hero without a forecast section, because the hero didn't load the forecast; it does now. A chosen metric now comes from Weather Sources like the rest of the card (the station's sensor first, e.g. UV and pressure in your units), and one that no source has (e.g. Ozone without an air-quality sensor) shows nothing instead of humidity.
+
 ## v2026.10.23.40
 
 - **Screen guide, full screen with fit:** everything always fits there (the rows share the screen height), so the map now shows a green "Fits 2000×1200 · rows 201px" frame instead of a line at the bottom. The dashed screen-edge line appears only if the rows would have to be smaller than the 60 px minimum.

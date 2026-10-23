@@ -787,6 +787,19 @@ import { actionHandler as iq } from "../../vendor/weather-forecast-card/src/hass
     lD.prototype.getSecondaryWeatherAttribute = function () {
       const v = this.config && this.config.current && this.config.current.secondary_info_attribute;
       if (v === "__wfc_none__") return null;
+      // A chosen metric follows Weather Sources like the rest of the card (the
+      // station's sensor first, then the weather entity). One that no source
+      // has shows nothing, instead of silently falling back to humidity.
+      if (typeof v === "string" && v && this.weatherEntity && cardProto._wfcMetricEntityChain) {
+        const ctx = { config: this.config, hass: this.hass, _wfcSources: cardProto._wfcSources, _wfcSlotEntityForKey: cardProto._wfcSlotEntityForKey, _wfcMetricEntityChain: cardProto._wfcMetricEntityChain };
+        let eid = null;
+        try { eid = (cardProto._wfcMetricEntityChain.call(ctx, v) || []).find((e) => !String(e).startsWith("weather.") && this.hass && this.hass.states[e]); } catch (_e) { eid = null; }
+        if (eid) {
+          const cfg = { ...this.config, current: { ...this.config.current, secondary_info_attribute: { name: v, entity: eid } } };
+          return ORIG_SECONDARY.call(Object.create(this, { config: { value: cfg } }));
+        }
+        if (!(v in (this.weatherEntity.attributes || {}))) return null;
+      }
       return ORIG_SECONDARY.call(this);
     };
   }
@@ -802,9 +815,14 @@ import { actionHandler as iq } from "../../vendor/weather-forecast-card/src/hass
     const fx = sp.forecast_extra;
     const skyShown = !!(sp.show || (wfc.sun_arc && wfc.sun_arc.show && wfc.sun_arc.baseline_mode === "sky"));
     const skyNeedsHourly = !!(skyShown && (sp.weather_adjust !== false || [sp.forecast_temps, sp.forecast_icons].some((v) => v && v !== "hidden") || (Array.isArray(fx) ? fx.length : fx && fx !== "none") || Object.values(sp.forecast_metric_pos || {}).some((v) => v && v !== "hidden")));
-    const wantHourly = !!(wfc.hourly.show || skyNeedsHourly);
-    const wantForecast = !!(wantHourly || wfc.daily.show);
-    const types = wantHourly && wfc.daily.show ? "both" : wantHourly ? "hourly" : "daily";
+    // The header's default sub-line (today's high / low) needs both forecasts,
+    // even when no forecast section is shown (e.g. a hero on its own).
+    const secAttr = config.current && config.current.secondary_info_attribute;
+    const secHL = !!(wfc.current.show && (secAttr == null || secAttr === ""));
+    const wantHourly = !!(wfc.hourly.show || skyNeedsHourly || secHL);
+    const wantDaily = !!(wfc.daily.show || secHL);
+    const wantForecast = !!(wantHourly || wantDaily);
+    const types = wantHourly && wantDaily ? "both" : wantHourly ? "hourly" : "daily";
     // Derive the legacy flags up front. The original setConfig throws when both
     // are false, but our extension supports "only details / sun" layouts — so we
     // keep show_current truthy for validation and correct it afterwards.
@@ -813,7 +831,7 @@ import { actionHandler as iq } from "../../vendor/weather-forecast-card/src/hass
       show_current: wfc.current.show || (!wantForecast ? true : false),
       show_forecast: wantForecast,
     };
-    if (wantForecast && (types === "both" || !config.forecast_types || skyNeedsHourly)) patched.forecast_types = types;
+    if (wantForecast && (types === "both" || !config.forecast_types || skyNeedsHourly || secHL)) patched.forecast_types = types;
     ORIG_SET_CONFIG.call(this, patched);
     // Reflect true intent for our own render (section list drives visibility).
     this.config.show_current = !!wfc.current.show;
