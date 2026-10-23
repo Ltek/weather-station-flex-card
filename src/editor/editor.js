@@ -709,7 +709,7 @@ class WeatherStationFlexCardEditor extends LitElement {
         const id = `${p.type}:${name}`;
         const open = (this._subOpen ||= new Set()).has(id);
         return html`<details class="sub psub" ?open=${open} @toggle=${(e) => { e.target.open ? this._subOpen.add(id) : this._subOpen.delete(id); this.requestUpdate(); }}>
-          <summary><ha-icon icon="mdi:weather-sunset"></ha-icon><span>${name}</span></summary>
+          <summary><ha-icon icon=${f[0]?.subIcon || "mdi:weather-sunset"}></ha-icon><span>${name}</span></summary>
           ${open ? html`<div class="psub-body">${form(f)}</div>` : nothing}
         </details>`;
       }
@@ -741,7 +741,8 @@ class WeatherStationFlexCardEditor extends LitElement {
         : nothing}
       ${this._sections(p, common, defs, update, "Layout")}
       ${m.groups
-        ? m.groups.map(([title, f]) => this._sections(p, f, {}, update, title))
+        // Grouped panels (e.g. Wind): each group is a collapsible sub-panel.
+        ? html`<div class="grp">${m.label} options</div>${m.groups.map(([title, f, icon], i) => this._sections(p, i === 0 ? f : f.map((x) => ({ ...x, sub: title, subIcon: icon })), {}, update, title))}`
         : m.schema.length
           ? this._sections(p, m.schema, {}, update, `${m.label} options`)
           : nothing}

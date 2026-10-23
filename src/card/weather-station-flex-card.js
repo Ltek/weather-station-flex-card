@@ -510,7 +510,9 @@ class WeatherStationFlexCard extends LitElement {
   // update never rebuilds charts/maps, while an edited panel is rebuilt.
   _panelEl(p, i, popup = false) {
     this._els ||= new Map();
-    const key = `${popup ? "pop" : "grid"}:${i}:${JSON.stringify(p)}`;
+    // Most panels get a fresh element when their settings change. Wind keeps
+    // its element, so a hosted Wind Rose Card stays drawn while it reloads.
+    const key = `${popup ? "pop" : "grid"}:${i}:${p.type === "wind" ? "wind" : JSON.stringify(p)}`;
     let el = this._els.get(key);
     if (!el) {
       el = document.createElement(panelMeta(p).tag);

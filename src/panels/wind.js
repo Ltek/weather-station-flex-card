@@ -15,6 +15,19 @@ import { roseEngine, windroseCard, WINDROSE_TAG } from "./windrose.js";
 const DEFAULT_BINS = { mph: [1, 5, 10, 15, 25], "km/h": [2, 8, 16, 24, 40], "m/s": [0.5, 2, 4.5, 7, 11], kn: [1, 4, 9, 13, 22] };
 const BIN_COLORS = ["#90caf9", "#4fc3f7", "#26a69a", "#ffca28", "#ff7043", "#d32f2f"];
 
+// True once a Wind Rose Card has drawn its rose (its SVG holds the petals).
+function roseDrawn(el) {
+  let n = 0;
+  const walk = (r) => {
+    for (const e of r.querySelectorAll("*")) {
+      if (e.tagName === "path" && ++n > 8) return true;
+      if (e.shadowRoot && walk(e.shadowRoot)) return true;
+    }
+    return false;
+  };
+  return walk(el.shadowRoot || el);
+}
+
 class WsfcWind extends LitElement {
   static properties = {
     hass: { attribute: false },
@@ -47,7 +60,8 @@ class WsfcWind extends LitElement {
       .spd { fill: var(--primary-text-color); font-size: 26px; font-weight: 500; text-anchor: middle; }
       .unit { fill: var(--secondary-text-color); font-size: 11px; text-anchor: middle; }
       .ptr { fill: var(--wsfc-wind); transition: transform .8s ease; }
-      .wr { min-height: 0; }
+      .wr { min-height: 0; position: relative; }
+      .wr-stage { position: absolute; inset: 0; visibility: hidden; pointer-events: none; overflow: hidden; }
       /* Fit mode: the chart is a fixed strip and the rose / dial takes what's left. */
       :host([fit]) .body { flex: 0 0 auto; height: var(--wsfc-wind-chart-h, 110px); min-height: 0; }
       .wr > * { --ha-card-background: transparent; --ha-card-box-shadow: none; --ha-card-border-width: 0; display: block; }
@@ -89,9 +103,10 @@ class WsfcWind extends LitElement {
       if (ids.dir && ids.speed) {
         this._ensureRose(windroseCard(c, ids, unit));
         if (this._wrEl) this._wrEl.hass = this.hass;
+        if (this._wrNext) this._wrNext.hass = this.hass;
         const sc = Math.max(30, Math.min(150, Number(c.wr_scale ?? 100)));
         const w = this.fit && this._fitPx ? `width:min(${sc}%, ${this._fitPx}px);margin:0 auto` : sc !== 100 ? `width:${sc}%;margin:0 auto` : "";
-        main = this._wrErr ? html`<div class="note">${this._wrErr}</div>` : html`<div class="wr fitmain" style=${w}>${this._wrEl || ""}</div>`;
+        main = this._wrErr ? html`<div class="note">${this._wrErr}</div>` : html`<div class="wr fitmain" style=${w}>${this._wrEl || ""}${this._wrNext ? html`<div class="wr-stage" aria-hidden="true">${this._wrNext}</div>` : ""}</div>`;
       }
     }
     if (!main) {
@@ -127,15 +142,36 @@ class WsfcWind extends LitElement {
       const helpers = await window.loadCardHelpers?.();
       if (!helpers) throw new Error("Home Assistant card helpers unavailable");
       if (this._wrJson !== json) return;
-      this._wrEl = helpers.createCardElement(cfg);
-      this._wrEl.hass = this.hass;
+      const el = helpers.createCardElement(cfg);
+      el.hass = this.hass;
       this._wrErr = undefined;
+      if (!this._wrEl) this._wrEl = el;
+      else {
+        // A settings change: keep the current rose on screen while the new one
+        // loads its history (hidden alongside), then swap. No blank rose.
+        this._wrNext = el;
+        this._wrSwap(el);
+      }
       this.requestUpdate();
     } catch (e) {
       this._wrErr = `Wind Rose Card failed to load: ${e?.message || e}`;
       this.requestUpdate();
     }
   }
+
+  // Swap in the staged Wind Rose Card once it has drawn (or after 15 s).
+  _wrSwap(el, start = Date.now()) {
+    clearTimeout(this._wrTimer);
+    if (this._wrNext !== el) return;
+    if (Date.now() - start > 15000 || roseDrawn(el)) {
+      this._wrEl = el;
+      this._wrNext = undefined;
+      this.requestUpdate();
+      return;
+    }
+    this._wrTimer = setTimeout(() => this._wrSwap(el, start), 250);
+  }
+
 
   // Compass: pointer sits on the ring at the bearing the wind comes FROM and
   // points toward the centre (meteorological convention).

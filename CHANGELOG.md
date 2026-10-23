@@ -1,5 +1,10 @@
 # Changelog
 
+## v2026.10.23.55
+
+- **Fix: the Wind Rose Card no longer goes blank when you change a setting.** The wind panel keeps its place on screen; the rose with the new settings loads its history in the background and replaces the old one once it's drawn.
+- **Wind settings are easier to read.** View stays open at the top; Readings, Chart, Compass, Wind rose, each Wind Rose Card group (speed bars, corner info, statistics, buttons, advanced) and Sensors are now collapsible sub-panels with icons, closed until you open them.
+
 ## v2026.10.23.54
 
 - **Hero: a size for every text item, with or without Auto.** With **Set scale to Auto** off, each item keeps its own pixel size in the sections editor (temperature, condition text, icon in Current Weather Header; time and date in Clock & Date; chips in Current Weather Metrics). With it on, those pixel sliders are replaced by scale sliders in the hero's own options — **Overall scale**, then **Temperature**, **Condition text**, **Condition icon**, **Clock time**, **Date** and **Metric chips** (30–300 %, 100 % = the auto size) — so each item can still be made bigger or smaller on its own.
