@@ -437,7 +437,9 @@ class WeatherStationFlexCardEditor extends LitElement {
     // A hero inside a card with an animated or image background doesn't draw
     // its own animation: hide those settings (they're under Appearance).
     const cardBg = this._config.background === "animated" || (this._config.background === "image" && !!(this._config.background_image || this._config.background_image_url));
-    const hide = [...(panelMeta(p)?.flexHide || []), ...(p.type === "hero" && cardBg ? ["show_condition_effects"] : [])];
+    const hide = [...(panelMeta(p)?.flexHide || []), ...(p.type === "hero" && cardBg ? ["show_condition_effects"] : []),
+      // Set scale to Auto sizes these from the panel, so their own sliders would do nothing.
+      ...(p.type === "hero" && p.auto_scale ? ["header_temp_size", "header_state_size", "header_icon_size", "clock_font_size", "clock_date_font_size", "chip_text_size", "chip_icon_size", "global_icon_size", "global_text_size"] : [])];
     if (JSON.stringify(hide) !== JSON.stringify(ed.wsfcHide || [])) { ed.wsfcHide = hide; ed.requestUpdate?.(); }
     ed._wsfcOnChange = (emitted) => {
       const np = clone(p);

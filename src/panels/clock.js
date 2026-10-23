@@ -32,12 +32,13 @@ export function clockText(c, hass, now = new Date()) {
 }
 
 /** Auto sizes (px) that fit `time` and `date` into w × h, times scale. */
-export function clockSizes(w, h, timeText, showDate, scale = 1) {
+export function clockSizes(w, h, timeText, showDate, scale = 1, dateShare = 0.3) {
   const chars = Math.max(4, String(timeText).length);
   let time = (w * 0.92) / (chars * 0.56); // digits are ~0.56 em wide
-  if (h > 0) time = Math.min(time, (h * 0.9) / (showDate ? 1.55 : 1.1));
+  // Height for the time plus the date line under it (date = dateShare of the time).
+  if (h > 0) time = Math.min(time, (h * 0.9) / (showDate ? 1.25 + dateShare : 1.1));
   time = Math.max(14, time * scale);
-  return { time: Math.round(time), date: Math.round(Math.max(10, time * 0.3)) };
+  return { time: Math.round(time), date: Math.round(Math.max(8, time * dateShare)) };
 }
 
 class WsfcClock extends LitElement {
@@ -102,7 +103,7 @@ class WsfcClock extends LitElement {
     const { time, date } = clockText(c, this.hass, this._now);
     const { w = 300, h = 0 } = this._dims || {};
     const auto = c.auto_size !== false;
-    const sz = auto ? clockSizes(w, h, showTime ? time : date, showTime && showDate, Number(c.scale ?? 100) / 100) : { time: Number(c.time_size) || 48, date: Number(c.date_size) || 16 };
+    const sz = auto ? clockSizes(w, h, showTime ? time : date, showTime && showDate, Number(c.scale ?? 100) / 100, Math.max(0.1, Math.min(1, Number(c.date_scale ?? 30) / 100))) : { time: Number(c.time_size) || 48, date: Number(c.date_size) || 16 };
     const dateSize = showTime ? sz.date : auto ? sz.time * 0.6 : sz.date;
     return html`<div class="clock ${c.align || "center"}" role="timer" aria-live="off" aria-label=${[showTime ? time : "", showDate ? date : ""].filter(Boolean).join(", ")}>
       ${showTime ? html`<span class="time" style="font-size:${sz.time}px;font-weight:${c.time_weight || 300};${c.color ? `color:${c.color};` : ""}">${time}</span>` : nothing}

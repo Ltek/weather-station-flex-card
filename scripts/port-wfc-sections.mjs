@@ -268,6 +268,9 @@ const patches = [
    "            <ha-icon class=\"wfc-ico-btn ${i === arr.length - 1 || arr[i + 1].pos !== m.pos ? \"disabled\" : \"\"}\" icon=\"mdi:arrow-down-bold\" title=\"Move down\""],
   ["Order is outer \u2192 inner. Expand a metric",
    "Listed top to bottom as they appear on the bar; the arrows move a metric up or down among those in the same place (change its place with the drop-down). Expand a metric"],
+  // Size fields controlled by the panel (e.g. the hero's Set scale to Auto) are hidden.
+  ["  edProto._wfcAutoSizeField = function (id, field, label) {\n",
+   "  edProto._wfcAutoSizeField = function (id, field, label) {\n    if (this.wsfcHide && this.wsfcHide.includes(field)) return eY;\n"],
 ];
 for (const [from, to] of patches) {
   if (!body.includes(from)) throw new Error(`Patch target missing: ${from}`);

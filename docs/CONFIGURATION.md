@@ -243,8 +243,9 @@ Default size: 4 of 12 wide, 1 row high.
 | `align` | `center` · `left` · `right` | `center` | **Alignment** |
 | `auto_size` | `true` / `false` | `true` | **Auto size** — Size the time and date to fill the panel. |
 | `scale` | number 50–200 % | `100` | **Auto scaling** — Auto size: bigger or smaller. |
-| `time_size` | number 12–200 px |  | **Time size** — Auto size off: time size (default 48). |
-| `date_size` | number 8–80 px |  | **Date size** — Auto size off: date size (default 16). |
+| `date_scale` | number 10–100 % | `30` | **Date size** — Date size as a share of the time's size. |
+| `time_size` | number 12–200 px | `48` | **Time size** |
+| `date_size` | number 8–80 px | `16` | **Date size** |
 | `time_weight` | `300` · `400` · `500` · `700` | `300` | **Time weight** |
 | `color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Color** — Time color. Not set: the theme's text color. |
 | `date_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Date color** — Not set: secondary text. |

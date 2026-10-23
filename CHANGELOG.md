@@ -1,5 +1,11 @@
 # Changelog
 
+## v2026.10.23.53
+
+- **Fix: hero clock and date sizes.** A size equal to the hero's old built-in default (time 40 px, date 14 px) wasn't saved, so the wide or narrow hero presets (date 18 / 12 px) showed instead and the slider seemed to do nothing. The hero's clock and date now default to **Auto** (sized from the panel), so any size you set is kept.
+- **Hero: Set scale to Auto** now hides the size sliders it overrides (header, clock, date, chips) in the sections editor, instead of leaving sliders that have no effect.
+- **Clock panel:** new **Date size** (% of the time's size) while Auto size is on; the fixed Time size and Date size sliders show only with Auto size off.
+
 ## v2026.10.23.52
 
 - **New configuration reference** ([docs/CONFIGURATION.md](docs/CONFIGURATION.md)): every card and panel option with its values, default and what it does, plus example YAML. It's generated from the editor's own settings (`npm run docs:config`), so it always matches the editor. The README now covers features only.

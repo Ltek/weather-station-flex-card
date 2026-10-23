@@ -27,8 +27,9 @@ export const FLEX_BASES = {
         clock_show_time: true,
         clock_show_date: true,
         clock_placement: "right",
-        clock_font_size: 40,
-        clock_date_font_size: 14,
+        // Auto (0): the clock and date size themselves from the hero panel.
+        clock_font_size: 0,
+        clock_date_font_size: 0,
         clock_contrast: "auto",
         clock_date_contrast: "auto",
       },
@@ -118,12 +119,12 @@ FLEX_BASES.chips = {
 
 // Hero size presets by tile width (applied under the user's own settings).
 const HERO_LARGE = {
-  wfc: { current: { header_temp_size: 72, header_state_size: 24, header_icon_size: 96, clock_font_size: 56, clock_date_font_size: 18 } },
+  wfc: { current: { header_temp_size: 72, header_state_size: 24, header_icon_size: 96 } },
 };
 // Narrow: the clock moves under the conditions so the condition, icon and
 // temperature keep the top-left corner.
 const HERO_NARROW = {
-  wfc: { current: { clock_placement: "below-right", clock_font_size: 26, clock_date_font_size: 12 } },
+  wfc: { current: { clock_placement: "below-right" } },
 };
 
 /**

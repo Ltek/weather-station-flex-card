@@ -4726,6 +4726,7 @@ import { actionHandler as iq } from "../../vendor/weather-forecast-card/src/hass
   // Size slider for a per-section field where 0 = "Auto" (use the derived
   // default). Reads "Auto" at 0, "<n>px" otherwise; commits 0 for auto.
   edProto._wfcAutoSizeField = function (id, field, label) {
+    if (this.wsfcHide && this.wsfcHide.includes(field)) return eY;
     const r = wfcRangeFor(field, "");
     const sec = this._wfcState()[id] || {};
     const cur = clamp(parseInt(sec[field], 10) || 0, r.min, r.max);
