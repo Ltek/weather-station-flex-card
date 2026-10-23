@@ -1,5 +1,10 @@
 # Changelog
 
+## v2026.10.23.38
+
+- **Hero:** removed the **Show the metric chips** checkbox; the metrics are turned on or off in **Section order & visibility**, as before.
+- The **Chips** panel is now called **Current Weather Metrics** (its default title too). Its config type stays `chips`.
+
 ## v2026.10.22.37
 
 - **Editor look:** the Weather Flex sub-panels inside a panel (Card Appearance, Current Weather Metrics, Sun Position …) are no longer indented, and **Sun & moon facts** looks like them (hairline card, bold title, accent icon, chevron). Group subtitles (Layout, Default Overrides, options groups) follow the design guide: theme accent color, mixed case, group size, semibold, thin divider; Appearance's group titles use the accent too.

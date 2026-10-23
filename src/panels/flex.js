@@ -103,7 +103,7 @@ export const FLEX_BASES = {
     },
   },
 };
-// Chips: the hero's Current Weather Metrics section on its own.
+// Current Weather Metrics (type chips): the hero's metrics section on its own.
 FLEX_BASES.chips = {
   wfc: {
     order: ["details"],
@@ -248,8 +248,6 @@ class WsfcHeroPanel extends WsfcFlexPanel {
     if (this._size === "large") cfg = deepMerge(cfg, HERO_LARGE);
     if (this._size === "narrow") cfg = deepMerge(cfg, HERO_NARROW);
     cfg = deepMerge(cfg, this.config?.flex || {});
-    // Chips off: the Current Weather Metrics section isn't drawn in the hero.
-    if (this.config?.show_chips === false) cfg = deepMerge(cfg, { wfc: { details: { show: false } } });
     // "Set scale to Auto": every size follows the tile (and the scale %), over
     // any size set in the sections editor.
     if (this.config?.auto_scale) {
@@ -334,7 +332,7 @@ export function trackerConfig(p, station) {
 
 class WsfcChipsPanel extends WsfcFlexPanel {
   type = "chips";
-  defaultTitle = "Current conditions";
+  defaultTitle = "Current Weather Metrics";
   defaultIcon = "mdi:format-list-bulleted-square";
   titleOnlyWhenSet = true;
 }

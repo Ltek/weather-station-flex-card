@@ -4,7 +4,7 @@ A weather-station dashboard in one Home Assistant card. Panels sit in a 12-colum
 
 Built around an Ecowitt WS90 / GW2000B; works with any station whose sensors are in Home Assistant — including all three Ecowitt integrations (Home Assistant's Ecowitt, Ecowitt Local, Ecowitt Official), alone or combined. See [docs/ECOWITT_INTEGRATIONS.md](docs/ECOWITT_INTEGRATIONS.md).
 
-Current build: **v2026.10.22.37** · full history in [CHANGELOG.md](CHANGELOG.md)
+Current build: **v2026.10.23.38** · full history in [CHANGELOG.md](CHANGELOG.md)
 
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Ltek&repository=weather-station-flex-card&category=plugin)
 
@@ -53,7 +53,7 @@ Only what you change is saved, so the YAML stays short.
 | `graph` | Any series on two axes; 6h–48h from history, 7d–365d from long-term statistics with min–max bands. |
 | `temp_humidity` | Graph preset: temperature, dew point and humidity. |
 | `uv_solar` | Graph preset: UV index (left axis, shaded) and solar radiation (right axis). |
-| `chips` | The hero's current-condition chips on their own, with Weather Flex's Current Weather Metrics options. |
+| `chips` | **Current Weather Metrics**: the hero's metric chips on their own, with Weather Flex's Current Weather Metrics options. |
 | `clock` | Time and date that size themselves to the panel; seconds, 12/24-hour, date formats, alignment, colours. |
 | `stack` | Child panels side by side (`direction: horizontal`, wraps only below `min_width`) or one above another (`vertical`). Children take `grow` (relative width), `min_width` and `rows`. Hidden children (toggled off or hiding themselves) leave the stack and the others fill their space; children get their own panel buttons. |
 | `wind` | Compass or wind rose, plus a speed/gust chart. The rose view uses the [Wind Rose Card](https://github.com/aukedejong/lovelace-windrose-card) when it is installed (`windrose_preset`: standard, periods, beaufort, corners, stats, playback, minimal; extra options under `windrose:`), else a built-in 24 h rose. |
