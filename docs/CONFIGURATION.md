@@ -133,13 +133,15 @@ Default size: 12 of 12 wide, 3 rows high. Also takes `flex:`: Weather Flex secti
 
 | Option | Value | Default | What it does |
 |---|---|---|---|
-| `auto_scale` | `true` / `false` | `false` | **Set scale to Auto** — Size the temperature, condition, icon, clock, date and metric chips from the panel's size. Each then has its own scale below, instead of the pixel sizes in the sections editor. |
+| `main_temperature` | `temperature` · `feels_like` | `temperature` | **Main temperature** — Feels like shows the feels-like temperature in place of the temperature (falls back to the temperature when there's no feels-like value). |
+| `auto_scale` | `true` / `false` | `false` | **Set scale to Auto** — Size the temperature, its sub-header, condition, icon, clock, date and metric chips from the panel's size. Each then has its own scale below, instead of the pixel sizes in the sections editor. |
 | `scale` | number 50–200 % | `100` | **Overall scale** — Everything bigger or smaller; the items below scale on top of this. |
 | `temp_scale` | number 30–300 % | `100` | **Temperature** |
 | `condition_scale` | number 30–300 % | `100` | **Condition text** |
 | `icon_scale` | number 30–300 % | `100` | **Condition icon** |
 | `clock_scale` | number 30–300 % | `100` | **Clock time** |
 | `date_scale` | number 30–300 % | `100` | **Date** |
+| `secondary_scale` | number 30–300 % | `100` | **Temperature sub-header** — The line under the temperature, e.g. today's high / low. |
 | `chips_scale` | number 30–300 % | `100` | **Metric chips** |
 
 **Sun & moon facts**
@@ -502,7 +504,7 @@ Default size: 6 of 12 wide, 4 rows high.
 | Option | Value | Default | What it does |
 |---|---|---|---|
 | `dial_scale` | number 50–250 % | `100` | **Size** — Compass and built-in rose size. |
-| `compass_arrow_size` | number 50–200 % | `100` | **Pointer size** — Direction pointer size. |
+| `compass_arrow_size` | number 50–400 % | `100` | **Pointer size** — Direction pointer size. |
 | `compass_arrow_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Pointer color** — Not set: the wind color. |
 
 **Wind rose**
@@ -516,7 +518,7 @@ Default size: 6 of 12 wide, 4 rows high.
 | `wr_period` | `preset` · `-1h` · `-8h` · `-1d` · `-7d` · `-30d` | `preset` | **Default period** — Period shown first. |
 | `wr_scale` | number 30–150 % | `100` | **Size** — Wind Rose Card size within the panel. |
 | `wr_arrow` | `true` / `false` | `true` | **Direction arrow** — Current direction arrow. |
-| `wr_arrow_size` | number 10–120 | `50` | **Arrow size** — Direction arrow (pointer) size. |
+| `wr_arrow_size` | number 10–240 | `50` | **Arrow size** — Direction arrow (pointer) size. |
 | `wr_arrow_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Arrow color** — Not set: red. The Wind Rose Card uses it for the speed-bar arrows too. |
 
 **Wind Rose Card: speed bars**
@@ -530,7 +532,7 @@ Default size: 6 of 12 wide, 4 rows high.
 | `wr_range_max` | number 5–150 |  | **Speed bar max** — Last band starts here. |
 | `wr_gust_max` | number 5–150 |  | **Gust bar max** — Default: the speed bar max. |
 | `wr_speed_arrows` | `preset` · `on` · `off` | `preset` | **Speed arrows** — Arrow on each bar at the current speed. |
-| `wr_speed_arrow_size` | number 10–120 | `40` | **Speed arrow size** |
+| `wr_speed_arrow_size` | number 10–240 | `40` | **Speed arrow size** |
 
 **Wind Rose Card: corner info**
 

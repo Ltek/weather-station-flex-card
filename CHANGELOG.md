@@ -1,5 +1,11 @@
 # Changelog
 
+## v2026.10.23.56
+
+- **Hero: size for the line under the temperature** (e.g. today's high / low). With Set scale to Auto off: **Temperature sub-header size** in the sections editor (Current Weather Header → Header sizes). With Auto on: a **Temperature sub-header** scale slider (30–300 %).
+- **Hero: Main temperature** drop-down — **Feels like** shows the feels-like temperature in place of the temperature (falls back to the temperature when there's no feels-like value).
+- **Wind: arrow sizes always follow their sliders.** The Wind Rose Card direction arrow and speed-bar arrows are always given the slider's value (or its default), so a preset or the Wind Rose Card's own defaults can't change them. Max sizes doubled: Wind Rose Card arrows up to 240, compass pointer up to 400 %.
+
 ## v2026.10.23.55
 
 - **Fix: the Wind Rose Card no longer goes blank when you change a setting.** The wind panel keeps its place on screen; the rose with the new settings loads its history in the background and replaces the old one once it's drawn.

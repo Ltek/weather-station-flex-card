@@ -573,6 +573,7 @@ import { actionHandler as iq } from "../../vendor/weather-forecast-card/src/hass
         header_state_size: 0,
         header_temp_size: 0,
         header_icon_size: 0,
+        header_secondary_size: 0,
         ...wfcClockDefaults(),
         ...tt(),
         ...dv(),
@@ -1168,12 +1169,15 @@ import { actionHandler as iq } from "../../vendor/weather-forecast-card/src/hass
     const stateSz = Number(cc.header_state_size) || 0;
     const tempSz = Number(cc.header_temp_size) || 0;
     const iconSz = Number(cc.header_icon_size) || 0;
+    // Sub-header (the line under the temperature), e.g. today's high / low.
+    const secSz = Number(cc.header_secondary_size) || 0;
     const sizeStyle =
+      (secSz ? `--wfc-hdr-sec:${secSz}px;` : "") +
       (iconSz ? `--current-conditions-icon-size:${iconSz}px;` : "") +
       (stateSz || tempSz ? `--wfc-hdr-state:${stateSz ? stateSz + "px" : "inherit"};--wfc-hdr-temp:${tempSz ? tempSz + "px" : "inherit"};` : "");
     const weatherEl = eq`
       <div
-        class="wfc-current-weather-container${stateSz || tempSz ? " wfc-hdr-sized" : ""}"
+        class="wfc-current-weather-container${stateSz || tempSz ? " wfc-hdr-sized" : ""}${secSz ? " wfc-hdr-secsized" : ""}"
         style=${sizeStyle || eY}
         .actionHandler=${iq({
           hasHold: ib(this.config.hold_action),
@@ -1184,8 +1188,8 @@ import { actionHandler as iq } from "../../vendor/weather-forecast-card/src/hass
         <wfc-current-weather
           class=${(this.config.current && this.config.current.secondary_info_attribute) === "__wfc_none__" ? "wfc-hide-secondary" : ""}
           .hass=${this.hass}
-          .weatherEntity=${this._wfcMergedCurrentEntity(ctx.stateObj)}
-          .config=${this.config}
+          .weatherEntity=${this._wfcMainTempEntity(this._wfcMergedCurrentEntity(ctx.stateObj), cc)}
+          .config=${this._wfcMainTempConfig(cc)}
           .hourlyForecast=${this._hourlyForecastData}
           .dailyForecast=${this._dailyForecastData}
         ></wfc-current-weather>
@@ -1743,6 +1747,32 @@ import { actionHandler as iq } from "../../vendor/weather-forecast-card/src/hass
     } catch (_e) {
       return stateObj;
     }
+  };
+
+  // Main temperature: "feels_like" shows the feels-like value in its place.
+  cardProto._wfcFeelsLike = function (stateObj) {
+    let v = null;
+    try { v = this._wfcCurrentMetricRaw("apparent_temperature"); } catch (_e) { v = null; }
+    if (v == null) v = stateObj && stateObj.attributes ? stateObj.attributes.apparent_temperature : null;
+    const n = Number(v);
+    return v == null || v === "" || !Number.isFinite(n) ? null : n;
+  };
+  cardProto._wfcMainTempEntity = function (stateObj, cc) {
+    if (!cc || cc.main_temperature !== "feels_like" || !stateObj || !stateObj.attributes) return stateObj;
+    const v = this._wfcFeelsLike(stateObj);
+    if (v == null) return stateObj;
+    return { ...stateObj, attributes: { ...stateObj.attributes, temperature: v } };
+  };
+  // A temperature entity would win over the feels-like value, so drop it then.
+  cardProto._wfcMainTempConfig = function (cc) {
+    if (!cc || cc.main_temperature !== "feels_like" || !this.config.current || !this.config.current.temperature_entity) return this.config;
+    if (this._wfcFeelsLike(this.hass && this.config.entity ? this.hass.states[this.config.entity] : null) == null) return this.config;
+    const current = { ...this.config.current };
+    delete current.temperature_entity;
+    if (this.__wfcMtCfg && this.__wfcMtCfg.src === this.config) return this.__wfcMtCfg.cfg;
+    const cfg = { ...this.config, current };
+    this.__wfcMtCfg = { src: this.config, cfg };
+    return cfg;
   };
 
   // --- Details ---------------------------------------------------------------
@@ -3018,6 +3048,8 @@ import { actionHandler as iq } from "../../vendor/weather-forecast-card/src/hass
          sets a size. !important beats the base @container rule. */
       .wfc-hdr-sized .wfc-current-state { font-size: var(--wfc-hdr-state, inherit) !important; }
       .wfc-hdr-sized .wfc-current-temperature { font-size: var(--wfc-hdr-temp, inherit) !important; }
+      .wfc-hdr-secsized .wfc-current-secondary-info { font-size: var(--wfc-hdr-sec) !important; line-height: 1.2; }
+      .wfc-hdr-secsized .wfc-current-secondary-icon { width: 1.25em !important; height: 1.25em !important; --mdc-icon-size: 1.25em !important; }
 
       /* Digital clock in the Current Weather section. */
       .wfc-cur-stack { display: flex; flex-direction: column; gap: 6px; width: 100%; }
@@ -4656,6 +4688,7 @@ import { actionHandler as iq } from "../../vendor/weather-forecast-card/src/hass
     if (/chip_text_size|chip_icon_size/.test(field)) return { min: 0, max: 48, step: 1 };
     if (/clock_font_size|clock_date_font_size/.test(field)) return { min: 0, max: 100, step: 1 };
     if (/header_icon_size/.test(field)) return { min: 0, max: 140, step: 2 };
+    if (/header_secondary_size/.test(field)) return { min: 0, max: 48, step: 1 };
     if (/header_state_size|header_temp_size/.test(field)) return { min: 0, max: 64, step: 1 };
     if (/global_icon_size|global_text_size/.test(field)) return { min: 0, max: 48, step: 1 };
     // Card drop-shadow: offsets can be negative; blur/spread/radius wider.
@@ -5100,6 +5133,7 @@ import { actionHandler as iq } from "../../vendor/weather-forecast-card/src/hass
                 ${this._wfcAutoSizeField(id, "header_icon_size", "Condition icon size")}
                 ${this._wfcAutoSizeField(id, "header_state_size", "Condition text size")}
                 ${this._wfcAutoSizeField(id, "header_temp_size", "Temperature size")}
+                ${this._wfcAutoSizeField(id, "header_secondary_size", "Temperature sub-header size")}
 
                 ${this._wfcGroup("Current Weather Header metrics")}
                 ${this._wfcConfigSelect("current.secondary_info_attribute", "Temperature sub-header Metric", secOpts, cur.secondary_info_attribute || "", "", true)}

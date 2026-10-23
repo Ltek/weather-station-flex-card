@@ -142,6 +142,7 @@ export function heroAutoSizes(w, h, scale = 1) {
     header_icon_size: r(temp * 1.3),
     clock: r(temp * 0.78),
     date: r(Math.max(10, temp * 0.25)),
+    secondary: r(Math.max(11, temp * 0.27)),
     chip_scale: Math.round(Math.max(0.6, Math.min(2.5, (temp / 64) * 1.05)) * 100) / 100,
   };
 }
@@ -256,6 +257,7 @@ class WsfcHeroPanel extends WsfcFlexPanel {
       header_icon_size: r(a.header_icon_size * k("icon_scale")),
       clock: r(a.clock * k("clock_scale")),
       date: r(a.date * k("date_scale")),
+      secondary: r(a.secondary * k("secondary_scale")),
       chip_scale: Math.round(a.chip_scale * k("chips_scale") * 100) / 100,
     };
   }
@@ -270,10 +272,12 @@ class WsfcHeroPanel extends WsfcFlexPanel {
     if (this.config?.auto_scale) {
       const a = this._auto;
       cfg = deepMerge(cfg, { wfc: {
-        current: { header_temp_size: a.header_temp_size, header_state_size: a.header_state_size, header_icon_size: a.header_icon_size, clock_font_size: 0, clock_date_font_size: 0 },
+        current: { header_temp_size: a.header_temp_size, header_state_size: a.header_state_size, header_icon_size: a.header_icon_size, header_secondary_size: a.secondary, clock_font_size: 0, clock_date_font_size: 0 },
         details: { chip_scale: a.chip_scale, chip_text_size: "", chip_icon_size: "", global_icon_size: Math.round(22 * a.chip_scale), global_text_size: Math.round(14 * a.chip_scale) },
       } });
     }
+    // Main temperature: Feels like in place of the temperature.
+    if (this.config?.main_temperature === "feels_like") cfg = deepMerge(cfg, { wfc: { current: { main_temperature: "feels_like" } } });
     // The card draws the animated background behind every panel: the hero
     // becomes transparent and stops animating on its own.
     if (this.cardBg) cfg = deepMerge(cfg, { show_condition_effects: false, wfc: { card: { bg_color: "transparent" } } });

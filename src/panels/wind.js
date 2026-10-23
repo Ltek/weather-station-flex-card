@@ -190,7 +190,7 @@ class WsfcWind extends LitElement {
       <circle class="ring" cx="100" cy="100" r="88" stroke-width="2"></circle>
       ${ticks}${lbl}
       ${b == null ? "" : svg`<g class="ptr" style=${`transform: rotate(${b}deg); transform-origin: 100px 100px;${this.config?.compass_arrow_color ? `fill:${this.config.compass_arrow_color};` : ""}`}>
-        <g style=${`transform: scale(${Math.max(0.5, Math.min(2, Number(this.config?.compass_arrow_size ?? 100) / 100))}); transform-origin: 100px 10px`}>
+        <g style=${`transform: scale(${Math.max(0.5, Math.min(4, Number(this.config?.compass_arrow_size ?? 100) / 100))}); transform-origin: 100px 10px`}>
           <path d="M100 36 L112 10 L100 16 L88 10 Z"></path>
         </g>
       </g>`}

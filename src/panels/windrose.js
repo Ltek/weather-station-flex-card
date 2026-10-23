@@ -177,16 +177,18 @@ export function applyOverrides(card, c, ids, unit) {
     const on = c.wr_beaufort === "on";
     card.windspeed_entities = card.windspeed_entities.map((e) => ({ ...e, speed_range_beaufort: on, ...(on ? { current_speed_arrow: true } : {}) }));
   }
-  if (c.wr_arrow === false) card.current_direction = { show_arrow: false };
-  else card.current_direction = { ...(card.current_direction || {}), show_arrow: true, ...(c.wr_arrow_size != null ? { arrow_size: Number(c.wr_arrow_size) } : {}) };
+  // Arrow sizes are always written out (the slider's value, or its default), so
+  // a preset or the Wind Rose Card's own defaults can't make them differ from
+  // what the slider shows.
+  const size = (v, d) => Math.max(10, Math.min(240, Number(v ?? d) || d));
+  if (c.wr_arrow === false) card.current_direction = { ...(card.current_direction || {}), show_arrow: false };
+  else card.current_direction = { ...(card.current_direction || {}), show_arrow: true, arrow_size: size(c.wr_arrow_size, 50) };
   if (c.wr_arrow_color) card.colors = { ...(card.colors || {}), rose_current_direction_arrow: c.wr_arrow_color };
-  if (set(c.wr_speed_arrows) || c.wr_speed_arrow_size != null) {
-    card.windspeed_entities = card.windspeed_entities.map((e) => ({
-      ...e,
-      ...(set(c.wr_speed_arrows) ? { current_speed_arrow: c.wr_speed_arrows === "on" } : {}),
-      ...(c.wr_speed_arrow_size != null ? { current_speed_arrow_size: Number(c.wr_speed_arrow_size) } : {}),
-    }));
-  }
+  card.windspeed_entities = card.windspeed_entities.map((e) => ({
+    ...e,
+    ...(set(c.wr_speed_arrows) ? { current_speed_arrow: c.wr_speed_arrows === "on" } : {}),
+    current_speed_arrow_size: size(c.wr_speed_arrow_size, 40),
+  }));
   return card;
 }
 

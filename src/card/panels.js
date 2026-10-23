@@ -18,13 +18,15 @@ export const PANEL_TYPES = {
     tag: "wsfc-panel-hero", label: "Hero (current conditions)", icon: "mdi:weather-partly-cloudy", span: 12, rows: 3, rowsCompact: 0, flex: true, inBar: false,
     flexPanels: ["Card Appearance", "Section order & visibility", "Current Weather Header", "Current Weather Metrics", "Clock & Date", "User Actions", "Advanced"],
     schema: [
-      { name: "auto_scale", selector: { boolean: {} }, default: false, helper: "Size the temperature, condition, icon, clock, date and metric chips from the panel's size. Each then has its own scale below, instead of the pixel sizes in the sections editor." },
+      { name: "main_temperature", label: "Main temperature", selector: { select: { mode: "dropdown", options: [{ value: "temperature", label: "Temperature" }, { value: "feels_like", label: "Feels like" }] } }, default: "temperature", helper: "Feels like shows the feels-like temperature in place of the temperature (falls back to the temperature when there's no feels-like value)." },
+      { name: "auto_scale", selector: { boolean: {} }, default: false, helper: "Size the temperature, its sub-header, condition, icon, clock, date and metric chips from the panel's size. Each then has its own scale below, instead of the pixel sizes in the sections editor." },
       { name: "scale", label: "Overall scale", when: (d) => !!d.auto_scale, selector: { number: { min: 50, max: 200, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100, helper: "Everything bigger or smaller; the items below scale on top of this." },
       { name: "temp_scale", label: "Temperature", when: (d) => !!d.auto_scale, selector: { number: { min: 30, max: 300, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100 },
       { name: "condition_scale", label: "Condition text", when: (d) => !!d.auto_scale, selector: { number: { min: 30, max: 300, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100 },
       { name: "icon_scale", label: "Condition icon", when: (d) => !!d.auto_scale, selector: { number: { min: 30, max: 300, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100 },
       { name: "clock_scale", label: "Clock time", when: (d) => !!d.auto_scale, selector: { number: { min: 30, max: 300, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100 },
       { name: "date_scale", label: "Date", when: (d) => !!d.auto_scale, selector: { number: { min: 30, max: 300, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100 },
+      { name: "secondary_scale", label: "Temperature sub-header", when: (d) => !!d.auto_scale, selector: { number: { min: 30, max: 300, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100, helper: "The line under the temperature, e.g. today's high / low." },
       { name: "chips_scale", label: "Metric chips", when: (d) => !!d.auto_scale, selector: { number: { min: 30, max: 300, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100 },
       ...factsFields(undefined, false, [["bottom", "Along the bottom"], ["top", "Along the top"]]),
     ],
@@ -114,7 +116,7 @@ export const PANEL_TYPES = {
       ]],
       ["Compass", "mdi:compass-outline", [
         { name: "dial_scale", selector: { number: { min: 50, max: 250, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100, helper: "Compass and built-in rose size." },
-        { name: "compass_arrow_size", selector: { number: { min: 50, max: 200, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100, helper: "Direction pointer size." },
+        { name: "compass_arrow_size", selector: { number: { min: 50, max: 400, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100, helper: "Direction pointer size." },
         { name: "compass_arrow_color", selector: { text: {} }, helper: "Not set: the wind color." },
       ]],
       ["Wind rose", "mdi:compass-rose", [
@@ -125,7 +127,7 @@ export const PANEL_TYPES = {
         { name: "wr_period", selector: { select: { options: opt([["preset", "From the preset"], ["-1h", "1 hour"], ["-8h", "8 hours"], ["-1d", "24 hours"], ["-7d", "7 days"], ["-30d", "30 days"]]) } }, default: "preset", helper: "Period shown first." },
         { name: "wr_scale", selector: { number: { min: 30, max: 150, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100, helper: "Wind Rose Card size within the panel." },
         { name: "wr_arrow", selector: { boolean: {} }, default: true, helper: "Current direction arrow." },
-        { name: "wr_arrow_size", when: (d) => d.wr_arrow !== false, selector: { number: { min: 10, max: 120, step: 5, mode: "slider" } }, default: 50, helper: "Direction arrow (pointer) size." },
+        { name: "wr_arrow_size", when: (d) => d.wr_arrow !== false, selector: { number: { min: 10, max: 240, step: 5, mode: "slider" } }, default: 50, helper: "Direction arrow (pointer) size." },
         { name: "wr_arrow_color", when: (d) => d.wr_arrow !== false, selector: { text: {} }, helper: "Not set: red. The Wind Rose Card uses it for the speed-bar arrows too." },
       ]],
       ["Wind Rose Card: speed bars", "mdi:chart-bar", [
@@ -136,7 +138,7 @@ export const PANEL_TYPES = {
         { name: "wr_range_max", label: "Speed bar max", when: (d) => d.wr_beaufort !== "on", selector: { number: { min: 5, max: 150, step: 5, mode: "slider" } }, helper: "Last band starts here." },
         { name: "wr_gust_max", label: "Gust bar max", when: (d) => d.wr_beaufort !== "on", selector: { number: { min: 5, max: 150, step: 5, mode: "slider" } }, helper: "Default: the speed bar max." },
         { name: "wr_speed_arrows", selector: { select: { options: opt([["preset", "From the preset"], ["on", "Show"], ["off", "Hide"]]) } }, default: "preset", helper: "Arrow on each bar at the current speed." },
-        { name: "wr_speed_arrow_size", when: (d) => d.wr_speed_arrows !== "off", selector: { number: { min: 10, max: 120, step: 5, mode: "slider" } }, default: 40 },
+        { name: "wr_speed_arrow_size", when: (d) => d.wr_speed_arrows !== "off", selector: { number: { min: 10, max: 240, step: 5, mode: "slider" } }, default: 40 },
       ]],
       ["Wind Rose Card: corner info", "mdi:page-layout-header-footer", [
         { name: "wr_corners", selector: { select: { options: opt([["preset", "From the preset"], ["on", "Show"], ["off", "Hide"]]) } }, default: "preset" },
