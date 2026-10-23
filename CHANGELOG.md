@@ -1,5 +1,9 @@
 # Changelog
 
+## v2026.10.23.47
+
+- **"Remember toggles" is now "Remember Panel Button States"** and lives in the **Panel buttons** section (it was under Appearance). Same behaviour: each browser keeps which panels were shown or hidden with the panel buttons across refreshes.
+
 ## v2026.10.23.46
 
 - **Fix: the animation speed sliders weren't in the editor** (v2026.10.23.45 added them to the card but not to Appearance → Background). They're there now: Star twinkle, Cloud drift, Rain, Snow, Sun rays, Lightning.

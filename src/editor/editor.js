@@ -67,16 +67,17 @@ const APPEARANCE_GROUPS = [
     { name: "layout_size", selector: { select: { options: [{ value: "auto", label: "Automatic (from the card's width)" }, { value: "wide", label: "Wide — desktop layout" }, { value: "medium", label: "Medium — tablet layout" }, { value: "narrow", label: "Narrow — phone layout (stacked)" }] } }, helper: "In a Sections view the card is only as wide as its section; widen the section or use a Panel view for the desktop layout." },
     { name: "row_height", selector: { number: { min: 40, max: 300, mode: "box", unit_of_measurement: "px" } }, helper: "Height of one row unit (default 110)." },
     { name: "gap", selector: { number: { min: 0, max: 32, mode: "box", unit_of_measurement: "px" } }, helper: "Space between panels (default 12)." },
-    { name: "remember", selector: { boolean: {} }, default: true, helper: "Remember which panels were toggled, per browser." },
     { name: "lite_editing", selector: { boolean: {} }, default: true, helper: "While the dashboard or this card is being edited: no animated background or blur, and the radar and Windy maps show a placeholder. Keeps the editor responsive." },
   ]],
 ];
+// In the Panel buttons section.
+const REMEMBER = [{ name: "remember", selector: { boolean: {} }, default: true, helper: "Keep which panels were shown or hidden with the panel buttons after a refresh, in each browser. Off: every load starts from the panels' Shown setting (the eye icon)." }];
 const GENERAL_SCHEMA = APPEARANCE_GROUPS.flatMap(([, f]) => f);
 const GENERAL_DEFAULTS = { layout: "auto", panel_bar: true, remember: true, fit_height: true, layout_size: "auto", background: "none", panel_opacity: 0.55, panel_blur: 6, lite_editing: true };
 
 const LABELS = {
   entity: "Weather entity", title: "Title", subtitle: "Subtitle", icon: "Icon", layout: "Layout", panel_bar: "Panel buttons",
-  remember: "Remember toggles", station_device: "Weather station device", layout_size: "Layout size", fit_height: "Fit panels to the screen height", row_height: "Row height", gap: "Gap", span: "Width", rows: "Height", display: "Display",
+  remember: "Remember Panel Button States", station_device: "Weather station device", layout_size: "Layout size", fit_height: "Fit panels to the screen height", row_height: "Row height", gap: "Gap", span: "Width", rows: "Height", display: "Display",
   in_bar: "Panel button", tile_background: "Panel background", show: "Shown", metric: "Metric", label: "Label", color: "Color", digits: "Decimals", chart: "Sparkline",
   hours: "Sparkline hours", show_minmax: "Show today's min/max", series: "Series", ranges: "Range buttons", range: "Default range",
   show_readings: "Show current readings", left_min: "Left axis min", left_max: "Left axis max", right_min: "Right axis min",
@@ -547,6 +548,12 @@ class WeatherStationFlexCardEditor extends LitElement {
         </select>
       </div>
       <p class="hint">A button toggles its panel (pop-up panels open instead). Panels without a button stay as they are.</p>
+      ${this._form(formData(c, REMEMBER, GENERAL_DEFAULTS), REMEMBER, (v) => {
+        const { panels: _p, ...rest } = this._config;
+        const next = applyForm(rest, REMEMBER, v, GENERAL_DEFAULTS);
+        if (this._config.panels) next.panels = this._config.panels;
+        this._emit(next);
+      })}
       <div class="btnbar">
         <button class="btn sm" @click=${() => setBtn(all, true)}>All</button>
         <button class="btn sm ghost" @click=${() => setBtn(all, false)}>None</button>
