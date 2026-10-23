@@ -24,6 +24,7 @@ import "./layout-map.js";
 import { renderFields, fieldStyles } from "./fields.js";
 import { setUnsaved } from "../card/unsaved.js";
 import { detected } from "../card/detected.js";
+import { ANIM_SPEEDS } from "../card/animation-speed.js";
 import { metricSensor, entityValue, integrationOf } from "../card/resolve.js";
 import "./sources.js";
 import "./series-editor.js";

@@ -1,5 +1,9 @@
 # Changelog
 
+## v2026.10.23.45
+
+- **Animation speeds** (Appearance → Background): separate sliders for **Star twinkle**, **Cloud drift**, **Rain**, **Snow**, **Sun rays** and **Lightning**, 25–300 % (100 % = normal, 50 % = half as fast). They apply to the card's animated background and to the hero's own animation.
+
 ## v2026.10.23.44
 
 - **Fix: animated background stayed in daytime.** The weather animation only switches to its night sky (dark, stars, the moon instead of the sun) when it's told the sun times, and it wasn't — so a partly cloudy evening still showed blue sky and the sun. The card background and the hero's own animation now follow sunset and sunrise at your Home Assistant location.

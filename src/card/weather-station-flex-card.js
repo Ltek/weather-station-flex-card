@@ -14,6 +14,7 @@ import { setDetected } from "./detected.js";
 import { extraMetricEntity } from "./air.js";
 import { WeatherForecastCard } from "../../vendor/weather-forecast-card/src/weather-forecast-card";
 import "../../vendor/weather-forecast-card/src/components/animation/wfc-animation-provider";
+import { animSpeedVars } from "./animation-speed.js";
 import "../panels/flex.js";
 import "../panels/graph.js";
 import "../panels/wind.js";
@@ -280,6 +281,7 @@ class WeatherStationFlexCard extends LitElement {
       bg ? `--wsfc-panel-opacity:${c.panel_opacity ?? 0.55}` : "",
       bg ? `--wsfc-panel-blur:${c.panel_blur ?? 6}px` : "",
       ...panelStyleVars(c),
+      ...animSpeedVars(c),
     ].join(";");
     const barInHeading = c.panels.some((p) => p.type === "heading" && p.show_bar);
     return html`

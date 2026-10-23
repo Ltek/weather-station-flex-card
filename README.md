@@ -4,7 +4,7 @@ A weather-station dashboard in one Home Assistant card. Panels sit in a 12-colum
 
 Built around an Ecowitt WS90 / GW2000B; works with any station whose sensors are in Home Assistant — including all three Ecowitt integrations (Home Assistant's Ecowitt, Ecowitt Local, Ecowitt Official), alone or combined. See [docs/ECOWITT_INTEGRATIONS.md](docs/ECOWITT_INTEGRATIONS.md).
 
-Current build: **v2026.10.23.44** · full history in [CHANGELOG.md](CHANGELOG.md)
+Current build: **v2026.10.23.45** · full history in [CHANGELOG.md](CHANGELOG.md)
 
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Ltek&repository=weather-station-flex-card&category=plugin)
 
@@ -121,6 +121,7 @@ panels:
 background: animated     # the hero's weather animation behind the whole card (night sky after sunset)
 background_effects: [rain, snow, lightning, sky, moon, sun, cloud]   # optional: which effects
 background_moon_phase: true
+anim_twinkle: 50           # animation speeds in %, 100 = normal: anim_twinkle, anim_clouds, anim_rain, anim_snow, anim_sun, anim_lightning
 panel_opacity: 0.45      # 0 = transparent panels … 1 = solid
 panel_blur: 8            # px of blur behind panels
 ```
