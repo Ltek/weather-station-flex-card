@@ -133,8 +133,14 @@ Default size: 12 of 12 wide, 3 rows high. Also takes `flex:`: Weather Flex secti
 
 | Option | Value | Default | What it does |
 |---|---|---|---|
-| `auto_scale` | `true` / `false` | `false` | **Set scale to Auto** — Size the temperature, condition, icon, clock, date and metric chips from the panel's size, over the sizes set below. Sizes left at Auto below follow the panel either way. |
-| `scale` | number 50–200 % | `100` | **Auto scaling** — Auto scaling: make the auto sizes bigger or smaller. |
+| `auto_scale` | `true` / `false` | `false` | **Set scale to Auto** — Size the temperature, condition, icon, clock, date and metric chips from the panel's size. Each then has its own scale below, instead of the pixel sizes in the sections editor. |
+| `scale` | number 50–200 % | `100` | **Overall scale** — Everything bigger or smaller; the items below scale on top of this. |
+| `temp_scale` | number 30–300 % | `100` | **Temperature** |
+| `condition_scale` | number 30–300 % | `100` | **Condition text** |
+| `icon_scale` | number 30–300 % | `100` | **Condition icon** |
+| `clock_scale` | number 30–300 % | `100` | **Clock time** |
+| `date_scale` | number 30–300 % | `100` | **Date** |
+| `chips_scale` | number 30–300 % | `100` | **Metric chips** |
 
 **Sun & moon facts**
 

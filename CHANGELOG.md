@@ -1,5 +1,9 @@
 # Changelog
 
+## v2026.10.23.54
+
+- **Hero: a size for every text item, with or without Auto.** With **Set scale to Auto** off, each item keeps its own pixel size in the sections editor (temperature, condition text, icon in Current Weather Header; time and date in Clock & Date; chips in Current Weather Metrics). With it on, those pixel sliders are replaced by scale sliders in the hero's own options — **Overall scale**, then **Temperature**, **Condition text**, **Condition icon**, **Clock time**, **Date** and **Metric chips** (30–300 %, 100 % = the auto size) — so each item can still be made bigger or smaller on its own.
+
 ## v2026.10.23.53
 
 - **Fix: hero clock and date sizes.** A size equal to the hero's old built-in default (time 40 px, date 14 px) wasn't saved, so the wide or narrow hero presets (date 18 / 12 px) showed instead and the slider seemed to do nothing. The hero's clock and date now default to **Auto** (sized from the panel), so any size you set is kept.

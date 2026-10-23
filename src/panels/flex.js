@@ -245,7 +245,19 @@ class WsfcHeroPanel extends WsfcFlexPanel {
 
   get _auto() {
     const { w = 0, h = 0 } = this._dims || {};
-    return heroAutoSizes(w || 700, h, Math.max(0.3, Math.min(3, Number(this.config?.scale ?? 100) / 100)));
+    const c = this.config || {};
+    const a = heroAutoSizes(w || 700, h, Math.max(0.3, Math.min(3, Number(c.scale ?? 100) / 100)));
+    // Per-item scale on top of the auto size (100 % = as computed).
+    const k = (key) => Math.max(0.3, Math.min(3, Number(c[key] ?? 100) / 100));
+    const r = (x) => Math.round(x);
+    return {
+      header_temp_size: r(a.header_temp_size * k("temp_scale")),
+      header_state_size: r(a.header_state_size * k("condition_scale")),
+      header_icon_size: r(a.header_icon_size * k("icon_scale")),
+      clock: r(a.clock * k("clock_scale")),
+      date: r(a.date * k("date_scale")),
+      chip_scale: Math.round(a.chip_scale * k("chips_scale") * 100) / 100,
+    };
   }
 
   _coreConfig() {
