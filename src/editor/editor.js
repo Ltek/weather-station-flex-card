@@ -43,6 +43,8 @@ const APPEARANCE_GROUPS = [
     { name: "background", selector: { select: { options: [{ value: "none", label: "None (theme)" }, { value: "animated", label: "Animated weather — the hero's animation behind the whole card" }, { value: "image", label: "Image — upload one or use a URL" }] } }, helper: "With an animated or image background, panels become see-through and the hero stops drawing its own." },
     { name: "background_effects", label: "Animation effects", when: (d) => d.background === "animated", selector: { select: { multiple: true, options: [["rain", "Rain"], ["snow", "Snow"], ["lightning", "Lightning"], ["sky", "Sky"], ["moon", "Moon"], ["sun", "Sun"], ["cloud", "Clouds"]].map(([value, label]) => ({ value, label })) } }, default: ["rain", "snow", "lightning", "sky", "moon", "sun", "cloud"], helper: "Which effects the weather animation draws. At night it shows the dark sky and the moon instead of the sun." },
     { name: "background_moon_phase", label: "Show moon phase", when: (d) => d.background === "animated", selector: { boolean: {} }, default: true, helper: "Shade the night-time moon to the current lunar phase (off: a full moon)." },
+    ...ANIM_SPEEDS.map(([name, , label], k) => ({ name, label, when: (d) => d.background !== "image", selector: { number: { min: 25, max: 300, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100,
+      helper: k === 0 ? "Animation speeds (100% = normal, 50% = half as fast), for the card background and the hero's own animation." : undefined })),
     { name: "background_image", when: (d) => d.background === "image", selector: { media: { accept: ["image/*"], image_upload: true } }, helper: "Image background: upload a PNG, JPG, WEBP… or pick one from your media." },
     { name: "background_image_url", when: (d) => d.background === "image", selector: { text: { type: "url" } }, helper: "Image background: or an image URL (wins over the upload), e.g. /local/images/sky.jpg." },
     { name: "background_image_fit", when: (d) => d.background === "image", selector: { select: { options: [{ value: "cover", label: "Fill (crop to fit)" }, { value: "contain", label: "Fit (whole image)" }, { value: "tile", label: "Tile" }] } }, default: "cover" },
@@ -65,7 +67,6 @@ const APPEARANCE_GROUPS = [
     { name: "layout_size", selector: { select: { options: [{ value: "auto", label: "Automatic (from the card's width)" }, { value: "wide", label: "Wide — desktop layout" }, { value: "medium", label: "Medium — tablet layout" }, { value: "narrow", label: "Narrow — phone layout (stacked)" }] } }, helper: "In a Sections view the card is only as wide as its section; widen the section or use a Panel view for the desktop layout." },
     { name: "row_height", selector: { number: { min: 40, max: 300, mode: "box", unit_of_measurement: "px" } }, helper: "Height of one row unit (default 110)." },
     { name: "gap", selector: { number: { min: 0, max: 32, mode: "box", unit_of_measurement: "px" } }, helper: "Space between panels (default 12)." },
-    { name: "panel_bar", selector: { boolean: {} }, default: true, helper: "Panel buttons that show/hide panels or open pop-ups." },
     { name: "remember", selector: { boolean: {} }, default: true, helper: "Remember which panels were toggled, per browser." },
     { name: "lite_editing", selector: { boolean: {} }, default: true, helper: "While the dashboard or this card is being edited: no animated background or blur, and the radar and Windy maps show a placeholder. Keeps the editor responsive." },
   ]],
@@ -517,15 +518,25 @@ class WeatherStationFlexCardEditor extends LitElement {
       if (v === "heading" && headingIdx < 0) list.splice(1, 0, { type: "heading", title: "Local measurements", show_status: true, show_bar: true });
       this._setPanels(list, { panel_bar: v === "hidden" ? false : undefined });
     };
-    const setBtn = (idx, on) => {
+    // Every panel, including the ones inside stacks ("i" or "i.j").
+    const setBtn = (paths, on) => {
+      const set = (p) => prune({ ...p, in_bar: on === inBarOf({ ...p, in_bar: undefined }) ? undefined : on });
       const list = panels.map((p, i) => {
-        if (!idx.includes(i)) return p;
-        const def = inBarOf({ ...p, in_bar: undefined });
-        return prune({ ...p, in_bar: on === def ? undefined : on });
+        let q = paths.includes(`${i}`) ? set(p) : p;
+        if (q.type === "stack" && Array.isArray(q.panels)) {
+          const kids = q.panels.map((c, j) => (c && paths.includes(`${i}.${j}`) ? set(c) : c));
+          if (kids.some((c, j) => c !== q.panels[j])) q = { ...q, panels: kids };
+        }
+        return q;
       });
       this._setPanels(list);
     };
-    const all = panels.map((_, i) => i);
+    const entries = [];
+    panels.forEach((p, i) => {
+      entries.push([p, `${i}`, false]);
+      if (p.type === "stack") (p.panels || []).forEach((c, j) => c && entries.push([c, `${i}.${j}`, true]));
+    });
+    const all = entries.map(([, k]) => k);
     return html`
       <div class="row-inline">
         <label for="bp">Buttons</label>
@@ -541,8 +552,8 @@ class WeatherStationFlexCardEditor extends LitElement {
         <button class="btn sm ghost" @click=${() => setBtn(all, false)}>None</button>
       </div>
       <div class="checks">
-        ${panels.map((p, i) => html`<label class="chk">
-          <input type="checkbox" .checked=${inBarOf(p)} @change=${(e) => setBtn([i], e.target.checked)} />
+        ${entries.map(([p, k, nested]) => html`<label class="chk ${nested ? "nested" : ""}">
+          <input type="checkbox" .checked=${inBarOf(p)} @change=${(e) => setBtn([k], e.target.checked)} />
           <ha-icon icon=${p.icon || (p.type === "metric" && METRICS[p.metric]?.icon) || panelMeta(p).icon}></ha-icon>
           <span>${panelName(p)}</span>${p.display === "popup" ? html`<span class="tag">pop-up</span>` : p.show === false ? html`<span class="tag">hidden on load</span>` : nothing}
         </label>`)}
@@ -838,6 +849,7 @@ class WeatherStationFlexCardEditor extends LitElement {
     .chk { display: flex; align-items: center; gap: var(--ltek-sp-2); font-size: var(--ltek-fs-label); padding: 3px 0; cursor: pointer; min-width: 0; }
     .chk span:not(.tag) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .chk ha-icon { --mdc-icon-size: var(--ltek-icon-sm); color: var(--ltek-c-icon); flex: 0 0 auto; }
+    .chk.nested { padding-left: var(--ltek-sp-6, 24px); }
     .chk .tag { font-size: var(--ltek-fs-tiny); color: var(--ltek-c-muted); white-space: nowrap; }
     /* A stack's panels, indented under its row. */
     .kids { margin: 0 var(--ltek-sp-2) var(--ltek-sp-2) var(--ltek-sp-6, 24px); padding-left: var(--ltek-sp-3); border-left: 2px solid var(--ltek-c-accent); display: flex; flex-direction: column; gap: var(--ltek-sp-2); }

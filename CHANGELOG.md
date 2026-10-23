@@ -1,5 +1,11 @@
 # Changelog
 
+## v2026.10.23.46
+
+- **Fix: the animation speed sliders weren't in the editor** (v2026.10.23.45 added them to the card but not to Appearance → Background). They're there now: Star twinkle, Cloud drift, Rain, Snow, Sun rays, Lightning.
+- **Panel buttons** lists every panel, including those inside stacks (indented under them); All / None include them too.
+- Removed the **Panel buttons** checkbox from Appearance — the Panel buttons section's placement (Above the panels / In the Button Menu panel / Hidden) does the same.
+
 ## v2026.10.23.45
 
 - **Animation speeds** (Appearance → Background): separate sliders for **Star twinkle**, **Cloud drift**, **Rain**, **Snow**, **Sun rays** and **Lightning**, 25–300 % (100 % = normal, 50 % = half as fast). They apply to the card's animated background and to the hero's own animation.
