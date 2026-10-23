@@ -64,6 +64,9 @@ class WsfcWind extends LitElement {
       .wr-stage { position: absolute; inset: 0; visibility: hidden; pointer-events: none; overflow: hidden; }
       /* Fit mode: the chart is a fixed strip and the rose / dial takes what's left. */
       :host([fit]) .body { flex: 0 0 auto; height: var(--wsfc-wind-chart-h, 110px); min-height: 0; }
+      /* The rose / dial keeps its real height (never squeezed under the chart);
+         fitting narrows it until everything fits. */
+      :host([fit]) .wr, :host([fit]) .top { flex-shrink: 0; }
       .wr > * { --ha-card-background: transparent; --ha-card-box-shadow: none; --ha-card-border-width: 0; display: block; }
     `,
   ];

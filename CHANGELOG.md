@@ -1,5 +1,9 @@
 # Changelog
 
+## v2026.10.23.58
+
+- **Fix: on small screens the wind rose / compass no longer overlaps the chart.** With Fit to the panel on, the rose was squeezed to the space left but drew at full size over the chart; it now keeps its real height and is narrowed until the rose, readings and chart all fit.
+
 ## v2026.10.23.57
 
 - **Fix: Temperature sub-header size and scale now resize the text.** Only its wrapper was sized before; the high / low text kept a fixed 14 px.
