@@ -131,6 +131,54 @@ export function findStationEntity(station, hass, re) {
   return cands.find((e) => !/indoor|inside/i.test(e)) || cands[0] || null;
 }
 
+// Integrations whose devices count as the station's for diagnostics.
+const ECOWITT = new Set(["ecowitt", "ecowitt_local", "ha_ecowitt_iot"]);
+
+/**
+ * Devices for diagnostics (battery, signal, online …): the station's devices
+ * (Weather Sources and their siblings), extra devices, then — unless turned
+ * off — every other device from an Ecowitt integration (e.g. Ecowitt Local's
+ * per-sensor devices next to the core integration).
+ */
+export function healthDevices(station, hass, c = {}) {
+  const out = [...stationDevices(station, hass)];
+  for (const d of Array.isArray(c.devices) ? c.devices : []) if (d && !out.includes(d)) out.push(d);
+  if (c.include_ecowitt !== false) {
+    const reg = hass?.entities || {};
+    for (const eid in reg) {
+      const r = reg[eid];
+      if (r?.device_id && ECOWITT.has(r.platform) && !out.includes(r.device_id)) out.push(r.device_id);
+    }
+  }
+  return out;
+}
+
+/**
+ * Best diagnostic entity matching `re` across healthDevices: a reading (sensor)
+ * beats an on/off one, a Weather Sources device breaks ties, outdoor beats
+ * indoor; `unit` (e.g. /%/) is preferred when given; `avoid` excludes names.
+ */
+export function findHealthEntity(station, hass, re, { unit, avoid } = {}) {
+  const own = new Set(stationDevices(station, hass));
+  let best = null, bestScore = -1;
+  for (const did of healthDevices(station, hass)) {
+    for (const eid of deviceEntities(hass, did)) {
+      const st = hass.states[eid];
+      if (!st) continue;
+      const h = `${eid} ${st.attributes?.friendly_name || ""}`;
+      if (!re.test(h) || (avoid && avoid.test(h))) continue;
+      let score = 0;
+      if (!eid.startsWith("binary_sensor.")) score += 4;
+      if (unit && unit.test(st.attributes?.unit_of_measurement || "")) score += 2;
+      if (own.has(did)) score += 1;
+      if (/indoor|inside/i.test(h)) score -= 3;
+      if (["unavailable", "unknown"].includes(st.state)) score -= 1;
+      if (score > bestScore) { best = eid; bestScore = score; }
+    }
+  }
+  return best;
+}
+
 /** Live numeric value + unit of an entity (null when unavailable). */
 export function entityValue(hass, eid) {
   const st = eid && hass?.states?.[eid];

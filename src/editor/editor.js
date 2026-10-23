@@ -368,7 +368,7 @@ class WeatherStationFlexCardEditor extends LitElement {
 
   _stationEditor() {
     const station = this._station;
-    const rows = [...MAP_KEYS, "rain_today", "battery", "signal", "rssi", "aqi", "pm2_5", "pm10", "ozone"].map((k) => {
+    const rows = [...MAP_KEYS, "rain_today", "battery", "battery_voltage", "capacitor", "signal", "signal_quality", "rssi", "online", "hardware_id", "aqi", "pm2_5", "pm10", "ozone"].map((k) => {
       const e = METRICS[k]?.find || METRICS[k]?.aq
         ? metricEntity(k, station, this.hass)
         : metricSensor(station, this.hass, k) || (this.hass.states[station.entity]?.attributes?.[k] != null ? station.entity : null);

@@ -238,7 +238,12 @@ export const PANEL_TYPES = {
   },
   health: {
     tag: "wsfc-panel-health", label: "Station health", icon: "mdi:heart-pulse", span: 4, rows: 0,
-    schema: [{ name: "show_devices", selector: { boolean: {} }, helper: "Show device names even when there is only one." }],
+    schema: [
+      { name: "show_devices", selector: { boolean: {} }, helper: "Show device names even when there is only one." },
+      { name: "include_ecowitt", label: "All Ecowitt devices", selector: { boolean: {} }, default: true, helper: "Also show devices from any Ecowitt integration that aren't in Weather Sources (e.g. Ecowitt Local's sensor devices next to the core integration)." },
+      { name: "show_ids", label: "Hardware IDs", selector: { boolean: {} }, default: true },
+      { name: "devices", label: "More devices", selector: { device: { multiple: true } }, helper: "Any other devices to show (battery, signal, online)." },
+    ],
   },
   pollen: {
     tag: "wsfc-panel-pollen", label: "Pollen", icon: "mdi:flower-pollen", span: 4, rows: 0,

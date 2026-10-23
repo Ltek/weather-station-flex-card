@@ -1,5 +1,11 @@
 # Changelog
 
+## v2026.10.23.43
+
+- **Station diagnostics from every Ecowitt device**, everywhere they're used (Weather station → Values used, the Station health panel, metric tiles): battery, signal and RSSI were only looked for on the Weather Sources devices, so with the core integration as the source they missed Ecowitt Local's per-sensor devices (WS90 battery showed the core's WH65 on/off sensor; signal and RSSI weren't found). They now search all devices from the Ecowitt, Ecowitt Local and Ecowitt Official integrations, preferring a reading (e.g. 100 %) over an on/off sensor.
+- **More diagnostics:** Battery voltage, Capacitor voltage, Signal quality (separate from Signal strength), Station online and Hardware ID — in Values used, as metric tiles and in Station health.
+- **Station health:** "Connected" (Ecowitt Local's text state) now counts as online instead of offline; new options **All Ecowitt devices** (on by default), **Hardware IDs** and **More devices**.
+
 ## v2026.10.23.42
 
 - **Weather Flex metrics look in air-quality integrations too:** the hero's Temperature sub-header metric and its metric chips (and the Current Weather Metrics panel) now find **Ozone** in your air-quality sources when Weather Sources don't have it — the station's own sensor, Home Assistant's AirNow integration, or any outdoor ozone sensor (the same lookup as the Air quality panel). The editor no longer marks Ozone "(unavailable)" when one exists.

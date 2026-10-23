@@ -3,24 +3,29 @@
 // core integration for readings plus Ecowitt Local for battery and signal).
 import { LitElement, html, css, nothing } from "lit";
 import { panelStyles, head, moreInfo } from "./shared.js";
-import { stationDevices, metricSensor, deviceEntities } from "../card/resolve.js";
+import { healthDevices, metricSensor, deviceEntities } from "../card/resolve.js";
 
 const KIND = [
-  ["online", (h, dc) => dc === "connectivity" || /\bonline\b/.test(h)],
+  ["online", (h, dc) => dc === "connectivity" || /\bonline\b|\bconnect(ed|ion)\b/.test(h)],
+  ["id", (h) => /hardware[\s_-]?id|\bhw[\s_-]?id\b|firmware|\bversion\b/.test(h)],
   ["battery", (h, dc) => dc === "battery" || /batt/.test(h)],
   ["capacitor", (h) => /capacitor|cap[\s_-]?volt/.test(h)],
   ["rssi", (h, dc) => /rssi/.test(h) || (dc === "signal_strength" && /dbm/.test(h))],
   ["signal", (h, dc) => /signal/.test(h) || dc === "signal_strength"],
 ];
-const ICON = { online: "mdi:lan-connect", battery: "mdi:battery", capacitor: "mdi:flash", rssi: "mdi:wifi-strength-2", signal: "mdi:signal" };
-const LABEL = { online: "Online", battery: "Battery", capacitor: "Capacitor", rssi: "RSSI", signal: "Signal" };
+const ICON = { online: "mdi:lan-connect", battery: "mdi:battery", capacitor: "mdi:flash", rssi: "mdi:wifi-strength-2", signal: "mdi:signal", id: "mdi:identifier" };
+const LABEL = { online: "Online", battery: "Battery", capacitor: "Capacitor", rssi: "RSSI", signal: "Signal", id: "Hardware ID" };
+// Online / connected states across the Ecowitt integrations (binary "on", or text like "Connected").
+const ONLINE = /^(on|online|connected|true|yes|ok|1)$/i;
+
 
 /** ok | warn | bad | "" for a health reading. */
 export function healthLevel(kind, st) {
   const s = st?.state, a = st?.attributes || {};
   if (s == null || s === "unavailable" || s === "unknown") return "bad";
   const n = Number(s), unit = a.unit_of_measurement || "";
-  if (kind === "online") return s === "on" ? "ok" : "bad";
+  if (kind === "online") return ONLINE.test(s) ? "ok" : "bad";
+  if (kind === "id") return "";
   if (kind === "battery") {
     if (st.entity_id.startsWith("binary_sensor.")) return s === "on" ? "bad" : "ok"; // on = low
     if (unit === "%") return n < 15 ? "bad" : n < 30 ? "warn" : "ok";
@@ -38,9 +43,9 @@ export function healthLevel(kind, st) {
 }
 
 /** Health entities on the station devices, grouped by device. */
-export function healthRows(station, hass) {
+export function healthRows(station, hass, c = {}) {
   const groups = [];
-  for (const did of stationDevices(station, hass)) {
+  for (const did of healthDevices(station, hass, c)) {
     const dev = hass.devices?.[did];
     const rows = [];
     for (const eid of deviceEntities(hass, did)) {
@@ -50,13 +55,13 @@ export function healthRows(station, hass) {
       const h = `${eid} ${st.attributes?.friendly_name || ""} ${st.attributes?.unit_of_measurement || ""}`.toLowerCase();
       const dc = st.attributes?.device_class;
       const kind = KIND.find(([, test]) => test(h, dc))?.[0];
-      if (!kind) continue;
+      if (!kind || (kind === "id" && c.show_ids === false)) continue;
       let name = st.attributes?.friendly_name || eid;
       const dn = dev?.name_by_user || dev?.name;
       if (dn && name.startsWith(dn)) name = name.slice(dn.length).trim() || LABEL[kind];
       rows.push({ eid, kind, name, st, level: healthLevel(kind, st), platform: reg.platform });
     }
-    const order = ["online", "battery", "capacitor", "signal", "rssi"];
+    const order = ["online", "battery", "capacitor", "signal", "rssi", "id"];
     rows.sort((a, b) => order.indexOf(a.kind) - order.indexOf(b.kind) || a.name.localeCompare(b.name));
     if (rows.length) groups.push({ device: dev?.name_by_user || dev?.name || did, model: dev?.model, rows });
   }
@@ -88,10 +93,10 @@ class WsfcHealth extends LitElement {
   render() {
     if (!this.hass) return nothing;
     const c = this.config || {};
-    const groups = healthRows(this.station, this.hass);
+    const groups = healthRows(this.station, this.hass, c);
     const fmt = (r) => {
       const st = r.st, u = st.attributes?.unit_of_measurement || "";
-      if (r.kind === "online") return st.state === "on" ? "Online" : "Offline";
+      if (r.kind === "online") return ONLINE.test(st.state) ? (/^(on|true|1)$/i.test(st.state) ? "Online" : st.state) : st.state === "off" ? "Offline" : st.state;
       if (st.entity_id.startsWith("binary_sensor.")) return r.kind === "battery" ? (st.state === "on" ? "Low" : "OK") : st.state;
       if (["unavailable", "unknown"].includes(st.state)) return "—";
       return `${st.state}${u ? ` ${u}` : ""}`;

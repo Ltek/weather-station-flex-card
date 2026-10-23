@@ -1,7 +1,7 @@
 // Metric catalog for metric tiles, graph series and the bulletin. `key` is a
 // Weather Flex metric key (resolved through Weather Sources); `find` is a
 // pattern for station values outside that catalog (rain totals).
-import { metricSensor, findStationEntity } from "./resolve.js";
+import { metricSensor, findStationEntity, findHealthEntity } from "./resolve.js";
 import { aqEntity } from "./air.js";
 
 export const METRICS = {
@@ -23,9 +23,15 @@ export const METRICS = {
   },
   rain_24h: { label: "Rain 24h", icon: "mdi:weather-rainy", color: "#1e88e5", digits: 2, find: /24[\s_-]?h(ours?)?[\s_-]?(piezo[\s_-]?)?rain|rain(fall)?[\s_-]?24[\s_-]?h/i },
   rain_event: { label: "Rain event", icon: "mdi:weather-rainy", color: "#1e88e5", digits: 2, find: /event[\s_-]?(piezo[\s_-]?)?rain|rain[\s_-]?event/i },
-  battery: { label: "Station battery", icon: "mdi:battery", color: "#66bb6a", digits: null, find: /batt/i, health: true },
-  signal: { label: "Station signal", icon: "mdi:signal", color: "#42a5f5", digits: 0, find: /signal/i, health: true },
+  // Diagnostics: searched across every Ecowitt device (see findHealthEntity).
+  battery: { label: "Station battery", icon: "mdi:battery", color: "#66bb6a", digits: null, find: /batt/i, health: true, unit: /%/, avoid: /volt/i },
+  battery_voltage: { label: "Battery voltage", icon: "mdi:battery-charging", color: "#66bb6a", digits: 2, find: /batt.*volt|volt.*batt/i, health: true },
+  capacitor: { label: "Capacitor voltage", icon: "mdi:flash", color: "#ffca28", digits: 1, find: /capacitor|cap[\s_-]?volt/i, health: true },
+  signal: { label: "Station signal", icon: "mdi:signal", color: "#42a5f5", digits: 0, find: /signal[\s_-]?strength|\bsignal\b(?![\s_-]?quality)/i, health: true },
+  signal_quality: { label: "Signal quality", icon: "mdi:signal-variant", color: "#42a5f5", digits: 0, find: /signal[\s_-]?quality/i, health: true },
   rssi: { label: "Station RSSI", icon: "mdi:wifi-strength-2", color: "#42a5f5", digits: 0, find: /rssi/i, health: true },
+  online: { label: "Station online", icon: "mdi:lan-connect", color: "#43a047", digits: null, find: /\bonline\b/i, health: true, avoid: /gateway|_gw\b/i },
+  hardware_id: { label: "Hardware ID", icon: "mdi:identifier", color: "#9e9e9e", digits: null, find: /hardware[\s_-]?id|\bhw[\s_-]?id\b/i, health: true },
   vpd: { label: "Vapour pressure deficit", icon: "mdi:water-opacity", color: "#8d6e63", digits: 2, find: /vapou?r[\s_-]?pressure[\s_-]?deficit|\bvpd\b/i },
   indoor_temperature: { label: "Indoor temperature", icon: "mdi:home-thermometer", color: "#ab47bc", digits: 1, find: /indoor[\s_-]?temp/i },
   aqi: { label: "AQI", icon: "mdi:air-filter", color: "#66bb6a", digits: 0, aq: "aqi" },
@@ -43,6 +49,7 @@ export function metricEntity(metric, station, hass, explicit) {
   if (!m) return null;
   if (m.key) return metricSensor(station, hass, m.key);
   if (m.aq) return aqEntity(station, hass, m.aq);
+  if (m.health) return findHealthEntity(station, hass, m.find, { unit: m.unit, avoid: m.avoid });
   if (m.find) return findStationEntity(station, hass, m.find);
   return null;
 }
