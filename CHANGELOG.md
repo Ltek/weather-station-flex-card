@@ -1,5 +1,10 @@
 # Changelog
 
+## v2026.10.23.48
+
+- **Sky Tracker: step buttons** (**Step buttons**, off by default): ◀ Now ▶ in the panel's header move the Sky Bar and sun arc to later hours or days, with a label like "Tomorrow 2 AM onward". Options: **Step** (6 h, 12 h, 1 day), **How far ahead** (12–168 h, default 48 — hourly forecasts usually reach 48 h; beyond that the bar shows daylight only) and **Back to now after** (default 60 s, 0 = stay).
+- **Wind Rose Card: coloured speed bars.** **Full colour scale** shows every speed range in its own colour (blue → green → yellow → red), and **Range step**, **Speed bar max** and **Gust bar max** set how many bands there are in your unit (e.g. 5 mph steps to 40 mph). Beaufort bars are labelled "Beaufort" again instead of the speed unit.
+
 ## v2026.10.23.47
 
 - **"Remember toggles" is now "Remember Panel Button States"** and lives in the **Panel buttons** section (it was under Appearance). Same behaviour: each browser keeps which panels were shown or hidden with the panel buttons across refreshes.

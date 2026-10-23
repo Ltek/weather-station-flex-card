@@ -163,6 +163,16 @@ export function applyOverrides(card, c, ids, unit) {
       else card.data_period = { period_back: c.wr_period };
     } else card.data_period = { period_back: c.wr_period };
   }
+  // Colour bands: the card colours each speed range (blue → red); more, smaller
+  // ranges and the full scale give the full colour bar.
+  if (set(c.wr_bar_full)) card.windspeed_entities = card.windspeed_entities.map((e) => ({ ...e, windspeed_bar_full: c.wr_bar_full === "on" }));
+  if (c.wr_range_step || c.wr_range_max || c.wr_gust_max) {
+    card.windspeed_entities = card.windspeed_entities.map((e, i) => {
+      if (e.speed_range_beaufort) return e;
+      const max = i === 0 ? c.wr_range_max : c.wr_gust_max || c.wr_range_max;
+      return { ...e, ...(c.wr_range_step ? { speed_range_step: Number(c.wr_range_step) } : {}), ...(max ? { speed_range_max: Number(max) } : {}) };
+    });
+  }
   if (set(c.wr_beaufort)) {
     const on = c.wr_beaufort === "on";
     card.windspeed_entities = card.windspeed_entities.map((e) => ({ ...e, speed_range_beaufort: on, ...(on ? { current_speed_arrow: true } : {}) }));
@@ -201,6 +211,12 @@ export function windroseCard(c, ids, unit) {
   };
   applyOverrides(card, c || {}, ids, unit);
   const merged = deepMerge(card, c?.windrose || {});
+  // Beaufort bars: let the card label them "Beaufort", not the speed unit.
+  merged.windspeed_entities = (merged.windspeed_entities || []).map((e) => {
+    if (!e.speed_range_beaufort || (c?.windrose?.windspeed_entities || []).some((x) => x?.output_speed_unit_label)) return e;
+    const { output_speed_unit_label: _l, ...rest } = e;
+    return rest;
+  });
   // The card refuses data_period together with an active period button.
   if (merged.buttons_config?.buttons?.some((b) => b.type === "period_selector" && b.active)) delete merged.data_period;
   return merged;

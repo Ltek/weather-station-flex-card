@@ -250,6 +250,13 @@ const patches = [
   // Hero inside a card with its own animated background: the animation settings live in Appearance.
   ["          ${this._wfcConfigCheckbox(\"show_moon_phase\", \"Show moon phase\", this._config.show_moon_phase, true)}\n          <p class=\"wfc-hint\">Shades the night-time moon to match the current lunar phase. Disable to always show a full moon.</p>\n          ${this._wfcStockFormFor(WFC_APPEARANCE_FORM_FIELDS)}\n          <p class=\"wfc-hint\">Which weather conditions trigger visual effects/animations on the card.</p>\n",
    "          ${this.wsfcHide && this.wsfcHide.includes(\"show_condition_effects\")\n            ? eq`<p class=\"wfc-hint\">The weather animation is drawn behind the whole card (Appearance \u2192 Background), so its effects and moon phase are set there.</p>`\n            : eq`${this._wfcConfigCheckbox(\"show_moon_phase\", \"Show moon phase\", this._config.show_moon_phase, true)}\n          <p class=\"wfc-hint\">Shades the night-time moon to match the current lunar phase. Disable to always show a full moon.</p>\n          ${this._wfcStockFormFor(WFC_APPEARANCE_FORM_FIELDS)}\n          <p class=\"wfc-hint\">Which weather conditions trigger visual effects/animations on the card.</p>`}\n"],
+  // Sky Tracker step buttons: a time offset for the Sky Bar and Sun Position windows.
+  ["  cardProto._wfcSunHours = function (cfg) {\n    cfg = cfg || {};\n    const now = new Date();\n",
+   "  cardProto._wfcSunHours = function (cfg) {\n    cfg = cfg || {};\n    // timeframe_offset_hours (Weather Station's Sky Tracker step buttons) moves\n    // the window into the future; the real \"now\" marker stays where it is.\n    const now = new Date(Date.now() + (Number(cfg.timeframe_offset_hours) || 0) * 3600000);\n"],
+  ["  cardProto._wfcArcWindow = function (cfg, rise, set) {\n    const mode = cfg.timeframe_mode || \"sunrise_sunset\";\n    const now = Date.now();\n",
+   "  cardProto._wfcArcWindow = function (cfg, rise, set) {\n    const mode = cfg.timeframe_mode || \"sunrise_sunset\";\n    const now = Date.now() + (Number(cfg.timeframe_offset_hours) || 0) * 3600000;\n"],
+  ["    const cfg = wfc.sun_arc;\n    const { sunrise, sunset } = wfcSunTimes(this.hass);\n",
+   "    const cfg = wfc.sun_arc;\n    // Shifted window: the sun's path for that day.\n    const { sunrise, sunset } = wfcSunTimes(this.hass, new Date(Date.now() + (Number(cfg.timeframe_offset_hours) || 0) * 3600000));\n"],
 ];
 for (const [from, to] of patches) {
   if (!body.includes(from)) throw new Error(`Patch target missing: ${from}`);

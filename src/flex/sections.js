@@ -2091,7 +2091,9 @@ import { actionHandler as iq } from "../../vendor/weather-forecast-card/src/hass
   // Returns [{date, cloud}] sampled hourly across the chosen window.
   cardProto._wfcSunHours = function (cfg) {
     cfg = cfg || {};
-    const now = new Date();
+    // timeframe_offset_hours (Weather Station's Sky Tracker step buttons) moves
+    // the window into the future; the real "now" marker stays where it is.
+    const now = new Date(Date.now() + (Number(cfg.timeframe_offset_hours) || 0) * 3600000);
     let start;
     let end;
 
@@ -2495,7 +2497,7 @@ import { actionHandler as iq } from "../../vendor/weather-forecast-card/src/hass
   // Compute the arc's time window [t0,t1] (ms) per its timeframe config.
   cardProto._wfcArcWindow = function (cfg, rise, set) {
     const mode = cfg.timeframe_mode || "sunrise_sunset";
-    const now = Date.now();
+    const now = Date.now() + (Number(cfg.timeframe_offset_hours) || 0) * 3600000;
     if (mode === "day") {
       const d = new Date(now);
       d.setHours(0, 0, 0, 0);
@@ -2514,7 +2516,8 @@ import { actionHandler as iq } from "../../vendor/weather-forecast-card/src/hass
   // --- Sun Arc (sunrise / current position / sunset) ------------------------
   cardProto._wfcRenderSunArc = function (wfc, ctx) {
     const cfg = wfc.sun_arc;
-    const { sunrise, sunset } = wfcSunTimes(this.hass);
+    // Shifted window: the sun's path for that day.
+    const { sunrise, sunset } = wfcSunTimes(this.hass, new Date(Date.now() + (Number(cfg.timeframe_offset_hours) || 0) * 3600000));
     if (!sunrise || !sunset) return eY;
     const now = Date.now();
     const rise = sunrise.getTime();

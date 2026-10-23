@@ -306,7 +306,7 @@ class WsfcDailyPanel extends WsfcFlexPanel {
  *   hours, anchor        for "hours": span and now_left | now_center
  *   moon, moon_phase     moon marker at night, drawn in its current phase
  */
-export function trackerConfig(p, station) {
+export function trackerConfig(p, station, offsetHours = 0) {
   const cfg = deepMerge(flexBase("sky_tracker", station), p?.flex || {});
   const w = cfg.wfc;
   const sa = (w.sun_arc ||= {}), sp = (w.sun_position ||= {});
@@ -318,6 +318,8 @@ export function trackerConfig(p, station) {
   sa.timeframe_hours = sp.timeframe_hours = hours;
   sa.timeframe_anchor = sp.timeframe_anchor = anchor;
   sa.night_moon = p?.moon !== false;
+  // Step buttons: the window moved into the future by this many hours.
+  if (offsetHours) sa.timeframe_offset_hours = sp.timeframe_offset_hours = offsetHours;
   if (p?.moon_phase === false) { if (sa.moon_icon === "phase") sa.moon_icon = "mdi:weather-night"; }
   else sa.moon_icon = "phase";
   if (arc) {
@@ -344,15 +346,70 @@ class WsfcSkyTracker extends WsfcFlexPanel {
   type = "sky_tracker";
   defaultTitle = "Sky Tracker";
   defaultIcon = "mdi:sun-clock-outline";
-  static styles = [...WsfcFlexPanel.styles, factStyles];
+  static styles = [...WsfcFlexPanel.styles, factStyles, css`
+    .steps { display: inline-flex; align-items: center; gap: 4px; }
+    .steps .when { font-size: 12px; color: var(--secondary-text-color); margin-right: 6px; white-space: nowrap; }
+    .steps button { display: inline-grid; place-items: center; min-width: 28px; height: 28px; padding: 0 8px; border-radius: 999px; cursor: pointer; font: inherit; font-size: 12px;
+      border: 1px solid var(--divider-color, rgba(127,127,127,.35)); background: transparent; color: var(--primary-text-color); }
+    .steps button ha-icon { --mdc-icon-size: 18px; }
+    .steps button:disabled { opacity: 0.35; cursor: default; }
+    .steps button:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 2px; }
+  `];
+  static properties = { ...WsfcFlexPanel.properties, _offset: { state: true } };
+
   _coreConfig() {
-    return trackerConfig(this.config, this.station);
+    return trackerConfig(this.config, this.station, this._offset || 0);
   }
+
+  // Step buttons: ◀ / Now / ▶ move the window by `step_hours`, up to
+  // `max_ahead` hours, and return to now after `return_after` seconds.
+  _step(dir) {
+    const c = this.config || {};
+    const step = Number(c.step_hours) || 12;
+    const max = Number(c.max_ahead ?? 48);
+    const next = dir === 0 ? 0 : Math.max(0, Math.min(max, (this._offset || 0) + dir * step));
+    this._offset = next;
+    clearTimeout(this._back);
+    const after = Number(c.return_after ?? 60);
+    if (next && after > 0) this._back = setTimeout(() => (this._offset = 0), after * 1000);
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    clearTimeout(this._back);
+  }
+
+  _steps() {
+    const c = this.config || {};
+    const off = this._offset || 0;
+    const step = Number(c.step_hours) || 12;
+    const max = Number(c.max_ahead ?? 48);
+    let label = "";
+    if (off) {
+      const lang = this.hass?.locale?.language;
+      const hours = Number(c.hours) || 24;
+      const anchor = c.anchor || "now_center";
+      const t0 = Date.now() + off * 3600e3 - (anchor === "now_center" && (c.timeframe || "hours") === "hours" ? (hours / 2) * 3600e3 : 0);
+      const d = new Date(t0), today = new Date();
+      const days = Math.round((new Date(d).setHours(0, 0, 0, 0) - new Date(today).setHours(0, 0, 0, 0)) / 864e5);
+      const day = days === 0 ? "Today" : days === 1 ? "Tomorrow" : new Intl.DateTimeFormat(lang, { weekday: "long" }).format(d);
+      label = (c.timeframe || "hours") === "hours" ? `${day} ${new Intl.DateTimeFormat(lang, { hour: "numeric" }).format(d)} onward` : day;
+    }
+    return html`<span class="steps">
+      ${label ? html`<span class="when">${label}</span>` : nothing}
+      <button type="button" ?disabled=${off <= 0} @click=${() => this._step(-1)} aria-label="Earlier" title="Earlier"><ha-icon icon="mdi:chevron-left"></ha-icon></button>
+      <button type="button" class="now" ?disabled=${off === 0} @click=${() => this._step(0)} title="Back to now">Now</button>
+      <button type="button" ?disabled=${off + step > max} @click=${() => this._step(1)} aria-label="Later" title="Later"><ha-icon icon="mdi:chevron-right"></ha-icon></button>
+    </span>`;
+  }
+
   render() {
     if (!this.hass || !this.station?.entity) return nothing;
     const c = this.config || {};
     if (c.show_arc === false && c.show_sky === false) return html`${head(c, this.defaultIcon, this.defaultTitle)}<div class="note">Turn on the sun arc or the sky gradient.</div>`;
-    return html`${(c.show_title ?? !!c.title) ? head(c, this.defaultIcon, this.defaultTitle) : nothing}
+    const showHead = c.show_title ?? !!c.title;
+    const steps = c.show_steps ? this._steps() : nothing;
+    return html`${showHead ? head(c, this.defaultIcon, this.defaultTitle, steps) : c.show_steps ? head({ ...c, show_title: false }, this.defaultIcon, "", steps) : nothing}
       <div class="core">${this._slot.update(this._coreConfig(), this.hass)}</div>
       ${this._slot.error ? html`<div class="err">${this._slot.error}</div>` : nothing}
       ${renderFacts(this.hass, c)}`;
