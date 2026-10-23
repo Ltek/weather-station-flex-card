@@ -32,7 +32,7 @@ const hm = (ms) => (ms == null || !isFinite(ms) ? "—" : `${Math.floor(ms / 360
  * Editor fields for a panel's facts. `defaults` is the list shown when the user
  * hasn't chosen; `on` is whether the block shows by default.
  */
-export function factsFields(defaults = ALL_FACTS, on = false) {
+export function factsFields(defaults = ALL_FACTS, on = false, positions = [["below", "Below the panel's content"], ["above", "Above the panel's content"]]) {
   // Form data already holds the default, so the checkbox state is d.show_facts.
   const when = (d) => !!d.show_facts;
   const weights = opt([["400", "Regular"], ["500", "Medium"], ["700", "Bold"]]);
@@ -40,6 +40,9 @@ export function factsFields(defaults = ALL_FACTS, on = false) {
   return [
     { name: "show_facts", label: "Show sun & moon facts", selector: { boolean: {} }, default: on },
     { name: "facts", label: "Facts", when, selector: { select: { multiple: true, options: opt(FACTS) } }, default: defaults },
+    { name: "fact_position", label: "Position", when, selector: { select: { options: opt(positions) } }, default: positions[0][0] },
+    { name: "fact_spacing", label: "Spacing", when, selector: { select: { options: opt([["spread", "Spread across the width"], ["packed", "Packed together"]]) } }, default: "spread" },
+    { name: "fact_gap", label: "Gap between facts", when, selector: { number: { min: 4, max: 80, step: 2, mode: "slider", unit_of_measurement: "px" } }, default: 14 },
     { name: "fact_align", label: "Alignment", when, selector: { select: { options: opt([["left", "Left"], ["center", "Center"], ["right", "Right"]]) } }, default: "left" },
     { name: "fact_moon_illum", label: "Illumination", when: (d) => when(d) && (d.facts || defaults).includes("moon_phase"), selector: { select: { options: opt([["separate", "Its own fact"], ["right", "With the moon phase, to the right of it"], ["below", "With the moon phase, under it"]]) } }, default: "separate" },
     { name: "fact_illum_value", label: "Illumination %", when: (d) => when(d) && (d.fact_moon_illum || "separate") !== "separate" && (d.facts || defaults).includes("moon_phase"), selector: { select: { options: opt([["below", "Under the label"], ["right", "To the right of the label"]]) } }, default: "below" },
@@ -107,9 +110,11 @@ export function renderFacts(hass, c, defaults = ALL_FACTS, on = false) {
     c.fact_value_color ? `--fv-color:${c.fact_value_color}` : "",
     `--moon-img:${Number(c.fact_moon_size) || 36}px`,
     `--f-align:${c.fact_align || "left"}`,
+    c.fact_gap != null ? `--f-gap:${Number(c.fact_gap)}px` : "",
   ].filter(Boolean).join(";");
   const illum = html`<div class="illum ${c.fact_illum_value === "right" ? "inline" : ""}"><span class="fl">${label.moon_illumination}</span><span class="fv">${v.moon_illumination}</span></div>`;
-  return html`<div class="facts" style=${style}>${keys.map((k) =>
+  const cls = `facts ${c.fact_spacing === "packed" ? "packed" : ""} al-${c.fact_align || "left"}`;
+  return html`<div class=${cls} style=${style}>${keys.map((k) =>
     k === "moon_phase"
       ? html`<div class="fact moon"><span class="mi">${moonSvg(v.moon_phase_value)}</span>
           <div class="mt ${couple === "right" ? "row" : ""}"><div><span class="fl">${label[k]}</span><span class="fv">${v.moon_phase}</span></div>${couple ? illum : nothing}</div></div>`
@@ -118,7 +123,14 @@ export function renderFacts(hass, c, defaults = ALL_FACTS, on = false) {
 }
 
 export const factStyles = css`
-  .facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 6px 14px; margin-top: 8px; text-align: var(--f-align, left); }
+  .facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 6px var(--f-gap, 14px); margin-top: 8px; text-align: var(--f-align, left); }
+  /* Packed: facts sit next to each other at their own width, the gap between them. */
+  .facts.packed { display: flex; flex-wrap: wrap; align-items: flex-start; }
+  .facts.packed .fact.moon { grid-column: auto; }
+  .facts.packed.al-center { justify-content: center; }
+  .facts.packed.al-right { justify-content: flex-end; }
+  .facts.above { margin: 0 0 8px; }
+  .facts.inhead { margin: 0; flex: 1; min-width: 0; }
   .fact { min-width: 0; }
   .fact .fl { display: block; font-size: var(--fl-size, 11px); font-weight: var(--fl-weight, 400); color: var(--fl-color, var(--secondary-text-color)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .fact .fv { display: block; font-size: var(--fv-size, 13px); font-weight: var(--fv-weight, 400); color: var(--fv-color, var(--primary-text-color)); white-space: nowrap; font-variant-numeric: tabular-nums; }

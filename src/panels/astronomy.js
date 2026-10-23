@@ -59,6 +59,7 @@ class WsfcAstronomy extends LitElement {
     const c = this.config || {};
     return html`
       ${head(c, "mdi:telescope", "Astronomy")}
+      ${c.fact_position === "above" ? renderFacts(this.hass, c, undefined, true) : nothing}
       <div class="wrap">
         ${c.show_chart === false ? nothing : html`<div class="chart">${this._chart(lat, lon, now)}</div>`}
         <div class="side">
@@ -68,7 +69,7 @@ class WsfcAstronomy extends LitElement {
               <td>${n === "Moon" && mt.alwaysUp ? "up all day" : n === "Moon" && mt.alwaysDown ? "down all day" : f(r)}</td>
               <td>${n === "Moon" && (mt.alwaysUp || mt.alwaysDown) ? "" : f(s)}</td></tr>`)}
           </table>`}
-          ${renderFacts(this.hass, c, undefined, true)}
+          ${(c.fact_position || "below") === "below" ? renderFacts(this.hass, c, undefined, true) : nothing}
         </div>
       </div>
     `;

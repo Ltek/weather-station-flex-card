@@ -20,7 +20,7 @@ export const PANEL_TYPES = {
     schema: [
       { name: "auto_scale", selector: { boolean: {} }, default: false, helper: "Size the temperature, condition, icon, clock, date and metric chips from the panel's size, over the sizes set below. Sizes left at Auto below follow the panel either way." },
       { name: "scale", selector: { number: { min: 50, max: 200, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100, helper: "Auto scaling: make the auto sizes bigger or smaller." },
-      ...factsFields(),
+      ...factsFields(undefined, false, [["bottom", "Along the bottom"], ["top", "Along the top"]]),
     ],
   },
   bulletin: {
@@ -208,7 +208,7 @@ export const PANEL_TYPES = {
       { name: "step_hours", label: "Step", when: (d) => !!d.show_steps, selector: { select: { options: opt([["6", "6 hours"], ["12", "12 hours"], ["24", "1 day"]]) } }, default: "12" },
       { name: "max_ahead", label: "How far ahead", when: (d) => !!d.show_steps, selector: { number: { min: 12, max: 168, step: 6, mode: "slider", unit_of_measurement: "h" } }, default: 48, helper: "Hourly forecasts usually reach 48 h; beyond that the bar shows daylight only." },
       { name: "return_after", label: "Back to now after", when: (d) => !!d.show_steps, selector: { number: { min: 0, max: 600, step: 10, mode: "slider", unit_of_measurement: "s" } }, default: 60, helper: "0 = stay." },
-      ...factsFields(),
+      ...factsFields(undefined, false, [["below", "Below the sky"], ["above", "Above the arc"], ["header", "In the header, beside the step buttons"]]),
     ],
   },
   astronomy: {

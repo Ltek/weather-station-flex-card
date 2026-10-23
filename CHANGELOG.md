@@ -1,5 +1,11 @@
 # Changelog
 
+## v2026.10.23.50
+
+- **Sun & moon facts: Position** — Sky Tracker: below the sky, above the arc, or **in the header beside the step buttons**; Hero: along the bottom or the top; Astronomy: below or above. **Spacing**: spread across the width, or packed together, with a **Gap between facts** slider.
+- **Import / Export** buttons at the top of the editor: Export shows the whole card's settings as YAML (copy or download a file); Import takes pasted YAML or JSON and replaces the settings in the editor (press Save to keep them). Bad input shows an error instead of changing anything.
+- The editor header no longer shows the internal "Weather Flex sections" build.
+
 ## v2026.10.23.49
 
 - **Editing is always paused, with a Live preview checkbox:** the animated background, panel blur and the Radar and Windy maps now always pause while you edit. A **Live preview** checkbox at the top of the editor runs them when you want to check the real look. It isn't saved and resets each time the editor closes. Removed the **Pause animations and maps while editing** setting (`lite_editing`) from Appearance.

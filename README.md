@@ -4,7 +4,7 @@ A weather-station dashboard in one Home Assistant card. Panels sit in a 12-colum
 
 Built around an Ecowitt WS90 / GW2000B; works with any station whose sensors are in Home Assistant — including all three Ecowitt integrations (Home Assistant's Ecowitt, Ecowitt Local, Ecowitt Official), alone or combined. See [docs/ECOWITT_INTEGRATIONS.md](docs/ECOWITT_INTEGRATIONS.md).
 
-Current build: **v2026.10.23.49** · full history in [CHANGELOG.md](CHANGELOG.md)
+Current build: **v2026.10.23.50** · full history in [CHANGELOG.md](CHANGELOG.md)
 
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Ltek&repository=weather-station-flex-card&category=plugin)
 
@@ -40,7 +40,7 @@ For a full-screen dashboard put the card in a **Panel** view and set `layout: fu
 - **Layout** — a map of the grid: drag panels to move them and drag their edges to resize (arrow keys work too). A screen guide draws the map to a chosen screen size with a line or frame where the screen ends.
 - **Panels** — the panel list (a stack's panels indented under it): edit, show/hide, duplicate, delete and add panels. Each panel has **Layout** (title and icon on/off, width, height, grid or pop-up, panel button, background, shadow / border / glow, shown on load) and its own options. The Hero, Chips, forecast and Sky Tracker panels also embed Weather Flex Card's editor for their sections.
 
-Only what you change is saved, so the YAML stays short.
+Only what you change is saved, so the YAML stays short. **Export** and **Import** at the top of the editor copy the whole card's settings as YAML, or replace them with pasted YAML or JSON.
 
 ## Panels
 

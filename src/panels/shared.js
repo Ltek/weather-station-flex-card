@@ -23,6 +23,8 @@ export const panelStyles = css`
   }
   .head ha-icon { --mdc-icon-size: 20px; color: var(--wsfc-muted); }
   .head .title { font-size: 15px; font-weight: 500; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  /* No title: the header's controls (e.g. facts + step buttons) get the room. */
+  .head .title:empty { flex: 0 0 0; }
   .seg {
     display: inline-flex;
     border: 1px solid var(--divider-color, rgba(127, 127, 127, 0.3));

@@ -218,6 +218,7 @@ class WsfcHeroPanel extends WsfcFlexPanel {
       /* Sun & moon facts across the bottom of the hero, over its background. */
       .hero-facts { position: absolute; left: 16px; right: 16px; bottom: 12px; z-index: 1; pointer-events: none; }
       .hero-facts .facts { margin: 0; }
+      .hero-facts.top { bottom: auto; top: 12px; }
       .core { margin: 0; display: flex; }
       .core > * { flex: 1; height: 100%; --ha-card-border-radius: var(--wsfc-radius, 16px); --card-padding: 16px; }
     `,
@@ -277,8 +278,9 @@ class WsfcHeroPanel extends WsfcFlexPanel {
     // Values for sizes left at Auto (0) in the sections editor, e.g. the clock and date.
     const a = this._auto;
     const facts = renderFacts(this.hass, this.config || {});
+    const top = (this.config?.fact_position || "bottom") === "top";
     return html`<div class="core" style="--wfc-clock-auto:${a.clock}px;--wfc-clock-date-auto:${a.date}px">${this._slot.update(this._coreConfig(), this.hass)}</div>
-      ${facts === nothing ? nothing : html`<div class="hero-facts">${facts}</div>`}
+      ${facts === nothing ? nothing : html`<div class="hero-facts ${top ? "top" : ""}">${facts}</div>`}
       ${this._slot.error ? html`<div class="err">${this._slot.error}</div>` : nothing}`;
   }
 }
@@ -347,7 +349,10 @@ class WsfcSkyTracker extends WsfcFlexPanel {
   defaultTitle = "Sky Tracker";
   defaultIcon = "mdi:sun-clock-outline";
   static styles = [...WsfcFlexPanel.styles, factStyles, css`
-    .steps { display: inline-flex; align-items: center; gap: 4px; }
+    .steps { display: inline-flex; align-items: center; gap: 4px; flex: 0 0 auto; }
+    .headfacts { flex: 1; min-width: 0; margin-right: 8px; }
+    .head:has(.headfacts) .steps { margin-left: auto; }
+    .headfacts .facts { margin: 0; }
     .steps .when { font-size: 12px; color: var(--secondary-text-color); margin-right: 6px; white-space: nowrap; }
     .steps button { display: inline-grid; place-items: center; min-width: 28px; height: 28px; padding: 0 8px; border-radius: 999px; cursor: pointer; font: inherit; font-size: 12px;
       border: 1px solid var(--divider-color, rgba(127,127,127,.35)); background: transparent; color: var(--primary-text-color); }
@@ -408,11 +413,18 @@ class WsfcSkyTracker extends WsfcFlexPanel {
     const c = this.config || {};
     if (c.show_arc === false && c.show_sky === false) return html`${head(c, this.defaultIcon, this.defaultTitle)}<div class="note">Turn on the sun arc or the sky gradient.</div>`;
     const showHead = c.show_title ?? !!c.title;
-    const steps = c.show_steps ? this._steps() : nothing;
-    return html`${showHead ? head(c, this.defaultIcon, this.defaultTitle, steps) : c.show_steps ? head({ ...c, show_title: false }, this.defaultIcon, "", steps) : nothing}
+    const pos = c.fact_position || "below";
+    const facts = renderFacts(this.hass, c);
+    // "header": the facts share the header row with the title and step buttons.
+    const right = pos === "header" && facts !== nothing
+      ? html`<span class="headfacts">${facts}</span>${c.show_steps ? this._steps() : nothing}`
+      : c.show_steps ? this._steps() : nothing;
+    const withHead = showHead || c.show_steps || (pos === "header" && facts !== nothing);
+    return html`${withHead ? head(showHead ? c : { ...c, show_title: false }, this.defaultIcon, this.defaultTitle, right) : nothing}
+      ${pos === "above" ? facts : nothing}
       <div class="core">${this._slot.update(this._coreConfig(), this.hass)}</div>
       ${this._slot.error ? html`<div class="err">${this._slot.error}</div>` : nothing}
-      ${renderFacts(this.hass, c)}`;
+      ${pos === "below" ? facts : nothing}`;
   }
 
 }

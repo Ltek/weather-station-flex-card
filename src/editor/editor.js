@@ -14,14 +14,15 @@
 // against the panel's base so only the user's changes are saved under `flex:`.
 // Its entity/metric_sources edits are global and go to the card's top level.
 import { LitElement, html, css, nothing } from "lit";
-import { CARD_VERSION, CARD_NAME } from "../card/constants.js";
+import { CARD_VERSION, CARD_NAME, CARD_TYPE } from "../card/constants.js";
 import { PANEL_TYPES, COMMON_SCHEMA, STACK_CHILD_SCHEMA, NO_TITLE, TITLE_WHEN_SET, panelMeta, spanOf, rowsOf, inBarOf, normalizePanels } from "../card/panels.js";
-import { CORE_EDITOR_TAG, FLEX_SECTIONS_BUILD, flexOverride, deepMerge } from "../card/core.js";
+import { CORE_EDITOR_TAG, flexOverride, deepMerge } from "../card/core.js";
 import { flexBase, trackerConfig } from "../panels/flex.js";
 import { prune, clone } from "../card/config.js";
 import { METRICS, metricEntity } from "../card/metrics.js";
 import "./layout-map.js";
 import { renderFields, fieldStyles } from "./fields.js";
+import { openConfigDialog } from "./config-io.js";
 import { setUnsaved, isLive, setLive } from "../card/unsaved.js";
 import { detected } from "../card/detected.js";
 import { ANIM_SPEEDS } from "../card/animation-speed.js";
@@ -291,7 +292,11 @@ class WeatherStationFlexCardEditor extends LitElement {
     if (!this.hass || !this._config) return nothing;
     return html`
       <div class="ed">
-        <div class="hdr"><span class="name">${CARD_NAME}</span><span class="ver">v${CARD_VERSION} · Weather Flex sections ${FLEX_SECTIONS_BUILD}</span></div>
+        <div class="hdr"><span class="name">${CARD_NAME}</span><span class="ver">v${CARD_VERSION}</span>
+          <span class="io">
+            <button class="btn sm ghost" title="Copy the whole card's settings as YAML" @click=${() => openConfigDialog({ mode: "export", config: this._config, cardType: `custom:${CARD_TYPE}` })}><ha-icon icon="mdi:export"></ha-icon>Export</button>
+            <button class="btn sm ghost" title="Replace the settings with pasted YAML or JSON" @click=${() => openConfigDialog({ mode: "import", cardType: `custom:${CARD_TYPE}`, onImport: (cfg) => { this._flexEds.clear(); this._openPanel = null; this._emit(cfg); this.requestUpdate(); } })}><ha-icon icon="mdi:import"></ha-icon>Import</button>
+          </span></div>
         <label class="live" title="While editing, the animated background, blur and the radar and Windy maps are paused to keep the editor fast. Tick to see them running (not saved).">
           <input type="checkbox" .checked=${isLive()} @change=${(e) => { setLive(e.target.checked); this.requestUpdate(); }} />
           <ha-icon icon="mdi:play-circle-outline"></ha-icon><span>Live preview</span>
@@ -838,6 +843,7 @@ class WeatherStationFlexCardEditor extends LitElement {
     /* A panel's own sub-panels (e.g. Sun & moon facts), styled like the
        Weather Flex sub-panels next to them: no indent, hairline card, bold
        title, accent icon, chevron on the right. */
+    .hdr .io { margin-left: auto; display: inline-flex; gap: 6px; }
     .live { display: flex; align-items: center; gap: var(--ltek-sp-2, 8px); margin: 0 0 var(--ltek-sp-3, 12px); padding: 6px 10px; border-radius: var(--ltek-r-card, 12px);
       border: 1px solid var(--ltek-c-border-soft); cursor: pointer; font-size: var(--ltek-fs-label, 14px); }
     .live input { accent-color: var(--ltek-c-accent); width: 16px; height: 16px; margin: 0; }
