@@ -4,7 +4,7 @@ A weather-station dashboard in one Home Assistant card. Panels sit in a 12-colum
 
 Built around an Ecowitt WS90 / GW2000B; works with any station whose sensors are in Home Assistant — including all three Ecowitt integrations (Home Assistant's Ecowitt, Ecowitt Local, Ecowitt Official), alone or combined. See [docs/ECOWITT_INTEGRATIONS.md](docs/ECOWITT_INTEGRATIONS.md).
 
-Current build: **v2026.10.23.38** · full history in [CHANGELOG.md](CHANGELOG.md)
+Current build: **v2026.10.23.39** · full history in [CHANGELOG.md](CHANGELOG.md)
 
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Ltek&repository=weather-station-flex-card&category=plugin)
 
@@ -37,7 +37,7 @@ For a full-screen dashboard put the card in a **Panel** view and set `layout: fu
 - **Weather station** — the Weather Sources list: add your station device (e.g. the Ecowitt GW2000B) and a weather entity for the forecast, set their priority and per-value overrides, and see which sensor is used for each value. Applies to every panel.
 - **Appearance** — title, background (animated or an image), panel opacity, blur, corner radius, shadow, border and glow, layout, layout size, full-screen fit, row height and gap. Auto values show what they resolve to.
 - **Panel buttons** — above the panels, in the Button Menu panel, or hidden; one checkbox per panel, All / None.
-- **Layout** — a map of the grid: drag panels to move them and drag their edges to resize (arrow keys work too).
+- **Layout** — a map of the grid: drag panels to move them and drag their edges to resize (arrow keys work too). A screen guide draws the map to a chosen screen size with a line or frame where the screen ends.
 - **Panels** — the panel list (a stack's panels indented under it): edit, show/hide, duplicate, delete and add panels. Each panel has **Layout** (title and icon on/off, width, height, grid or pop-up, panel button, background, shadow / border / glow, shown on load) and its own options. The Hero, Chips, forecast and Sky Tracker panels also embed Weather Flex Card's editor for their sections.
 
 Only what you change is saved, so the YAML stays short.

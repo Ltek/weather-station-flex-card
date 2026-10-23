@@ -438,10 +438,53 @@ class WeatherStationFlexCardEditor extends LitElement {
     return html`<div class="flexed">${ed}</div>`;
   }
 
+  // Screen guide for the layout map (layout_screen: "1920x1080" | "window", layout_guide: off | line | frame).
+  _guideSpec() {
+    const c = this._config;
+    const scr = c.layout_screen;
+    if (!scr || (c.layout_guide || "line") === "off") return null;
+    const [w, h] = scr === "window" ? [window.innerWidth, window.innerHeight] : String(scr).split(/[x×]/).map(Number);
+    if (!w || !h) return null;
+    const gap = c.gap ?? 12;
+    const full = c.layout === "fullscreen";
+    const bar = c.panel_bar !== false && !this._panels.some((p) => p.type === "heading" && p.show_bar);
+    // Dashboard header + the card's own margin, padding, button row and title.
+    const chrome = 56 + (full ? 16 : 8) + 2 * gap + (bar ? 40 + gap : 0) + (c.title ? 44 + gap : 0);
+    return { w, h, chrome, gap, row: c.row_height || 110, fit: full && c.fit_height !== false, mode: c.layout_guide || "line" };
+  }
+
+  _screenGuide() {
+    const c = this._config;
+    const presets = [["", "Off"], ["window", `This browser window (${window.innerWidth}×${window.innerHeight})`], ["1920x1080", "1920×1080 (16:9 desktop)"], ["2560x1440", "2560×1440 (16:9)"], ["3440x1440", "3440×1440 (21:9)"],
+      ["1366x768", "1366×768 (laptop)"], ["1280x800", "1280×800 (16:10 tablet)"], ["1180x820", "1180×820 (iPad landscape)"], ["820x1180", "820×1180 (iPad portrait)"], ["1080x1920", "1080×1920 (portrait panel)"]];
+    const cur = c.layout_screen || "";
+    const custom = cur && !presets.some(([v]) => v === cur);
+    const set = (patch) => {
+      const next = { ...this._config, ...patch };
+      for (const k of Object.keys(patch)) if (patch[k] == null || patch[k] === "") delete next[k];
+      this._emit(next);
+    };
+    return html`<div class="guidebar">
+      <div class="frow"><label for="lg-s">Screen guide</label>
+        <select id="lg-s" class="sel" @change=${(e) => set({ layout_screen: e.target.value === "custom" ? "1600x900" : e.target.value || undefined })}>
+          ${presets.map(([v, l]) => html`<option value=${v} ?selected=${v === cur}>${l}</option>`)}
+          <option value="custom" ?selected=${custom}>Custom size…</option>
+        </select></div>
+      ${custom ? html`<div class="frow"><label for="lg-c">Width × height</label>
+        <input id="lg-c" class="ftext" .value=${cur} placeholder="1600x900" @change=${(e) => set({ layout_screen: /^\d{3,5}\s*[x×]\s*\d{3,5}$/.test(e.target.value.trim()) ? e.target.value.trim().replace(/\s+/g, "").replace("×", "x") : cur })} /></div>` : nothing}
+      ${cur ? html`<div class="frow"><label for="lg-m">Show as</label>
+        <select id="lg-m" class="sel" @change=${(e) => set({ layout_guide: e.target.value === "line" ? undefined : e.target.value })}>
+          ${[["line", "Dotted line at the screen edge"], ["frame", "Frame — shade what's off screen"]].map(([v, l]) => html`<option value=${v} ?selected=${(c.layout_guide || "line") === v}>${l}</option>`)}
+        </select></div>
+        <div class="fhelp">The map is drawn to that screen's scale (window size inside the browser, below the dashboard header).${c.layout === "fullscreen" && c.fit_height !== false ? " Full screen with fit: rows share the screen height, as on the dashboard." : " Panels below the line need scrolling."}</div>` : nothing}
+    </div>`;
+  }
+
   _layoutEditor() {
     return html`
       <p class="hint"><b>Drag</b> a panel to move it; drag its <b>right or bottom edge</b> (or the corner) to resize. Keyboard: arrows move, Shift+arrows resize. This is the desktop layout — tablets and phones adapt automatically. Dashed = hidden on load.</p>
-      <wsfc-layout-map .panels=${this._panels} @layout-changed=${(e) => {
+      ${this._screenGuide()}
+      <wsfc-layout-map .panels=${this._panels} .guide=${this._guideSpec()} @layout-changed=${(e) => {
         this._flexEds.clear();
         this._openPanel = null;
         this._setPanels(e.detail.panels);
@@ -766,6 +809,7 @@ class WeatherStationFlexCardEditor extends LitElement {
     /* A panel's own sub-panels (e.g. Sun & moon facts), styled like the
        Weather Flex sub-panels next to them: no indent, hairline card, bold
        title, accent icon, chevron on the right. */
+    .guidebar { margin: 0 0 var(--ltek-sp-3); }
     details.psub { margin: var(--ltek-sp-3) 0 8px; border: 1px solid #3a3a3a; border-radius: 12px; background: rgba(255,255,255,0.015); }
     details.psub > summary { list-style: none; cursor: pointer; user-select: none; padding: 10px 14px; display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 700; color: var(--primary-text-color, #e1e1e1); }
     details.psub > summary::-webkit-details-marker { display: none; }

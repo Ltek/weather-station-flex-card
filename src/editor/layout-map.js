@@ -26,7 +26,54 @@ class WsfcLayoutMap extends LitElement {
     _order: { state: true }, // grid panel indexes in display order while dragging
     _size: { state: true }, // { index, span, rows } while resizing
     _drag: { state: true },
+    // Screen guide: { w, h } of the browser window, chrome (px above/around the
+    // grid), row / gap (px), fit (rows share the height), mode "line" | "frame".
+    guide: { attribute: false },
+    _mapW: { state: true },
+    _tracks: { state: true },
   };
+
+  connectedCallback() {
+    super.connectedCallback();
+    this._ro = new ResizeObserver(() => {
+      const g = this.renderRoot.querySelector(".grid");
+      if (!g) return;
+      const w = g.clientWidth - 12; // minus padding
+      if (Math.abs(w - (this._mapW || 0)) > 1) this._mapW = w;
+    });
+    this.updateComplete.then(() => { const g = this.renderRoot.querySelector(".grid"); if (g) this._ro.observe(g); });
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    this._ro?.disconnect();
+  }
+
+  // Map scale. With a screen guide the map is drawn to the screen's scale
+  // (map px per real px = map width / screen width); otherwise fixed sizes.
+  _scale() {
+    const g = this.guide;
+    if (!g?.w || !g?.h || !this._mapW) return { row: MAP_ROW, gap: MAP_GAP, line: null };
+    const k = this._mapW / g.w;
+    const avail = Math.max(100, g.h - (g.chrome || 0));
+    let rowPx = g.row || 110;
+    // Full screen + fit: rows share the screen height, like the card does.
+    if (g.fit && this._tracks) {
+      const rows = this._tracks / 2;
+      rowPx = Math.max(60, Math.min(400, (avail + (g.gap ?? 12)) / rows - (g.gap ?? 12)));
+    }
+    const gap = Math.max(2, (g.gap ?? 12) * k);
+    return { row: Math.max(8, rowPx * k), gap, line: avail * k, rowPx: Math.round(rowPx) };
+  }
+
+  updated() {
+    // Count the grid's half-row tracks (for the fit-to-screen scale).
+    const g = this.renderRoot.querySelector(".grid");
+    if (!g || !this.guide?.fit) return;
+    const { row, gap } = this._scale();
+    const tracks = Math.max(2, Math.round((g.clientHeight - 12 + gap) / ((row - gap) / 2 + gap)));
+    if (tracks !== this._tracks) this._tracks = tracks;
+  }
 
   // Grid panels = everything not shown as a pop-up.
   _gridIdx() {
@@ -37,9 +84,18 @@ class WsfcLayoutMap extends LitElement {
     const panels = this.panels || [];
     const order = this._order || this._gridIdx();
     const popups = panels.map((p, i) => i).filter((i) => panels[i].display === "popup");
+    const sc = this._scale();
+    this._mr = sc.row; this._mg = sc.gap;
+    const mode = this.guide?.mode || "line";
     return html`
-      <div class="grid" style=${`--row:${MAP_ROW}px;--gap:${MAP_GAP}px`}>
-        ${order.map((i) => this._block(panels[i], i))}
+      <div class="wrap">
+        <div class="grid" style=${`--row:${sc.row}px;--gap:${sc.gap}px`}>
+          ${order.map((i) => this._block(panels[i], i))}
+        </div>
+        ${sc.line != null
+          ? html`<div class="guide ${mode}" style=${`top:${6 + sc.line}px`} aria-hidden="true">
+              <span>${this.guide.w}×${this.guide.h} screen edge${this.guide.fit ? ` · rows ${sc.rowPx}px` : ""}</span></div>`
+          : nothing}
       </div>
       ${popups.length
         ? html`<div class="pops"><span>Pop-ups:</span>${popups.map((i) => html`<span class="pop"><ha-icon icon=${iconOf(panels[i])}></ha-icon>${nameOf(panels[i])}</span>`)}</div>`
@@ -143,8 +199,9 @@ class WsfcLayoutMap extends LitElement {
       // Rows: 0 means "fit content"; shown as one row in the map.
       const base = r0 || 1;
       // Half-row steps.
-      let rows = axis === "x" ? r0 : Math.max(0.5, Math.min(MAX_ROWS, base + Math.round((2 * (ev.clientY - y0)) / (MAP_ROW + MAP_GAP)) / 2));
-      if (axis !== "x" && r0 === 0 && rows === 1 && Math.abs(ev.clientY - y0) < (MAP_ROW + MAP_GAP) / 4) rows = 0;
+      const step = (this._mr || MAP_ROW) + (this._mg || MAP_GAP);
+      let rows = axis === "x" ? r0 : Math.max(0.5, Math.min(MAX_ROWS, base + Math.round((2 * (ev.clientY - y0)) / step) / 2));
+      if (axis !== "x" && r0 === 0 && rows === 1 && Math.abs(ev.clientY - y0) < step / 4) rows = 0;
       if (span !== this._size.span || rows !== this._size.rows) this._size = { index: i, span, rows };
     };
     const up = () => {
@@ -198,6 +255,12 @@ class WsfcLayoutMap extends LitElement {
 
   static styles = css`
     :host { display: block; }
+    .wrap { position: relative; }
+    /* Screen guide: where the screen ends. Line = dashed edge; Frame = also
+       shades everything below it. */
+    .guide { position: absolute; left: 0; right: 0; height: 0; border-top: 2px dashed var(--warning-color, #ffa600); pointer-events: none; z-index: 3; }
+    .guide span { position: absolute; right: 6px; top: 2px; font-size: 10px; font-weight: 600; color: var(--warning-color, #ffa600); background: var(--card-background-color, #1c1c1c); padding: 0 4px; border-radius: 4px; }
+    .guide.frame { bottom: 0; height: auto; background: repeating-linear-gradient(135deg, rgba(255, 166, 0, 0.12) 0 6px, transparent 6px 12px); border-radius: 0 0 10px 10px; }
     .grid {
       display: grid;
       grid-template-columns: repeat(12, minmax(0, 1fr));

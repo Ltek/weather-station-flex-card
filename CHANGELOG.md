@@ -1,5 +1,9 @@
 # Changelog
 
+## v2026.10.23.39
+
+- **Layout: screen guide.** Pick a screen (this browser window, 1920×1080, 2560×1440, 3440×1440, laptop, tablet, iPad landscape / portrait, a portrait panel, or a custom width × height) and the layout map is drawn to that screen's scale, with a dashed line where the screen ends, or a frame that shades everything off screen. It allows for the dashboard header, the card's padding, the button row and title. In full-screen mode with fit, rows share the screen height as on the dashboard, and the guide shows the row height that gives. Saved as `layout_screen` / `layout_guide`; used only by the editor.
+
 ## v2026.10.23.38
 
 - **Hero:** removed the **Show the metric chips** checkbox; the metrics are turned on or off in **Section order & visibility**, as before.
