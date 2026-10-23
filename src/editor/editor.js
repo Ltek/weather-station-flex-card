@@ -885,3 +885,5 @@ customElements.get("weather-station-flex-card-editor") || customElements.define(
 
 // For tests.
 globalThis.__wsfcEditorHelpers = { stackWithNext, unstack, moveIntoStack };
+// For scripts/gen-config-doc.mjs (docs/CONFIGURATION.md is generated from these).
+globalThis.__wsfcSchemas = { APPEARANCE_GROUPS, GENERAL_DEFAULTS, REMEMBER, LABELS, PANEL_TYPES, COMMON_SCHEMA, STACK_CHILD_SCHEMA };

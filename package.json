@@ -7,7 +7,8 @@
   "scripts": {
     "port": "node scripts/port-wfc-sections.mjs",
     "build": "node build.mjs",
-    "preview": "node build.mjs --preview && node scripts/serve.mjs"
+    "preview": "node build.mjs --preview && node scripts/serve.mjs",
+    "docs:config": "node build.mjs && node scripts/gen-config-doc.mjs"
   },
   "dependencies": {
     "@mdi/js": "7.4.47",

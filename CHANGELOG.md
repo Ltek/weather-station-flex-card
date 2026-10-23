@@ -1,5 +1,9 @@
 # Changelog
 
+## v2026.10.23.52
+
+- **New configuration reference** ([docs/CONFIGURATION.md](docs/CONFIGURATION.md)): every card and panel option with its values, default and what it does, plus example YAML. It's generated from the editor's own settings (`npm run docs:config`), so it always matches the editor. The README now covers features only.
+
 ## v2026.10.23.51
 
 - **Forecast Weather Metrics (Sky Bar) list in on-screen order:** the list was in the stored "outer → inner" order, so for metrics below the bar it read upside down (the one nearest the bar was last). It's now listed top to bottom as the metrics appear: above the bar, on the bar, below the bar from the bar down, then hidden ones. The ↑ ↓ arrows move a metric up or down on screen among the metrics in the same place; change a metric's place with its drop-down. Saved configs are unchanged.

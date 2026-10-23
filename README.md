@@ -10,7 +10,7 @@ https://github.com/Ltek/weather-station-flex-card
 
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Ltek&repository=weather-station-flex-card&category=plugin)
 
-Current build: **v2026.10.23.51** · full history in [CHANGELOG.md](CHANGELOG.md)
+Current build: **v2026.10.23.52** · full history in [CHANGELOG.md](CHANGELOG.md)
 
 ---
 
@@ -90,7 +90,7 @@ Current build: **v2026.10.23.51** · full history in [CHANGELOG.md](CHANGELOG.md
 - **Import / Export** — copy the whole card's settings as YAML, or paste settings to restore or share a setup.
 - **Unsaved changes** banner on the preview until you save.
 
-Only what you change is saved, so the stored config stays short.
+Only what you change is saved, so the stored config stays short. Prefer YAML? Every option is listed in the **[configuration reference](docs/CONFIGURATION.md)**.
 
 ---
 
@@ -122,7 +122,7 @@ Radar (RainViewer) and the Windy map need no account.
    - URL: `/local/community/weather-station-flex-card/weather-station-flex-card.js` · Type: **JavaScript Module**
 4. Clear your browser cache and hard-refresh.
 
-Then add **Weather Station Flex Card** from the card picker, choose your weather entity and station device under **Weather station**, and arrange the panels. For a wall display, put it in a **Panel** view and choose **Full screen** under Appearance.
+Then add **Weather Station Flex Card** from the card picker (or start from the YAML in the [configuration reference](docs/CONFIGURATION.md)), choose your weather entity and station device under **Weather station**, and arrange the panels. For a wall display, put it in a **Panel** view and choose **Full screen** under Appearance.
 
 ---
 
