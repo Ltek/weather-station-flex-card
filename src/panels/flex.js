@@ -142,7 +142,7 @@ export function heroAutoSizes(w, h, scale = 1) {
     header_icon_size: r(temp * 1.3),
     clock: r(temp * 0.78),
     date: r(Math.max(10, temp * 0.25)),
-    secondary: r(Math.max(11, temp * 0.27)),
+    secondary: r(Math.max(11, temp * 0.2)),
     chip_scale: Math.round(Math.max(0.6, Math.min(2.5, (temp / 64) * 1.05)) * 100) / 100,
   };
 }

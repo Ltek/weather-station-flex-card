@@ -1,5 +1,10 @@
 # Changelog
 
+## v2026.10.23.57
+
+- **Fix: Temperature sub-header size and scale now resize the text.** Only its wrapper was sized before; the high / low text kept a fixed 14 px.
+- **Hero: Time & date alignment** — Left, Center (default) or Right, in the sections editor (Clock & Date → Date) when the date is placed with the clock.
+
 ## v2026.10.23.56
 
 - **Hero: size for the line under the temperature** (e.g. today's high / low). With Set scale to Auto off: **Temperature sub-header size** in the sections editor (Current Weather Header → Header sizes). With Auto on: a **Temperature sub-header** scale slider (30–300 %).

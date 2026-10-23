@@ -479,6 +479,8 @@ import { actionHandler as iq } from "../../vendor/weather-forecast-card/src/hass
       // Date can follow the time ("with_time") or be placed independently using
       // the same placement values as the clock.
       clock_date_placement: "with_time",
+      // Time and date (when the date is with the clock) aligned to each other.
+      clock_align: "center",
       clock_format: "auto", // auto | 12 | 24
       clock_show_seconds: false,
       clock_show_date: false, // show the date element
@@ -1222,7 +1224,8 @@ import { actionHandler as iq } from "../../vendor/weather-forecast-card/src/hass
       (zones[place] = zones[place] || []).push(el);
     };
     if (dateWithTime) {
-      push(timePlace, eq`<div class="wfc-clock">${timeEl}${dateEl}</div>`);
+      const al = cc.clock_align === "left" || cc.clock_align === "right" ? " wfc-clock-al-" + cc.clock_align : "";
+      push(timePlace, eq`<div class="wfc-clock${al}">${timeEl}${dateEl}</div>`);
     } else {
       if (timeEl) push(timePlace, eq`<div class="wfc-clock">${timeEl}</div>`);
       if (dateEl) push(datePlace, eq`<div class="wfc-clock">${dateEl}</div>`);
@@ -3049,6 +3052,7 @@ import { actionHandler as iq } from "../../vendor/weather-forecast-card/src/hass
       .wfc-hdr-sized .wfc-current-state { font-size: var(--wfc-hdr-state, inherit) !important; }
       .wfc-hdr-sized .wfc-current-temperature { font-size: var(--wfc-hdr-temp, inherit) !important; }
       .wfc-hdr-secsized .wfc-current-secondary-info { font-size: var(--wfc-hdr-sec) !important; line-height: 1.2; }
+      .wfc-hdr-secsized .wfc-current-secondary-info .wfc-current-secondary-value { font-size: inherit !important; line-height: inherit; }
       .wfc-hdr-secsized .wfc-current-secondary-icon { width: 1.25em !important; height: 1.25em !important; --mdc-icon-size: 1.25em !important; }
 
       /* Digital clock in the Current Weather section. */
@@ -3074,6 +3078,8 @@ import { actionHandler as iq } from "../../vendor/weather-forecast-card/src/hass
       .wfc-cb-center { flex: 1; justify-content: center; }
       .wfc-cb-right { flex: 1; justify-content: flex-end; }
       .wfc-clock { display: flex; flex-direction: column; align-items: center; line-height: 1.05; flex: 0 0 auto; }
+      .wfc-clock.wfc-clock-al-left { align-items: flex-start; text-align: left; }
+      .wfc-clock.wfc-clock-al-right { align-items: flex-end; text-align: right; }
       .wfc-clock-time { color: var(--primary-text-color); font-variant-numeric: tabular-nums; white-space: nowrap; }
       .wfc-clock-date { color: var(--secondary-text-color); white-space: nowrap; }
     </style>`;
@@ -6234,6 +6240,9 @@ import { actionHandler as iq } from "../../vendor/weather-forecast-card/src/hass
                           this._wfcSetSecField(id, "clock_date_color", e.target.value)
                         )}
                       </div>
+                      ${s.clock_show_time && (s.clock_date_placement === "with_time" || !s.clock_date_placement)
+                        ? this._wfcSelect(id, "clock_align", "Time & date alignment", [{ value: "left", label: "Left" }, { value: "center", label: "Center" }, { value: "right", label: "Right" }], s.clock_align || "center", "center")
+                        : eY}
                       ${this._wfcSelect(
                         id,
                         "clock_date_contrast",
