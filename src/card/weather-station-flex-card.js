@@ -9,7 +9,7 @@ import { CARD_VERSION, CARD_TYPE, CARD_NAME } from "./constants.js";
 import { chipStyles, tileStyles } from "../panels/shared.js";
 import { panelMeta, rowsOf, inBarOf, normalizePanels, layoutOf, opensPopup } from "./panels.js";
 import { watchForecast } from "./forecast.js";
-import { isUnsaved } from "./unsaved.js";
+import { isUnsaved, isLive } from "./unsaved.js";
 import { setDetected } from "./detected.js";
 import { extraMetricEntity } from "./air.js";
 import { WeatherForecastCard } from "../../vendor/weather-forecast-card/src/weather-forecast-card";
@@ -161,6 +161,8 @@ class WeatherStationFlexCard extends LitElement {
   connectedCallback() {
     this._onUnsaved ||= () => this.preview && this.requestUpdate();
     window.addEventListener("wsfc-unsaved", this._onUnsaved);
+    this._onLive ||= () => this.requestUpdate();
+    window.addEventListener("wsfc-live", this._onLive);
     super.connectedCallback();
     this._ro = new ResizeObserver(([e]) => {
       const w = e.contentRect.width;
@@ -182,6 +184,7 @@ class WeatherStationFlexCard extends LitElement {
   disconnectedCallback() {
     super.disconnectedCallback();
     window.removeEventListener("wsfc-unsaved", this._onUnsaved);
+    window.removeEventListener("wsfc-live", this._onLive);
     this._unwatchHourly?.();
     this._unwatchHourly = null;
     this._hourlyFor = null;
@@ -300,7 +303,8 @@ class WeatherStationFlexCard extends LitElement {
   // rebuilds the card on every change, so skip the animated background, blur
   // and live maps. Dashboard edit mode adds ?edit=1 to the URL.
   get _lite() {
-    if (this._config?.lite_editing === false) return false;
+    // Always paused while editing, unless the editor's Live preview is ticked.
+    if (isLive()) return false;
     return !!(this.preview || this.editMode || /[?&]edit=1(&|$)/.test(globalThis.location?.search || ""));
   }
 

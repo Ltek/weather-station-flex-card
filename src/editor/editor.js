@@ -22,7 +22,7 @@ import { prune, clone } from "../card/config.js";
 import { METRICS, metricEntity } from "../card/metrics.js";
 import "./layout-map.js";
 import { renderFields, fieldStyles } from "./fields.js";
-import { setUnsaved } from "../card/unsaved.js";
+import { setUnsaved, isLive, setLive } from "../card/unsaved.js";
 import { detected } from "../card/detected.js";
 import { ANIM_SPEEDS } from "../card/animation-speed.js";
 import { metricSensor, entityValue, integrationOf } from "../card/resolve.js";
@@ -67,13 +67,12 @@ const APPEARANCE_GROUPS = [
     { name: "layout_size", selector: { select: { options: [{ value: "auto", label: "Automatic (from the card's width)" }, { value: "wide", label: "Wide — desktop layout" }, { value: "medium", label: "Medium — tablet layout" }, { value: "narrow", label: "Narrow — phone layout (stacked)" }] } }, helper: "In a Sections view the card is only as wide as its section; widen the section or use a Panel view for the desktop layout." },
     { name: "row_height", selector: { number: { min: 40, max: 300, mode: "box", unit_of_measurement: "px" } }, helper: "Height of one row unit (default 110)." },
     { name: "gap", selector: { number: { min: 0, max: 32, mode: "box", unit_of_measurement: "px" } }, helper: "Space between panels (default 12)." },
-    { name: "lite_editing", selector: { boolean: {} }, default: true, helper: "While the dashboard or this card is being edited: no animated background or blur, and the radar and Windy maps show a placeholder. Keeps the editor responsive." },
   ]],
 ];
 // In the Panel buttons section.
 const REMEMBER = [{ name: "remember", selector: { boolean: {} }, default: true, helper: "Keep which panels were shown or hidden with the panel buttons after a refresh, in each browser. Off: every load starts from the panels' Shown setting (the eye icon)." }];
 const GENERAL_SCHEMA = APPEARANCE_GROUPS.flatMap(([, f]) => f);
-const GENERAL_DEFAULTS = { layout: "auto", panel_bar: true, remember: true, fit_height: true, layout_size: "auto", background: "none", panel_opacity: 0.55, panel_blur: 6, lite_editing: true };
+const GENERAL_DEFAULTS = { layout: "auto", panel_bar: true, remember: true, fit_height: true, layout_size: "auto", background: "none", panel_opacity: 0.55, panel_blur: 6 };
 
 const LABELS = {
   entity: "Weather entity", title: "Title", subtitle: "Subtitle", icon: "Icon", layout: "Layout", panel_bar: "Panel buttons",
@@ -88,7 +87,7 @@ const LABELS = {
   owm_api_key: "OpenWeatherMap API key", owm_layers: "OpenWeatherMap layers", owm_default: "Layer shown first", owm_opacity: "Layer opacity",
   base_map_url: "Custom tile URL", base_map_attribution: "Custom tile attribution", day_offset: "Day", icon_size: "Icon size",
   show_moon: "Show moon", show_sun: "Show sun", attribute: "Text attribute", alerts_entity: "Alerts sensor", card: "Card configuration",
-  show_status: "Show station status", show_devices: "Show device names", overlay: "Layer", model: "Forecast model", level: "Altitude", wind_unit: "Wind unit", marker: "Location pin", preset: "Graph", engine: "Graph card", days_to_show: "Days", period: "Resolution", chart_type: "Chart type", stat_types: "Values", show_chart: "Altitude chart", show_arc: "Sun arc", show_sky: "Sky gradient & forecast row", timeframe: "Time window", hours: "Hours", anchor: "Now is", moon: "Moon at night", moon_phase: "Draw the moon phase", background: "Card background", panel_opacity: "Panel opacity", panel_blur: "Panel blur", sky_bar: "Sky Bar in the hero", show_facts: "Show sun times", moon_size: "Moon size", direction: "Direction", min_width: "Minimum width", grow: "Grow", show_bar: "Panel buttons here", lite_editing: "Pause animations and maps while editing", background_image: "Background image", background_image_url: "Background image URL", background_image_fit: "Image fit", background_dim: "Darken image",
+  show_status: "Show station status", show_devices: "Show device names", overlay: "Layer", model: "Forecast model", level: "Altitude", wind_unit: "Wind unit", marker: "Location pin", preset: "Graph", engine: "Graph card", days_to_show: "Days", period: "Resolution", chart_type: "Chart type", stat_types: "Values", show_chart: "Altitude chart", show_arc: "Sun arc", show_sky: "Sky gradient & forecast row", timeframe: "Time window", hours: "Hours", anchor: "Now is", moon: "Moon at night", moon_phase: "Draw the moon phase", background: "Card background", panel_opacity: "Panel opacity", panel_blur: "Panel blur", sky_bar: "Sky Bar in the hero", show_facts: "Show sun times", moon_size: "Moon size", direction: "Direction", min_width: "Minimum width", grow: "Grow", show_bar: "Panel buttons here", background_image: "Background image", background_image_url: "Background image URL", background_image_fit: "Image fit", background_dim: "Darken image",
   panel_radius: "Corner radius", panel_shadow: "Shadow", panel_border_width: "Border width", panel_border_color: "Border color", panel_glow: "Glow", panel_glow_color: "Glow color", panel_glow_size: "Glow size",
   rose_engine: "Wind rose", fit: "Fit to the panel", show_view_buttons: "View buttons", readings_position: "Readings", chart_position: "Chart position", show_legend: "Rose legend", wr_bars: "Speed bars", wr_corners: "Corner info", wr_stats: "Min / avg / max", wr_buttons: "Buttons", wr_buttons_position: "Button position", wr_period: "Default period", wr_beaufort: "Bar scale", wr_arrow: "Direction arrow", windrose_chart: "Chart with the Wind Rose Card", compass_arrow_size: "Pointer size", compass_arrow_color: "Pointer color", wr_arrow_size: "Arrow size", wr_arrow_color: "Arrow color", wr_speed_arrows: "Speed arrows", wr_speed_arrow_size: "Speed arrow size", stats_items: "Show", stats_align: "Alignment", chart_legend: "Chart legend", dial_scale: "Size", wr_scale: "Size", corner_speed: "Speed", corner_direction: "Direction", corner_gust: "Gust", corner_label_size: "Label size", corner_value_size: "Value size", corner_color: "Text color", stats_size: "Text size", stats_weight: "Text weight", stats_color: "Text color", wr_stats: "Position", windrose_preset: "Wind Rose Card preset", windrose: "Wind Rose Card options", auto_scale: "Set scale to Auto", show_time: "Show the time", show_seconds: "Seconds", time_format: "Time format", show_date: "Show the date", date_format: "Date format", align: "Alignment", auto_size: "Auto size", time_size: "Time size", date_size: "Date size", time_weight: "Time weight", date_color: "Date color", scale: "Auto scaling", device: "Pollen location", hide_off_season: "Hide out-of-season species", hide_when_off_season: "Hide the panel out of season", hide_when_none: "Hide the panel when all are None", species: "Species", max_rows: "Rows", show_tomorrow: "Tomorrow's trend", show_season: "Season strip", location: "Town / area text",
   seasons: "Season months", entities: "Sensors", pollutants: "Pollutants", show_scale: "AQI scale", show_aqi: "Show the AQI", extra: "More readings", bar_height: "Bar height", source: "Source text", show_source: "Show the source", show_location: "Show the town / area", hide_none: "Hide species at None", show_nothing: "Show the \"nothing in the air\" text", nothing_text: "\"Nothing in the air\" text", "entities.aqi": "AQI sensor",
@@ -250,9 +249,10 @@ class WeatherStationFlexCardEditor extends LitElement {
     window.removeEventListener("wsfc-detected", this._onDetected);
     clearTimeout(this._hassTimer);
     this._hassTimer = null;
-    // Dialog closed (saved or cancelled): the next editor starts clean.
+    // Dialog closed (saved or cancelled): the next editor starts clean and paused.
     this._savedJson = null;
     setUnsaved(false);
+    setLive(false);
   }
 
   get _panels() {
@@ -292,6 +292,11 @@ class WeatherStationFlexCardEditor extends LitElement {
     return html`
       <div class="ed">
         <div class="hdr"><span class="name">${CARD_NAME}</span><span class="ver">v${CARD_VERSION} · Weather Flex sections ${FLEX_SECTIONS_BUILD}</span></div>
+        <label class="live" title="While editing, the animated background, blur and the radar and Windy maps are paused to keep the editor fast. Tick to see them running (not saved).">
+          <input type="checkbox" .checked=${isLive()} @change=${(e) => { setLive(e.target.checked); this.requestUpdate(); }} />
+          <ha-icon icon="mdi:play-circle-outline"></ha-icon><span>Live preview</span>
+          <span class="live-hint">${isLive() ? "animations and maps running" : "animations and maps paused while editing"}</span>
+        </label>
         ${this._section("station", "mdi:weather-cloudy-clock", "Weather station", () => this._stationEditor())}
         ${this._section("general", "mdi:palette-outline", "Appearance", () => this._general())}
         ${this._section("buttons", "mdi:gesture-tap-button", "Panel buttons", () => this._buttonsEditor())}
@@ -833,6 +838,11 @@ class WeatherStationFlexCardEditor extends LitElement {
     /* A panel's own sub-panels (e.g. Sun & moon facts), styled like the
        Weather Flex sub-panels next to them: no indent, hairline card, bold
        title, accent icon, chevron on the right. */
+    .live { display: flex; align-items: center; gap: var(--ltek-sp-2, 8px); margin: 0 0 var(--ltek-sp-3, 12px); padding: 6px 10px; border-radius: var(--ltek-r-card, 12px);
+      border: 1px solid var(--ltek-c-border-soft); cursor: pointer; font-size: var(--ltek-fs-label, 14px); }
+    .live input { accent-color: var(--ltek-c-accent); width: 16px; height: 16px; margin: 0; }
+    .live ha-icon { --mdc-icon-size: 18px; color: var(--ltek-c-accent); }
+    .live .live-hint { margin-left: auto; color: var(--ltek-c-muted); font-size: var(--ltek-fs-small, 12px); }
     .guidebar { margin: 0 0 var(--ltek-sp-3); }
     details.psub { margin: var(--ltek-sp-3) 0 8px; border: 1px solid #3a3a3a; border-radius: 12px; background: rgba(255,255,255,0.015); }
     details.psub > summary { list-style: none; cursor: pointer; user-select: none; padding: 10px 14px; display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 700; color: var(--primary-text-color, #e1e1e1); }

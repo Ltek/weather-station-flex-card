@@ -9,3 +9,14 @@ export function setUnsaved(v) {
   unsaved = v;
   window.dispatchEvent(new CustomEvent("wsfc-unsaved", { detail: { unsaved: v } }));
 }
+
+// "Live preview" (editor checkbox, not saved): while editing, run the
+// animations and maps instead of pausing them. Each editing session starts off.
+let live = false;
+export const isLive = () => live;
+export function setLive(v) {
+  v = !!v;
+  if (v === live) return;
+  live = v;
+  window.dispatchEvent(new CustomEvent("wsfc-live", { detail: { live: v } }));
+}
