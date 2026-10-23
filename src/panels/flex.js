@@ -17,6 +17,9 @@ export const FLEX_BASES = {
     name: " ",
     show_condition_effects: true,
     show_moon_phase: true,
+    // The animation switches to its night sky (moon, dark) after sunset only
+    // when sun times are on.
+    forecast: { show_sun_times: true },
     wfc: {
       order: ["current", "details"],
       current: {

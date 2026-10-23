@@ -1,5 +1,11 @@
 # Changelog
 
+## v2026.10.23.44
+
+- **Fix: animated background stayed in daytime.** The weather animation only switches to its night sky (dark, stars, the moon instead of the sun) when it's told the sun times, and it wasn't — so a partly cloudy evening still showed blue sky and the sun. The card background and the hero's own animation now follow sunset and sunrise at your Home Assistant location.
+- **Animated background settings in Appearance → Background:** **Animation effects** (rain, snow, lightning, sky, moon, sun, clouds) and **Show moon phase**, shown when Background is Animated weather. Image settings show only for an image background.
+- **Hero:** its own animation settings (condition effects, moon phase under Card Appearance) are available only when the card has no animated or image background; otherwise it points to Appearance.
+
 ## v2026.10.23.43
 
 - **Station diagnostics from every Ecowitt device**, everywhere they're used (Weather station → Values used, the Station health panel, metric tiles): battery, signal and RSSI were only looked for on the Weather Sources devices, so with the core integration as the source they missed Ecowitt Local's per-sensor devices (WS90 battery showed the core's WH65 on/off sensor; signal and RSSI weren't found). They now search all devices from the Ecowitt, Ecowitt Local and Ecowitt Official integrations, preferring a reading (e.g. 100 %) over an on/off sensor.

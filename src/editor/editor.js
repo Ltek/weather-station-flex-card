@@ -40,10 +40,12 @@ const APPEARANCE_GROUPS = [
   ]],
   ["Background", [
     { name: "background", selector: { select: { options: [{ value: "none", label: "None (theme)" }, { value: "animated", label: "Animated weather — the hero's animation behind the whole card" }, { value: "image", label: "Image — upload one or use a URL" }] } }, helper: "With an animated or image background, panels become see-through and the hero stops drawing its own." },
-    { name: "background_image", selector: { media: { accept: ["image/*"], image_upload: true } }, helper: "Image background: upload a PNG, JPG, WEBP… or pick one from your media." },
-    { name: "background_image_url", selector: { text: { type: "url" } }, helper: "Image background: or an image URL (wins over the upload), e.g. /local/images/sky.jpg." },
-    { name: "background_image_fit", selector: { select: { options: [{ value: "cover", label: "Fill (crop to fit)" }, { value: "contain", label: "Fit (whole image)" }, { value: "tile", label: "Tile" }] } }, default: "cover" },
-    { name: "background_dim", selector: { number: { min: 0, max: 0.9, step: 0.05, mode: "slider" } }, default: 0.25, helper: "Image background: darken it so text stays readable (0 = off)." },
+    { name: "background_effects", label: "Animation effects", when: (d) => d.background === "animated", selector: { select: { multiple: true, options: [["rain", "Rain"], ["snow", "Snow"], ["lightning", "Lightning"], ["sky", "Sky"], ["moon", "Moon"], ["sun", "Sun"], ["cloud", "Clouds"]].map(([value, label]) => ({ value, label })) } }, default: ["rain", "snow", "lightning", "sky", "moon", "sun", "cloud"], helper: "Which effects the weather animation draws. At night it shows the dark sky and the moon instead of the sun." },
+    { name: "background_moon_phase", label: "Show moon phase", when: (d) => d.background === "animated", selector: { boolean: {} }, default: true, helper: "Shade the night-time moon to the current lunar phase (off: a full moon)." },
+    { name: "background_image", when: (d) => d.background === "image", selector: { media: { accept: ["image/*"], image_upload: true } }, helper: "Image background: upload a PNG, JPG, WEBP… or pick one from your media." },
+    { name: "background_image_url", when: (d) => d.background === "image", selector: { text: { type: "url" } }, helper: "Image background: or an image URL (wins over the upload), e.g. /local/images/sky.jpg." },
+    { name: "background_image_fit", when: (d) => d.background === "image", selector: { select: { options: [{ value: "cover", label: "Fill (crop to fit)" }, { value: "contain", label: "Fit (whole image)" }, { value: "tile", label: "Tile" }] } }, default: "cover" },
+    { name: "background_dim", when: (d) => d.background === "image", selector: { number: { min: 0, max: 0.9, step: 0.05, mode: "slider" } }, default: 0.25, helper: "Image background: darken it so text stays readable (0 = off)." },
   ]],
   ["Panels", [
     { name: "panel_opacity", selector: { number: { min: 0, max: 1, step: 0.05, mode: "slider" } }, helper: "With a card background: panel opacity (0 = fully transparent, 1 = solid). Default 0.55." },
@@ -350,8 +352,7 @@ class WeatherStationFlexCardEditor extends LitElement {
   _general() {
     const bg = this._config.background || "none";
     return APPEARANCE_GROUPS.map(([title, fields]) => {
-      // Image fields only with an image background.
-      const f = fields.filter((x) => bg === "image" || !x.name.startsWith("background_"));
+      const f = fields;
       return html`<div class="agrp"><div class="agrp-t">${title}</div>${this._form(formData(this._config, f, GENERAL_DEFAULTS), f, (v) => {
         const { panels: _p, ...rest } = this._config;
         const next = applyForm(rest, f, v, GENERAL_DEFAULTS);
@@ -420,7 +421,11 @@ class WeatherStationFlexCardEditor extends LitElement {
     // difference from the panel without `flex:` is stored.
     const effective = (q) => (q.type === "sky_tracker" ? trackerConfig(q, this._station) : deepMerge(flexBase(q.type, this._station), q.flex || {}));
     ed.wsfcPanels = panelMeta(p)?.flexPanels || null;
-    ed.wsfcHide = panelMeta(p)?.flexHide || null;
+    // A hero inside a card with an animated or image background doesn't draw
+    // its own animation: hide those settings (they're under Appearance).
+    const cardBg = this._config.background === "animated" || (this._config.background === "image" && !!(this._config.background_image || this._config.background_image_url));
+    const hide = [...(panelMeta(p)?.flexHide || []), ...(p.type === "hero" && cardBg ? ["show_condition_effects"] : [])];
+    if (JSON.stringify(hide) !== JSON.stringify(ed.wsfcHide || [])) { ed.wsfcHide = hide; ed.requestUpdate?.(); }
     ed._wsfcOnChange = (emitted) => {
       const np = clone(p);
       const override = flexOverride(emitted, effective({ ...p, flex: undefined }));

@@ -3254,10 +3254,12 @@ import { actionHandler as iq } from "../../vendor/weather-forecast-card/src/hass
     return eq`
       <details class="wfc-panel"><summary class="wfc-panel-summary"><ha-icon class="wfc-panel-icon" icon=${WFC_SCHEMA_ICONS.card_appearance}></ha-icon><span class="wfc-panel-title">Card Appearance</span></summary>
         <div class="wfc-ed-panel">
-          ${this._wfcConfigCheckbox("show_moon_phase", "Show moon phase", this._config.show_moon_phase, true)}
+          ${this.wsfcHide && this.wsfcHide.includes("show_condition_effects")
+            ? eq`<p class="wfc-hint">The weather animation is drawn behind the whole card (Appearance → Background), so its effects and moon phase are set there.</p>`
+            : eq`${this._wfcConfigCheckbox("show_moon_phase", "Show moon phase", this._config.show_moon_phase, true)}
           <p class="wfc-hint">Shades the night-time moon to match the current lunar phase. Disable to always show a full moon.</p>
           ${this._wfcStockFormFor(WFC_APPEARANCE_FORM_FIELDS)}
-          <p class="wfc-hint">Which weather conditions trigger visual effects/animations on the card.</p>
+          <p class="wfc-hint">Which weather conditions trigger visual effects/animations on the card.</p>`}
           ${this._wfcConfigText("icons_path", "Custom icons path", this._config.icons_path, "/local/img/weather")}
           <p class="wfc-hint">Path to custom weather condition icons (e.g. /local/img/weather).</p>
 
