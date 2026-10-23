@@ -4220,9 +4220,18 @@ import { actionHandler as iq } from "../../vendor/weather-forecast-card/src/hass
 
   // Move a metric up/down in the outer→inner order.
   edProto._wfcMoveMetric = function (id, key, dir) {
-    this._wfcCommitMetrics(id, (order) => {
+    // Weather Station: the list is shown top to bottom as on the bar, so
+    // "up" moves a metric up on screen. Rows below the bar are stored
+    // outer → inner (bottom first), so their direction flips.
+    const wfc = this._wfcState();
+    const list = wfcMetrics(wfc[id] || {});
+    const me = list.find((m) => m.key === key);
+    if (me && me.pos === "below") dir = -dir;
+    this._wfcCommitMetrics(id, (order, pos) => {
       const i = order.indexOf(key);
-      const j = i + dir;
+      // Swap with the nearest metric in the same placement.
+      let j = i + dir;
+      while (j >= 0 && j < order.length && pos[order[j]] !== pos[key]) j += dir;
       if (i < 0 || j < 0 || j >= order.length) return;
       const tmp = order[i];
       order[i] = order[j];
@@ -4258,7 +4267,11 @@ import { actionHandler as iq } from "../../vendor/weather-forecast-card/src/hass
   // placement selector in the summary, and (when expanded) per-metric icon
   // color, icon size and text-legibility overrides.
   edProto._wfcMetricsOrder = function (id, s) {
-    const list = wfcMetrics(s);
+    // Top to bottom as on the bar: above (outer first), overlay, below
+    // (inner first = top), then hidden.
+    const all = wfcMetrics(s);
+    const grp = (p) => all.filter((m) => m.pos === p);
+    const list = [...grp("above"), ...grp("overlay"), ...grp("below").reverse(), ...all.filter((m) => !["above", "overlay", "below"].includes(m.pos))];
     const styleMap = s.forecast_metric_style || {};
     return list.map((m, i, arr) => {
       const st = styleMap[m.key] || {};
@@ -4277,9 +4290,9 @@ import { actionHandler as iq } from "../../vendor/weather-forecast-card/src/hass
                 (o) => eq`<option value=${o.value} ?selected=${o.value === m.pos}>${o.label}</option>`
               )}
             </select>
-            <ha-icon class="wfc-ico-btn ${i === 0 ? "disabled" : ""}" icon="mdi:arrow-up-bold" title="Move up"
+            <ha-icon class="wfc-ico-btn ${i === 0 || arr[i - 1].pos !== m.pos ? "disabled" : ""}" icon="mdi:arrow-up-bold" title="Move up"
               @click=${(e) => { e.preventDefault(); e.stopPropagation(); this._wfcMoveMetric(id, m.key, -1); }}></ha-icon>
-            <ha-icon class="wfc-ico-btn ${i === arr.length - 1 ? "disabled" : ""}" icon="mdi:arrow-down-bold" title="Move down"
+            <ha-icon class="wfc-ico-btn ${i === arr.length - 1 || arr[i + 1].pos !== m.pos ? "disabled" : ""}" icon="mdi:arrow-down-bold" title="Move down"
               @click=${(e) => { e.preventDefault(); e.stopPropagation(); this._wfcMoveMetric(id, m.key, 1); }}></ha-icon>
           </summary>
           <div class="wfc-detail-fields">
@@ -5355,7 +5368,7 @@ import { actionHandler as iq } from "../../vendor/weather-forecast-card/src/hass
                             )
                           : eY}`
                     )}
-                    <p class="wfc-hint">Show/hide and place each metric, and drag the order to control exactly where each sits on the bar. Order is outer → inner. Expand a metric to override the defaults (including its own "Show every").</p>
+                    <p class="wfc-hint">Show/hide and place each metric, and drag the order to control exactly where each sits on the bar. Listed top to bottom as they appear on the bar; the arrows move a metric up or down among those in the same place (change its place with the drop-down). Expand a metric to override the defaults (including its own "Show every").</p>
                     ${this._wfcMetricsOrder(id, s)}`
                 )}
 

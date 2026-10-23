@@ -257,6 +257,17 @@ const patches = [
    "  cardProto._wfcArcWindow = function (cfg, rise, set) {\n    const mode = cfg.timeframe_mode || \"sunrise_sunset\";\n    const now = Date.now() + (Number(cfg.timeframe_offset_hours) || 0) * 3600000;\n"],
   ["    const cfg = wfc.sun_arc;\n    const { sunrise, sunset } = wfcSunTimes(this.hass);\n",
    "    const cfg = wfc.sun_arc;\n    // Shifted window: the sun's path for that day.\n    const { sunrise, sunset } = wfcSunTimes(this.hass, new Date(Date.now() + (Number(cfg.timeframe_offset_hours) || 0) * 3600000));\n"],
+  // Forecast Weather Metrics list in on-screen order.
+  ["  edProto._wfcMoveMetric = function (id, key, dir) {\n    this._wfcCommitMetrics(id, (order) => {\n      const i = order.indexOf(key);\n      const j = i + dir;\n      if (i < 0 || j < 0 || j >= order.length) return;\n      const tmp = order[i];\n      order[i] = order[j];\n      order[j] = tmp;\n    });\n  };\n",
+   "  edProto._wfcMoveMetric = function (id, key, dir) {\n    // Weather Station: the list is shown top to bottom as on the bar, so\n    // \"up\" moves a metric up on screen. Rows below the bar are stored\n    // outer \u2192 inner (bottom first), so their direction flips.\n    const wfc = this._wfcState();\n    const list = wfcMetrics(wfc[id] || {});\n    const me = list.find((m) => m.key === key);\n    if (me && me.pos === \"below\") dir = -dir;\n    this._wfcCommitMetrics(id, (order, pos) => {\n      const i = order.indexOf(key);\n      // Swap with the nearest metric in the same placement.\n      let j = i + dir;\n      while (j >= 0 && j < order.length && pos[order[j]] !== pos[key]) j += dir;\n      if (i < 0 || j < 0 || j >= order.length) return;\n      const tmp = order[i];\n      order[i] = order[j];\n      order[j] = tmp;\n    });\n  };\n"],
+  ["  edProto._wfcMetricsOrder = function (id, s) {\n    const list = wfcMetrics(s);\n",
+   "  edProto._wfcMetricsOrder = function (id, s) {\n    // Top to bottom as on the bar: above (outer first), overlay, below\n    // (inner first = top), then hidden.\n    const all = wfcMetrics(s);\n    const grp = (p) => all.filter((m) => m.pos === p);\n    const list = [...grp(\"above\"), ...grp(\"overlay\"), ...grp(\"below\").reverse(), ...all.filter((m) => ![\"above\", \"overlay\", \"below\"].includes(m.pos))];\n"],
+  ["            <ha-icon class=\"wfc-ico-btn ${i === 0 ? \"disabled\" : \"\"}\" icon=\"mdi:arrow-up-bold\" title=\"Move up\"",
+   "            <ha-icon class=\"wfc-ico-btn ${i === 0 || arr[i - 1].pos !== m.pos ? \"disabled\" : \"\"}\" icon=\"mdi:arrow-up-bold\" title=\"Move up\""],
+  ["            <ha-icon class=\"wfc-ico-btn ${i === arr.length - 1 ? \"disabled\" : \"\"}\" icon=\"mdi:arrow-down-bold\" title=\"Move down\"",
+   "            <ha-icon class=\"wfc-ico-btn ${i === arr.length - 1 || arr[i + 1].pos !== m.pos ? \"disabled\" : \"\"}\" icon=\"mdi:arrow-down-bold\" title=\"Move down\""],
+  ["Order is outer \u2192 inner. Expand a metric",
+   "Listed top to bottom as they appear on the bar; the arrows move a metric up or down among those in the same place (change its place with the drop-down). Expand a metric"],
 ];
 for (const [from, to] of patches) {
   if (!body.includes(from)) throw new Error(`Patch target missing: ${from}`);
