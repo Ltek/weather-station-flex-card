@@ -58,17 +58,21 @@ class WsfcLayoutMap extends LitElement {
     const avail = Math.max(100, g.h - (g.chrome || 0));
     let rowPx = g.row || 110;
     // Full screen + fit: rows share the screen height, like the card does.
+    let fits = false;
     if (g.fit && this._tracks) {
       const rows = this._tracks / 2;
-      rowPx = Math.max(60, Math.min(400, (avail + (g.gap ?? 12)) / rows - (g.gap ?? 12)));
+      const want = (avail + (g.gap ?? 12)) / rows - (g.gap ?? 12);
+      rowPx = Math.max(60, Math.min(400, want));
+      fits = want >= 60; // below the minimum the rows stop shrinking and the grid runs off screen
     }
     const gap = Math.max(2, (g.gap ?? 12) * k);
-    return { row: Math.max(8, rowPx * k), gap, line: avail * k, rowPx: Math.round(rowPx) };
+    return { row: Math.max(8, rowPx * k), gap, line: avail * k, rowPx: Math.round(rowPx), fits };
   }
 
   updated() {
-    // Count the grid's half-row tracks (for the fit-to-screen scale).
-    const g = this.renderRoot.querySelector(".grid");
+    // Count the half-row tracks of the panels shown on load (for the
+    // fit-to-screen scale), from a hidden copy of the grid without the hidden panels.
+    const g = this.renderRoot.querySelector(".grid.measure");
     if (!g || !this.guide?.fit) return;
     const { row, gap } = this._scale();
     const tracks = Math.max(2, Math.round((g.clientHeight - 12 + gap) / ((row - gap) / 2 + gap)));
@@ -92,10 +96,15 @@ class WsfcLayoutMap extends LitElement {
         <div class="grid" style=${`--row:${sc.row}px;--gap:${sc.gap}px`}>
           ${order.map((i) => this._block(panels[i], i))}
         </div>
-        ${sc.line != null
-          ? html`<div class="guide ${mode}" style=${`top:${6 + sc.line}px`} aria-hidden="true">
-              <span>${this.guide.w}×${this.guide.h} screen edge${this.guide.fit ? ` · rows ${sc.rowPx}px` : ""}</span></div>`
-          : nothing}
+        ${this.guide?.fit ? html`<div class="grid measure" aria-hidden="true" style=${`--row:${sc.row}px;--gap:${sc.gap}px`}>
+          ${order.filter((i) => panels[i].show !== false).map((i) => html`<div style=${this._place(panels[i])}></div>`)}</div>` : nothing}
+        ${sc.line == null
+          ? nothing
+          : sc.fits
+            // Full screen + fit: everything fits; the frame is the screen.
+            ? html`<div class="guide fitbox" aria-hidden="true"><span>Fits ${this.guide.w}×${this.guide.h} · rows ${sc.rowPx}px</span></div>`
+            : html`<div class="guide ${mode}" style=${`top:${6 + sc.line}px`} aria-hidden="true">
+                <span>${this.guide.w}×${this.guide.h} screen edge${this.guide.fit ? ` · rows at the ${sc.rowPx}px minimum` : ""}</span></div>`}
       </div>
       ${popups.length
         ? html`<div class="pops"><span>Pop-ups:</span>${popups.map((i) => html`<span class="pop"><ha-icon icon=${iconOf(panels[i])}></ha-icon>${nameOf(panels[i])}</span>`)}</div>`
@@ -103,12 +112,18 @@ class WsfcLayoutMap extends LitElement {
     `;
   }
 
+  // Half-row tracks: a 1-row panel spans 2, a half-height panel 1.
+  _place(p, sz) {
+    const span = sz ? sz.span : spanOf(p);
+    const rows = sz ? sz.rows : rowsOf(p);
+    return `grid-column: span ${span}; grid-row: span ${rows ? Math.max(1, Math.round(rows * 2)) : 2};`;
+  }
+
   _block(p, i) {
     const sz = this._size?.index === i ? this._size : null;
     const span = sz ? sz.span : spanOf(p);
     const rows = sz ? sz.rows : rowsOf(p);
-    // Half-row tracks: a 1-row panel spans 2, a half-height panel 1.
-    const style = `grid-column: span ${span}; grid-row: span ${rows ? Math.max(1, Math.round(rows * 2)) : 2};`;
+    const style = this._place(p, sz);
     const cls = ["blk", p.show === false ? "hidden" : "", this._drag?.index === i ? "dragging" : "", sz ? "sizing" : "", p.type].join(" ");
     return html`<div class=${cls} style=${style} data-i=${i} tabindex="0" role="button"
         aria-label=${`${nameOf(p)}, width ${span} of 12, height ${rows || "auto"}. Arrow keys move; Shift+arrows resize.`}
@@ -260,6 +275,9 @@ class WsfcLayoutMap extends LitElement {
        shades everything below it. */
     .guide { position: absolute; left: 0; right: 0; height: 0; border-top: 2px dashed var(--warning-color, #ffa600); pointer-events: none; z-index: 3; }
     .guide span { position: absolute; right: 6px; top: 2px; font-size: 10px; font-weight: 600; color: var(--warning-color, #ffa600); background: var(--card-background-color, #1c1c1c); padding: 0 4px; border-radius: 4px; }
+    .grid.measure { position: absolute; left: 0; right: 0; top: 0; visibility: hidden; pointer-events: none; background: none; }
+    .guide.fitbox { top: 0; bottom: 0; height: auto; border: 2px dashed var(--success-color, #43a047); border-radius: 10px; }
+    .guide.fitbox span { top: auto; bottom: 4px; color: var(--success-color, #43a047); }
     .guide.frame { bottom: 0; height: auto; background: repeating-linear-gradient(135deg, rgba(255, 166, 0, 0.12) 0 6px, transparent 6px 12px); border-radius: 0 0 10px 10px; }
     .grid {
       display: grid;

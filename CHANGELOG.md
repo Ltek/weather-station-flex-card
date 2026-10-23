@@ -1,5 +1,10 @@
 # Changelog
 
+## v2026.10.23.40
+
+- **Screen guide, full screen with fit:** everything always fits there (the rows share the screen height), so the map now shows a green "Fits 2000×1200 · rows 201px" frame instead of a line at the bottom. The dashed screen-edge line appears only if the rows would have to be smaller than the 60 px minimum.
+- The row height it shows leaves out panels hidden on load, as the dashboard does.
+
 ## v2026.10.23.39
 
 - **Layout: screen guide.** Pick a screen (this browser window, 1920×1080, 2560×1440, 3440×1440, laptop, tablet, iPad landscape / portrait, a portrait panel, or a custom width × height) and the layout map is drawn to that screen's scale, with a dashed line where the screen ends, or a frame that shades everything off screen. It allows for the dashboard header, the card's padding, the button row and title. In full-screen mode with fit, rows share the screen height as on the dashboard, and the guide shows the row height that gives. Saved as `layout_screen` / `layout_guide`; used only by the editor.
