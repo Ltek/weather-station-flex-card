@@ -1,5 +1,9 @@
 # Changelog
 
+## v2026.10.23.42
+
+- **Weather Flex metrics look in air-quality integrations too:** the hero's Temperature sub-header metric and its metric chips (and the Current Weather Metrics panel) now find **Ozone** in your air-quality sources when Weather Sources don't have it — the station's own sensor, Home Assistant's AirNow integration, or any outdoor ozone sensor (the same lookup as the Air quality panel). The editor no longer marks Ozone "(unavailable)" when one exists.
+
 ## v2026.10.23.41
 
 - **Fix: Temperature sub-header metric.** "High / Low Temperature" (the default) showed humidity in a hero without a forecast section, because the hero didn't load the forecast; it does now. A chosen metric now comes from Weather Sources like the rest of the card (the station's sensor first, e.g. UV and pressure in your units), and one that no source has (e.g. Ozone without an air-quality sensor) shows nothing instead of humidity.

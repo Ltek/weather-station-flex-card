@@ -119,3 +119,17 @@ export function pollutantIndex(kind, value, unit, thresholds) {
 export function concentrationLevel(kind, value, unit, thresholds) {
   return aqiLevel(pollutantIndex(kind, value, unit, thresholds));
 }
+
+// Weather Flex metric keys that an air-quality source can supply.
+const AQ_FOR_METRIC = { ozone: "ozone", pm2_5: "pm2_5", pm25: "pm2_5", pm10: "pm10", aqi: "aqi", co2: "co2", carbon_dioxide: "co2" };
+
+/**
+ * Extra entity for a Weather Flex metric that Weather Sources may not cover
+ * (the hero's sub-header and chips): air-quality readings from the station,
+ * AirNow or any outdoor sensor of that type. null for other metrics.
+ */
+export function extraMetricEntity(key, hass, config) {
+  const kind = AQ_FOR_METRIC[key];
+  if (!kind || !hass) return null;
+  return aqEntity({ entity: config?.entity, metric_sources: config?.metric_sources }, hass, kind);
+}

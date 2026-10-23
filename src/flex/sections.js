@@ -1644,6 +1644,11 @@ import { actionHandler as iq } from "../../vendor/weather-forecast-card/src/hass
       if (src.overrides && src.overrides[key]) add(src.overrides[key]);
       add(this._wfcSlotEntityForKey(src.ref, key));
     }
+    // Weather Station: other integrations for metrics Weather Sources may not
+    // cover (e.g. ozone, PM2.5 from AirNow or an air-quality sensor).
+    if (typeof l5.__wsfcExtraEntity === "function") {
+      try { add(l5.__wsfcExtraEntity(key, this.hass, this.config)); } catch (_e) { /* ignore */ }
+    }
     // Safety net: the base entity is always a candidate of last resort (it is
     // what the header/forecast fall back to even if it is absent from the list).
     add(this.config && this.config.entity);
@@ -3450,6 +3455,10 @@ import { actionHandler as iq } from "../../vendor/weather-forecast-card/src/hass
     scanFc(this._hourlyForecastData);
     scanFc(this._dailyForecastData);
     if (this.__wfcSrc) Object.values(this.__wfcSrc).forEach((rec) => { if (rec) { scanFc(rec.hourly); scanFc(rec.daily); } });
+    // Weather Station: metrics found in other integrations (air quality) count as available.
+    if (typeof l5.__wsfcExtraEntity === "function") {
+      for (const k of ["ozone"]) { try { if (l5.__wsfcExtraEntity(k, this.hass, this._config)) avail.add(k); } catch (_e) { /* ignore */ } }
+    }
     return avail;
   };
 

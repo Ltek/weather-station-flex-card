@@ -11,6 +11,8 @@ import { panelMeta, rowsOf, inBarOf, normalizePanels, layoutOf, opensPopup } fro
 import { watchForecast } from "./forecast.js";
 import { isUnsaved } from "./unsaved.js";
 import { setDetected } from "./detected.js";
+import { extraMetricEntity } from "./air.js";
+import { WeatherForecastCard } from "../../vendor/weather-forecast-card/src/weather-forecast-card";
 import "../../vendor/weather-forecast-card/src/components/animation/wfc-animation-provider";
 import "../panels/flex.js";
 import "../panels/graph.js";
@@ -31,6 +33,9 @@ import "../editor/editor.js";
 
 const NARROW_PX = 720;
 const MEDIUM_PX = 1100;
+
+// Weather Flex metrics (sub-header, chips) also look in air-quality sources.
+WeatherForecastCard.__wsfcExtraEntity = extraMetricEntity;
 
 /** Classes that turn off the Appearance shadow / border / glow for one panel. */
 export const tileFx = (p) => [p.tile_shadow === false ? "no-shadow" : "", p.tile_border === false ? "no-border" : "", p.tile_glow === false ? "no-glow" : ""].filter(Boolean).join(" ");
