@@ -1,5 +1,10 @@
 # Changelog
 
+## v2026.10.24.61
+
+- **Low-power animation** (Appearance → Background), for tablets and other low-powered screens: no panel blur while the background animates (the panels no longer re-blur the moving clouds every frame), each cloud drawn once on its own layer, and simpler cloud edges (no turbulence filter). Smoother drift; clouds look a little softer.
+- **Fix: clouds no longer jump when their drift speed changes.** The drift follows the forecast wind; a new speed used to snap the clouds to a different position. They now carry on from where they are at the new speed.
+
 ## v2026.10.24.60
 
 - **Maps: Start paused** (new option on Radar / map and Wind map), for low-powered tablets.

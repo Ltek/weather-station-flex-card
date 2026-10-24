@@ -46,6 +46,7 @@ With no `panels:` the card shows its default dashboard (hero, bulletin, Sky Trac
 | `background` | `none` · `animated` · `image` | `none` | **Card background** — With an animated or image background, panels become see-through and the hero stops drawing its own. |
 | `background_effects` | list of: `rain` · `snow` · `lightning` · `sky` · `moon` · `sun` · `cloud` | `["rain","snow","lightning","sky","moon","sun","cloud"]` | **Animation effects** — Which effects the weather animation draws. At night it shows the dark sky and the moon instead of the sun. |
 | `background_moon_phase` | `true` / `false` | `true` | **Show moon phase** — Shade the night-time moon to the current lunar phase (off: a full moon). |
+| `anim_low_power` | `true` / `false` | `false` | **Low-power animation** — For tablets and other low-powered screens: no panel blur while the background animates, each cloud drawn once on its own, and simpler cloud edges. Smoother drift; clouds look a little softer. |
 | `anim_twinkle` | number 10–150 % | `100` | **Star twinkle** — Animation speeds (100% = normal, 50% = half as fast), for the card background and the hero's own animation. |
 | `anim_clouds` | number 10–150 % | `100` | **Cloud drift** |
 | `anim_rain` | number 10–150 % | `100` | **Rain** |
@@ -62,7 +63,7 @@ With no `panels:` the card shows its default dashboard (hero, bulletin, Sky Trac
 | Option | Value | Default | What it does |
 |---|---|---|---|
 | `panel_opacity` | number 0–1 | `0.55` | **Panel opacity** — With a card background: panel opacity (0 = fully transparent, 1 = solid). Default 0.55. |
-| `panel_blur` | number 0–30 px | `6` | **Panel blur** — With a card background: blur behind panels. Default 6. |
+| `panel_blur` | number 0–30 px | `6` | **Panel blur** — With a card background: blur behind panels. Default 6 (off with Low-power animation). |
 | `panel_radius` | number 0–40 px |  | **Corner radius** — Auto: your theme's card corner radius (shown above). Move the slider to set your own; × goes back to Auto. |
 | `panel_shadow` | `none` · `soft` · `medium` · `strong` | `none` | **Shadow** |
 | `panel_border_width` | number 0–6 px |  | **Border width** — Border (default none). |

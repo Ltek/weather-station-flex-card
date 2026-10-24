@@ -12,6 +12,8 @@ const SPEED_CSS = css`
   .raindrop, .splat { animation-duration: calc(var(--duration) * var(--wsfc-anim-rain, 1)); animation-delay: calc(var(--delay) * var(--wsfc-anim-rain, 1)); }
   .snowflake { animation-duration: calc(var(--duration) * var(--wsfc-anim-snow, 1)); animation-delay: calc(var(--delay) * var(--wsfc-anim-snow, 1)); }
   .lightning-flash { animation-duration: calc(20s * var(--wsfc-anim-lightning, 1)); }
+  .cloud { filter: var(--wsfc-cloud-filter, url(#wfc-cloud-rough)); will-change: var(--wsfc-cloud-will, auto); }
+  .cloud.night { filter: var(--wsfc-cloud-filter-night, url(#wfc-cloud-rough) brightness(0.5)); }
   :host { --sun-spin-duration: calc(var(--weather-forecast-card-effects-sun-spin-duration, 100s) * var(--wsfc-anim-sun, 1)); }
 `;
 
@@ -28,6 +30,31 @@ if (!WeatherAnimationProvider.__wsfcSpeed) {
   // while its count and the panel height are unchanged; a real change (more
   // rain, another condition, a resize) still gets new ones.
   const proto = WeatherAnimationProvider.prototype;
+  // Cloud drift speed follows the forecast wind (and the speed slider). A CSS
+  // animation whose duration changes jumps to a new position; keep each track
+  // where it was and carry on at the new speed.
+  const tracks = (el) => [...(el.renderRoot?.querySelectorAll?.(".cloud-track") || [])];
+  const anim = (t) => t.getAnimations?.().find((a) => a.animationName === "cloud-drift");
+  const where = (a) => {
+    const d = Number(a?.effect?.getComputedTiming?.().duration);
+    const t = Number(a?.currentTime);
+    return d > 0 && Number.isFinite(t) ? { d, f: (t % d) / d } : null;
+  };
+  const before = proto.willUpdate;
+  proto.willUpdate = function (changed) {
+    this.__wsfcDrift = tracks(this).map((t) => where(anim(t)));
+    return before?.call(this, changed);
+  };
+  const after = proto.updated;
+  proto.updated = function (changed) {
+    const r = after?.call(this, changed);
+    const prev = this.__wsfcDrift || [];
+    tracks(this).forEach((t, i) => {
+      const a = anim(t), was = prev[i], now = where(a);
+      if (a && was && now && Math.abs(now.d - was.d) > 1) a.currentTime = was.f * now.d;
+    });
+    return r;
+  };
   const compute = proto.computeParticles;
   if (typeof compute === "function") {
     proto.computeParticles = function () {

@@ -282,7 +282,9 @@ class WeatherStationFlexCard extends LitElement {
       c.row_height ? `--wsfc-row:${c.row_height}px` : "",
       c.gap != null ? `--wsfc-gap:${c.gap}px` : "",
       bg ? `--wsfc-panel-opacity:${c.panel_opacity ?? 0.55}` : "",
-      bg ? `--wsfc-panel-blur:${c.panel_blur ?? 6}px` : "",
+      bg ? `--wsfc-panel-blur:${c.anim_low_power ? 0 : c.panel_blur ?? 6}px` : "",
+      // Low-power animation: each cloud on its own layer, no turbulence edges.
+      c.anim_low_power ? "--wsfc-cloud-will:transform;--wsfc-cloud-filter:none;--wsfc-cloud-filter-night:brightness(0.5)" : "",
       ...panelStyleVars(c),
       ...animSpeedVars(c),
     ].join(";");
