@@ -174,6 +174,7 @@ export const PANEL_TYPES = {
     tag: "wsfc-panel-radar", label: "Radar / map", icon: "mdi:radar", span: 6, rows: 4,
     schema: [
       { name: "radar", selector: { boolean: {} }, default: true, helper: "RainViewer radar loop. Turn off for a plain map with OpenWeatherMap layers." },
+      { name: "start_paused", label: "Start paused", when: (d) => d.radar !== false, selector: { boolean: {} }, default: false, helper: "Show only the latest radar image until you press play; the other frames load then. Lighter for low-powered tablets." },
       { name: "base_map", selector: { select: { options: BASES } } },
       { name: "zoom", selector: { number: { min: 2, max: 14, step: 0.5, mode: "box" } } },
       { name: "latitude", selector: { number: { mode: "box", step: "any" } }, helper: "Map center (default: your Home Assistant location)." },
@@ -230,6 +231,7 @@ export const PANEL_TYPES = {
   wind_map: {
     tag: "wsfc-panel-wind-map", label: "Wind map (Windy)", icon: "mdi:map-marker-radius-outline", span: 6, rows: 3,
     schema: [
+      { name: "start_paused", label: "Start paused", selector: { boolean: {} }, default: false, helper: "Don't load the animated Windy map until you press play (Windy can't show a still image). Lighter for low-powered tablets." },
       { name: "overlay", selector: { select: { options: opt([["wind", "Wind"], ["gust", "Gusts"], ["rain", "Rain & thunder"], ["temp", "Temperature"], ["clouds", "Clouds"], ["pressure", "Pressure"], ["radar", "Radar"], ["satellite", "Satellite"]]) } }, default: "wind" },
       { name: "zoom", selector: { number: { min: 3, max: 11, mode: "slider" } }, default: 6 },
       { name: "model", selector: { select: { options: opt([["ecmwf", "ECMWF"], ["gfs", "GFS"], ["icon", "ICON"], ["namConus", "NAM (US)"]]) } }, default: "ecmwf" },

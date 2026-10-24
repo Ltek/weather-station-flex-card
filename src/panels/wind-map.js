@@ -36,13 +36,23 @@ export function windyUrl(c, hass) {
 }
 
 class WsfcWindMap extends LitElement {
-  static properties = { hass: { attribute: false }, config: { attribute: false }, station: { attribute: false }, lite: { attribute: false } };
+  static properties = { hass: { attribute: false }, config: { attribute: false }, station: { attribute: false }, lite: { attribute: false }, _on: { state: true } };
   static styles = [
     panelStyles,
     pausedStyles,
     css`
       .frame { position: relative; flex: 1; min-height: 220px; border-radius: 12px; overflow: hidden; background: #1b1f24; }
       iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+      .start { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; width: 100%;
+        border: 0; cursor: pointer; color: var(--wsfc-muted); font: inherit; font-size: 13px;
+        background: repeating-linear-gradient(135deg, rgba(127, 127, 127, 0.08) 0 12px, rgba(127, 127, 127, 0.14) 12px 24px); }
+      .start .pb { display: grid; place-items: center; width: 56px; height: 56px; border-radius: 50%; background: var(--primary-color); color: var(--text-primary-color, #fff); }
+      .start .pb ha-icon { --mdc-icon-size: 32px; }
+      .start:focus-visible { outline: 2px solid var(--primary-color); outline-offset: -2px; }
+      button.stop { display: inline-grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 0; border-radius: 50%; cursor: pointer;
+        background: rgba(127, 127, 127, 0.15); color: var(--primary-text-color); }
+      button.stop ha-icon { --mdc-icon-size: 18px; }
+      button.stop:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 2px; }
     `,
   ];
   render() {
@@ -51,8 +61,20 @@ class WsfcWindMap extends LitElement {
     // Build the URL once per config so hass updates don't reload the map.
     const url = windyUrl(c, this.hass);
     if (url !== this._url) this._url = url;
-    const title = c.show_title === false ? nothing : head(c, "mdi:weather-windy", c.title || `${WINDY_OVERLAYS[c.overlay || "wind"] || "Wind"} map`);
+    // Start paused: nothing loads until play; the stop button unloads it again.
+    if (this._on === undefined) this._on = !c.start_paused;
+    const name = `${WINDY_OVERLAYS[c.overlay || "wind"] || "Wind"} map`;
+    const stop = c.start_paused && this._on
+      ? html`<button class="stop" type="button" @click=${() => (this._on = false)} aria-label="Stop the Windy map" title="Stop"><ha-icon icon="mdi:stop"></ha-icon></button>`
+      : nothing;
+    const title = head(c, "mdi:weather-windy", c.title || name, stop);
     if (this.lite) return html`${title}${paused("mdi:map-marker-radius-outline", "Windy map")}`;
+    if (!this._on) {
+      return html`${title}
+        <div class="frame"><button class="start" type="button" @click=${() => (this._on = true)} aria-label=${`Load the animated ${name}`}>
+          <span class="pb"><ha-icon icon="mdi:play"></ha-icon></span><span>${name} — press play to load</span>
+        </button></div>`;
+    }
     return html`${title}
       <div class="frame"><iframe src=${this._url} title="Windy weather map" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe></div>`;
   }

@@ -1,5 +1,11 @@
 # Changelog
 
+## v2026.10.24.60
+
+- **Maps: Start paused** (new option on Radar / map and Wind map), for low-powered tablets.
+  - **Radar:** shows only the latest radar image, paused; the rest of the loop is loaded the first time you press play.
+  - **Wind map (Windy):** Windy can't show a still image, so the map isn't loaded at all until you press the play button on the panel; a stop button in its header unloads it again.
+
 ## v2026.10.24.59
 
 - **Fix: star twinkle (and the other animations) run at a steady speed.** Every weather update picked new random stars, which restarted each twinkle part-way and made it look slow, then fast, then slow. Stars, rain, snow and sun rays now stay put until something really changes (the condition, rain amount or panel size).

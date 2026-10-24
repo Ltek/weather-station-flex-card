@@ -67,7 +67,7 @@ class WsfcRadar extends LitElement {
 
   constructor() {
     super();
-    this._playing = true;
+    this._playing = undefined; // set from start_paused on first render
     this._frames = [];
     this._idx = 0;
   }
@@ -80,6 +80,11 @@ class WsfcRadar extends LitElement {
     const key = this.config?.owm_api_key;
     const overlays = this.config?.owm_layers || ["wind_new"];
     const overlay = this._overlay ?? this.config?.owm_default ?? "none";
+    if (this._playing === undefined) {
+      // Start paused: only the latest frame is loaded until play is pressed.
+      this._playing = !this.config?.start_paused;
+      this._lean = !this._playing;
+    }
     if (this.lite) return html`${head(this.config, this._radarOn ? "mdi:radar" : "mdi:map", this._radarOn ? "Radar" : "Map")}${paused(this._radarOn ? "mdi:radar" : "mdi:map", this._radarOn ? "Radar loop" : "Map")}`;
     // Header: title, then the loop time and play/pause, then the overlay picker.
     const controls = html`<span class="ctl">
@@ -170,7 +175,9 @@ class WsfcRadar extends LitElement {
       const res = await fetch(RAINVIEWER_INDEX);
       if (!res.ok) throw new Error(`RainViewer ${res.status}`);
       const idx = await res.json();
-      const frames = [...(idx.radar?.past || []), ...(idx.radar?.nowcast || [])];
+      let frames = [...(idx.radar?.past || []), ...(idx.radar?.nowcast || [])];
+      // Paused at start: just the latest observed image (no hidden frames to load).
+      if (this._lean) frames = (idx.radar?.past || []).slice(-1);
       if (!frames.length || !this._map) return;
       // Replace layers: keep existing ones whose path is unchanged.
       const old = new Map(this._frames.map((f) => [f.path, f]));
@@ -188,7 +195,9 @@ class WsfcRadar extends LitElement {
       });
       old.forEach((f) => this._map.removeLayer(f.layer));
       this._error = undefined;
-      this._idx = this._frames.length - 1;
+      // The latest observed frame (not a forecast one) is shown first.
+      const past = this._frames.filter((f) => !f.nowcast).length;
+      this._idx = Math.max(0, past - 1);
       this._show(this._idx);
       if (this._playing) this._schedule();
     } catch (e) {
@@ -220,6 +229,8 @@ class WsfcRadar extends LitElement {
 
   _togglePlay = () => {
     this._playing = !this._playing;
+    // First play after starting paused: load the whole loop now.
+    if (this._playing && this._lean) { this._lean = false; this._loadFrames(); return; }
     if (this._playing) this._schedule();
     else clearTimeout(this._timer);
   };

@@ -370,6 +370,7 @@ Default size: 6 of 12 wide, 4 rows high.
 | Option | Value | Default | What it does |
 |---|---|---|---|
 | `radar` | `true` / `false` | `true` | **Radar loop** — RainViewer radar loop. Turn off for a plain map with OpenWeatherMap layers. |
+| `start_paused` | `true` / `false` | `false` | **Start paused** — Show only the latest radar image until you press play; the other frames load then. Lighter for low-powered tablets. |
 | `base_map` | `gray` · `streets` · `topo` · `imagery` · `osm` |  | **Base map** |
 | `zoom` | number 2–14 |  | **Zoom** |
 | `latitude` | number |  | **Latitude** — Map center (default: your Home Assistant location). |
@@ -584,6 +585,7 @@ Default size: 6 of 12 wide, 3 rows high.
 
 | Option | Value | Default | What it does |
 |---|---|---|---|
+| `start_paused` | `true` / `false` | `false` | **Start paused** — Don't load the animated Windy map until you press play (Windy can't show a still image). Lighter for low-powered tablets. |
 | `overlay` | `wind` · `gust` · `rain` · `temp` · `clouds` · `pressure` · `radar` · `satellite` | `wind` | **Layer** |
 | `zoom` | number 3–11 | `6` | **Zoom** |
 | `model` | `ecmwf` · `gfs` · `icon` · `namConus` | `ecmwf` | **Forecast model** |
