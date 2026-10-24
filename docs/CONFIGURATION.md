@@ -46,12 +46,12 @@ With no `panels:` the card shows its default dashboard (hero, bulletin, Sky Trac
 | `background` | `none` · `animated` · `image` | `none` | **Card background** — With an animated or image background, panels become see-through and the hero stops drawing its own. |
 | `background_effects` | list of: `rain` · `snow` · `lightning` · `sky` · `moon` · `sun` · `cloud` | `["rain","snow","lightning","sky","moon","sun","cloud"]` | **Animation effects** — Which effects the weather animation draws. At night it shows the dark sky and the moon instead of the sun. |
 | `background_moon_phase` | `true` / `false` | `true` | **Show moon phase** — Shade the night-time moon to the current lunar phase (off: a full moon). |
-| `anim_twinkle` | number 25–300 % | `100` | **Star twinkle** — Animation speeds (100% = normal, 50% = half as fast), for the card background and the hero's own animation. |
-| `anim_clouds` | number 25–300 % | `100` | **Cloud drift** |
-| `anim_rain` | number 25–300 % | `100` | **Rain** |
-| `anim_snow` | number 25–300 % | `100` | **Snow** |
-| `anim_sun` | number 25–300 % | `100` | **Sun rays** |
-| `anim_lightning` | number 25–300 % | `100` | **Lightning** |
+| `anim_twinkle` | number 10–150 % | `100` | **Star twinkle** — Animation speeds (100% = normal, 50% = half as fast), for the card background and the hero's own animation. |
+| `anim_clouds` | number 10–150 % | `100` | **Cloud drift** |
+| `anim_rain` | number 10–150 % | `100` | **Rain** |
+| `anim_snow` | number 10–150 % | `100` | **Snow** |
+| `anim_sun` | number 10–150 % | `100` | **Sun rays** |
+| `anim_lightning` | number 10–150 % | `100` | **Lightning** |
 | `background_image` | image (uploaded through the editor) |  | **Background image** — Image background: upload a PNG, JPG, WEBP… or pick one from your media. |
 | `background_image_url` | URL |  | **Background image URL** — Image background: or an image URL (wins over the upload), e.g. /local/images/sky.jpg. |
 | `background_image_fit` | `cover` · `contain` · `tile` | `cover` | **Image fit** |

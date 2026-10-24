@@ -1,7 +1,8 @@
 // Animation speeds for the weather animation (card background and the hero's
 // own): extra rules appended to the vendored provider's styles, driven by CSS
 // variables the card sets (they inherit into the hero's provider too). Each is
-// a duration multiplier: 2 = half as fast.
+// a duration multiplier: 2 = half as fast. Speeds are 10–150 %.
+export const SPEED_MIN = 10, SPEED_MAX = 150;
 import { css } from "lit";
 import { WeatherAnimationProvider } from "../../vendor/weather-forecast-card/src/components/animation/wfc-animation-provider";
 
@@ -21,6 +22,32 @@ if (!WeatherAnimationProvider.__wsfcSpeed) {
   WeatherAnimationProvider.finalize?.();
   WeatherAnimationProvider.elementStyles = [...(WeatherAnimationProvider.elementStyles || []), SPEED_CSS];
   WeatherAnimationProvider.__wsfcSpeed = true;
+  // The provider picks new random stars / drops / rays on every weather update
+  // (every few seconds in Home Assistant), which restarts each twinkle at a new
+  // point: stars looked slow, then fast, then slow. Keep each kind of particle
+  // while its count and the panel height are unchanged; a real change (more
+  // rain, another condition, a resize) still gets new ones.
+  const proto = WeatherAnimationProvider.prototype;
+  const compute = proto.computeParticles;
+  if (typeof compute === "function") {
+    proto.computeParticles = function () {
+      const next = compute.call(this);
+      const prev = this.__wsfcParticles;
+      const h = this._containerHeight;
+      if (prev && prev.h === h) {
+        const byType = (list) => list.reduce((m, p) => ((m[p.type] ||= []).push(p), m), {});
+        const a = byType(prev.list), b = byType(next);
+        for (const t of Object.keys(b)) if (a[t] && a[t].length === b[t].length) b[t] = a[t];
+        const kept = next.map(() => null);
+        const idx = {};
+        next.forEach((p, i) => { idx[p.type] = (idx[p.type] ?? -1) + 1; kept[i] = b[p.type][idx[p.type]]; });
+        this.__wsfcParticles = { h, list: kept };
+        return kept;
+      }
+      this.__wsfcParticles = { h, list: next };
+      return next;
+    };
+  }
 }
 
 export const ANIM_SPEEDS = [
@@ -36,7 +63,8 @@ export const ANIM_SPEEDS = [
 export function animSpeedVars(c) {
   const out = [];
   for (const [key, v] of ANIM_SPEEDS) {
-    const pct = Number(c?.[key]);
+    let pct = Number(c?.[key]);
+    if (pct > 0) pct = Math.max(SPEED_MIN, Math.min(SPEED_MAX, pct));
     if (pct > 0 && pct !== 100) out.push(`${v}:${(100 / pct).toFixed(3)}`);
   }
   return out;

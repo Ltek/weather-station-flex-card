@@ -1,5 +1,10 @@
 # Changelog
 
+## v2026.10.24.59
+
+- **Fix: star twinkle (and the other animations) run at a steady speed.** Every weather update picked new random stars, which restarted each twinkle part-way and made it look slow, then fast, then slow. Stars, rain, snow and sun rays now stay put until something really changes (the condition, rain amount or panel size).
+- **Animation speed sliders are now 10–150 %** (were 25–300 %). Saved values outside the range are clamped.
+
 ## v2026.10.23.58
 
 - **Fix: on small screens the wind rose / compass no longer overlaps the chart.** With Fit to the panel on, the rose was squeezed to the space left but drew at full size over the chart; it now keeps its real height and is narrowed until the rose, readings and chart all fit.
