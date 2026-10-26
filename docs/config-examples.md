@@ -129,7 +129,7 @@ The embedded section editor saves its changes under `flex:` (the same settings a
 
 Area data comes from the CoAgMET package (Colorado, measured) when it's installed, else from Open-Meteo (anywhere, modelled). Both use Open-Meteo's daily names (`temperature_2m_max`, `temperature_2m_min`, `precipitation_sum`, `wind_gusts_10m_max`, `et0_fao_evapotranspiration`), so the panels read them the same way.
 
-CoAgMET package: copy `extras/coagmet/coagmet_records.py` to `/config/` and `coagmet_records.yaml` to `/config/packages/`, then restart. It defaults to Longmont South (`lmt01`, Northern Water network, since 1994); change the station id in the YAML for another CoAgMET or Northern Water station.
+CoAgMET package: copy both files from `extras/coagmet/` (`coagmet_records.yaml` and `coagmet_records.py`) side by side into `/config/packages/`, then restart. It defaults to Longmont South (`lmt01`, Northern Water network, since 1994); change the station id in the YAML for another CoAgMET or Northern Water station.
 
 ```yaml
 - type: records
