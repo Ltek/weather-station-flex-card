@@ -58,6 +58,18 @@ With no `panels:` the card shows its default dashboard (hero, bulletin, Sky Trac
 | `background_image_fit` | `cover` · `contain` · `tile` | `cover` | **Image fit** |
 | `background_dim` | number 0–0.9 | `0.25` | **Darken image** — Image background: darken it so text stays readable (0 = off). |
 
+### Collapsible panels
+
+| Option | Value | Default | What it does |
+|---|---|---|---|
+| `collapse_title_tap` | `true` / `false` | `true` | **Tap the title to fold / unfold** — For panels with Collapse button on (each panel can override this). |
+| `show_collapse_hint` | `true` / `false` | `true` | **Hint under the title while folded** |
+| `collapse_hint` | text |  | **Hint text** — Default "Tap title to show". |
+| `collapsed_icon_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Collapsed icon color** — Not set: the theme's disabled colour. |
+| `collapsed_text_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Collapsed title color** — Not set: the theme's disabled text colour. |
+| `expanded_icon_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Expanded icon color** — Not set: the theme's state icon colour. |
+| `expanded_text_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Expanded title color** — Not set: the theme's text colour. |
+
 ### Panels
 
 | Option | Value | Default | What it does |
@@ -103,9 +115,16 @@ Where the buttons go: `panel_bar: false` hides the bar; a Button Menu panel (`he
 | `rows` | number 0–10 |  | **Height** — Height in row units, in half steps (0 = fit content, 0.5 = half height). |
 | `display` | `grid` · `tile_popup` · `popup` |  | **Display** |
 | `in_bar` | `true` / `false` |  | **Panel button** — Adds a button for this panel to the button menu, to show or hide it (or open its pop-up). Off: no button, and the panel is always shown (unless hidden with the eye icon in the panel list). |
-| `collapsible` | `true` / `false` | `false` | **Collapse button** — A button in the panel's header that folds it down to just its title, to save space (e.g. maps). Your choice is remembered in this browser with Remember Panel Button States. |
-| `collapsed` | `true` / `false` | `false` | **Start collapsed** |
 | `content_scale` | number 40–200 % | `100` | **Content size** — Everything inside the panel bigger or smaller (text, icons, tiles), so it fits the space. |
+| `collapsible` | `true` / `false` | `false` | **Collapse button** — Fold the panel down to its title header to save space (e.g. maps). A folded map is paused. With Remember Panel Button States, this browser remembers what you folded. |
+| `collapsed` | `true` / `false` | `false` | **Start collapsed** |
+| `collapse_title_tap` | `default` · `on` · `off` | `default` | **Tap the title to fold / unfold** |
+| `show_collapse_hint` | `default` · `on` · `off` | `default` | **Hint under the title while folded** |
+| `collapse_hint` | text |  | **Hint text** — Default "Tap title to show". |
+| `collapsed_icon_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Collapsed icon color** — Not set: the theme's disabled colour. |
+| `collapsed_text_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Collapsed title color** — Not set: the theme's disabled text colour. |
+| `expanded_icon_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Expanded icon color** — Not set: the theme's state icon colour. |
+| `expanded_text_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Expanded title color** — Not set: the theme's text colour. |
 | `tile_background` | `default` · `translucent` · `solid` · `none` | `default` | **Panel background** |
 | `tile_shadow` | `true` / `false` | `true` | **Disable shadow** (the editor shows it as a *Disable …* checkbox; `false` = disabled) |
 | `tile_border` | `true` / `false` | `true` | **Disable border** (the editor shows it as a *Disable …* checkbox; `false` = disabled) |
@@ -378,6 +397,7 @@ Default size: 4 of 12 wide, fits its content.
 |---|---|---|---|
 | `near_km` | number 1–40 | `16` | **Warn within (km)** — Default 16 km (10 miles). |
 | `near_minutes` | number 5–120 | `30` | **…for (minutes after a strike)** |
+| `show_battery` | `true` / `false` | `true` | **Sensor battery** |
 | `show_note` | `true` / `false` | `true` | **Note** |
 | `distance_entity` | entity id (`sensor.*`) |  | **Distance sensor** — Found on its own (e.g. Ecowitt WH57). |
 | `count_entity` | entity id (`sensor.*`) |  | **Strikes sensor** |
@@ -823,7 +843,7 @@ The embedded section editor saves its changes under `flex:` (the same settings a
 
 Area data comes from the CoAgMET package (Colorado, measured) when it's installed, else from Open-Meteo (anywhere, modelled). Both use Open-Meteo's daily names (`temperature_2m_max`, `temperature_2m_min`, `precipitation_sum`, `wind_gusts_10m_max`, `et0_fao_evapotranspiration`), so the panels read them the same way.
 
-CoAgMET package: copy `extras/coagmet/coagmet_records.py` to `/config/` and `coagmet_records.yaml` to `/config/packages/`, then restart. It defaults to Longmont South (`lmt01`, Northern Water network, since 1994); change the station id in the YAML for another CoAgMET or Northern Water station.
+CoAgMET package: copy both files from `extras/coagmet/` (`coagmet_records.yaml` and `coagmet_records.py`) side by side into `/config/packages/`, then restart. It defaults to Longmont South (`lmt01`, Northern Water network, since 1994); change the station id in the YAML for another CoAgMET or Northern Water station.
 
 ```yaml
 - type: records
