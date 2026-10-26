@@ -1,5 +1,13 @@
 # Changelog
 
+## v2026.10.26.63
+
+- **Strict fit to screen dimensions** (Layout, full screen with Fit on): every panel is exactly the height you set, so the page fits the screen as the layout map shows; content taller than its panel scrolls inside the panel. Off (the default) keeps today's behaviour, where panels grow to fit their content.
+- **The layout map shows the real screen.** With a Screen guide set, a hidden, paused copy of the card is laid out at that screen size, and an "On the screen at load" view shows where every panel actually lands, the screen edge, and which panels are partly or fully off screen. Panels whose content makes them taller than their rows are marked in the map (e.g. 8×0.5 → 3.5).
+- **Collapse to the title header** (any panel with a header): a Collapse button in the panel's header folds it down to its title, and Start collapsed folds it at load. A folded map is paused, so it doesn't load or animate. With Remember Panel Button States on, the browser remembers what you folded.
+- **Content size** for every panel (40–200 %): everything inside bigger or smaller, so it fits its space.
+- **Air quality and Pollen: Horizontal spacing and Vertical spacing** sliders (tile widths, columns and gaps; row height and padding). Air quality tiles are now as wide as what's in them (no empty space on the right), with **Stretch tiles to fill the width** to go back; less space between the AQI number and its rating.
+
 ## v2026.10.26.62
 
 - **New panel: Weather records.** Your station's warmest, coldest, strongest gust and wettest day from Home Assistant's long-term statistics (grows as history builds up), plus area records from a nearby CoAgMET / Northern Water station: records for today's date, this month and all-time, with a badge when today beats the record for its date, and the station's distance and direction from home.

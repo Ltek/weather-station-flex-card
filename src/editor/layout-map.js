@@ -29,6 +29,8 @@ class WsfcLayoutMap extends LitElement {
     // Screen guide: { w, h } of the browser window, chrome (px above/around the
     // grid), row / gap (px), fit (rows share the height), mode "line" | "frame".
     guide: { attribute: false },
+    // Where the panels really land on that screen (from the layout probe).
+    measured: { attribute: false },
     _mapW: { state: true },
     _tracks: { state: true },
   };
@@ -98,7 +100,7 @@ class WsfcLayoutMap extends LitElement {
         </div>
         ${this.guide?.fit ? html`<div class="grid measure" aria-hidden="true" style=${`--row:${sc.row}px;--gap:${sc.gap}px`}>
           ${order.filter((i) => panels[i].show !== false).map((i) => html`<div style=${this._place(panels[i])}></div>`)}</div>` : nothing}
-        ${sc.line == null
+        ${sc.line == null || this.measured
           ? nothing
           : sc.fits
             // Full screen + fit: everything fits; the frame is the screen.
@@ -106,10 +108,36 @@ class WsfcLayoutMap extends LitElement {
             : html`<div class="guide ${mode}" style=${`top:${6 + sc.line}px`} aria-hidden="true">
                 <span>${this.guide.w}×${this.guide.h} screen edge${this.guide.fit ? ` · rows at the ${sc.rowPx}px minimum` : ""}</span></div>`}
       </div>
+      ${this._screen()}
       ${popups.length
         ? html`<div class="pops"><span>Pop-ups:</span>${popups.map((i) => html`<span class="pop"><ha-icon icon=${iconOf(panels[i])}></ha-icon>${nameOf(panels[i])}</span>`)}</div>`
         : nothing}
     `;
+  }
+
+  // The real screen at load, to scale: every panel where the card puts it,
+  // the screen edge, and what's below it (needs scrolling to see).
+  _screen() {
+    const m = this.measured, g = this.guide;
+    if (!m || !g || !this._mapW || !m.w) return nothing;
+    const k = this._mapW / m.w;
+    const total = Math.max(m.gridH, m.visibleH);
+    const off = m.tiles.filter((t) => t.where === "off"), part = m.tiles.filter((t) => t.where === "partial");
+    const names = (list) => list.map((t) => nameOf(this.panels[t.i] || {})).join(", ");
+    return html`<div class="shot-head">On the ${g.w}×${g.h} screen at load${m.gridH <= m.visibleH + 1 ? html` — <span class="okc">everything fits</span>` : ""}</div>
+      <div class="shot" style=${`height:${Math.round(total * k) + 2}px`}>
+        ${m.tiles.map((t) => {
+          const p = this.panels[t.i] || {};
+          return html`<div class="st ${t.where} ${t.collapsed ? "folded" : ""}" style=${`left:${t.x * k}px;top:${t.y * k}px;width:${Math.max(4, t.w * k)}px;height:${Math.max(4, t.h * k)}px`}
+            title=${`${nameOf(p)}: ${Math.round(t.w)}×${Math.round(t.h)} px${t.where === "off" ? " — off screen at load" : t.where === "partial" ? " — partly off screen" : ""}`}>
+            <ha-icon icon=${iconOf(p)}></ha-icon><span>${nameOf(p)}</span></div>`;
+        })}
+        ${m.gridH > m.visibleH + 1 ? html`<div class="below" style=${`top:${m.visibleH * k}px`}><span>screen edge · scroll for the rest</span></div>` : nothing}
+      </div>
+      ${off.length || part.length
+        ? html`<div class="shot-note">${part.length ? html`<b>Partly off screen:</b> ${names(part)}. ` : ""}${off.length ? html`<b>Off screen:</b> ${names(off)}.` : ""}
+            ${g.fit && !g.strict ? " Content makes some panels taller than their rows (→ in the map above); try Strict fit, Content size, or more rows for them." : ""}</div>`
+        : nothing}`;
   }
 
   // Half-row tracks: a 1-row panel spans 2, a half-height panel 1.
@@ -124,13 +152,17 @@ class WsfcLayoutMap extends LitElement {
     const span = sz ? sz.span : spanOf(p);
     const rows = sz ? sz.rows : rowsOf(p);
     const style = this._place(p, sz);
-    const cls = ["blk", p.show === false ? "hidden" : "", this._drag?.index === i ? "dragging" : "", sz ? "sizing" : "", p.type].join(" ");
+    const m = !sz && this.measured?.tiles?.find((t) => t.i === i);
+    // Rows this panel really takes on that screen (content can make it taller).
+    const real = m && !m.collapsed ? Math.round(((m.h + this.measured.gap) / (this.measured.row + this.measured.gap)) * 2) / 2 : null;
+    const grows = real != null && rows > 0 && real > rows + 0.25;
+    const cls = ["blk", p.show === false ? "hidden" : "", this._drag?.index === i ? "dragging" : "", sz ? "sizing" : "", p.type, m ? `at-${m.where}` : "", grows ? "grows" : "", m?.collapsed ? "folded" : ""].join(" ");
     return html`<div class=${cls} style=${style} data-i=${i} tabindex="0" role="button"
         aria-label=${`${nameOf(p)}, width ${span} of 12, height ${rows || "auto"}. Arrow keys move; Shift+arrows resize.`}
         @pointerdown=${(e) => this._startMove(e, i)} @keydown=${(e) => this._key(e, i)}>
       <ha-icon icon=${iconOf(p)}></ha-icon>
       <span class="nm">${nameOf(p)}</span>
-      <span class="dim">${span}×${rows || "a"}</span>
+      <span class="dim">${span}×${rows || "a"}${grows ? html` <b class="need" title="Its content makes it taller on that screen">→ ${real}</b>` : nothing}${m?.collapsed ? " · folded" : ""}</span>
       <span class="rz x" @pointerdown=${(e) => this._startSize(e, i, "x")}></span>
       <span class="rz y" @pointerdown=${(e) => this._startSize(e, i, "y")}></span>
       <span class="rz xy" @pointerdown=${(e) => this._startSize(e, i, "xy")}></span>
@@ -321,6 +353,24 @@ class WsfcLayoutMap extends LitElement {
     .rz.x { top: 0; right: 0; width: 8px; height: 100%; cursor: ew-resize; }
     .rz.y { left: 0; bottom: 0; height: 8px; width: 100%; cursor: ns-resize; }
     .rz.xy { right: 0; bottom: 0; width: 12px; height: 12px; cursor: nwse-resize; background: linear-gradient(135deg, transparent 50%, var(--primary-color) 50%); opacity: 0.7; border-bottom-right-radius: 6px; }
+    .need { color: var(--warning-color, #ffa600); font-weight: 700; }
+    .blk.grows { border-color: var(--warning-color, #ffa600); }
+    .blk.at-off { border-style: dotted; }
+    .blk.folded { opacity: 0.8; }
+    .shot-head { margin: 10px 0 4px; font-size: 12px; font-weight: 600; color: var(--secondary-text-color); }
+    .shot-head .okc { color: var(--success-color, #43a047); }
+    .shot { position: relative; border-radius: 10px; background: rgba(127, 127, 127, 0.08); overflow: hidden; }
+    .st { position: absolute; box-sizing: border-box; border-radius: 4px; border: 1px solid var(--divider-color, #444); background: var(--card-background-color, #222);
+      display: flex; gap: 3px; align-items: flex-start; padding: 2px 4px; font-size: 10px; line-height: 1.2; overflow: hidden; color: var(--primary-text-color); }
+    .st ha-icon { --mdc-icon-size: 12px; color: var(--primary-color); flex: 0 0 auto; }
+    .st span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .st.partial { border-color: var(--warning-color, #ffa600); }
+    .st.off { opacity: 0.55; border-style: dashed; }
+    .st.folded { background: transparent; }
+    .below { position: absolute; left: 0; right: 0; bottom: 0; border-top: 2px dashed var(--warning-color, #ffa600); pointer-events: none;
+      background: repeating-linear-gradient(135deg, rgba(255, 166, 0, 0.16) 0 6px, transparent 6px 12px); }
+    .below span { position: absolute; right: 6px; top: 2px; font-size: 10px; font-weight: 600; color: var(--warning-color, #ffa600); background: var(--card-background-color, #1c1c1c); padding: 0 4px; border-radius: 4px; }
+    .shot-note { margin-top: 4px; font-size: 11px; color: var(--secondary-text-color); line-height: 1.4; }
     .pops { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 6px; font-size: 11px; color: var(--secondary-text-color); }
     .pop { display: inline-flex; gap: 4px; align-items: center; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--divider-color, #444); color: var(--primary-text-color); }
     .pop ha-icon { --mdc-icon-size: 13px; }

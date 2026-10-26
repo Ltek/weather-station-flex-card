@@ -78,6 +78,7 @@ With no `panels:` the card shows its default dashboard (hero, bulletin, Sky Trac
 |---|---|---|---|
 | `layout` | `auto` · `fullscreen` | `auto` | **Layout** |
 | `fit_height` | `true` / `false` | `true` | **Fit panels to the screen height** — Full screen: panels with a height share the screen height (row height is calculated). |
+| `fit_strict` | `true` / `false` | `false` | **Strict fit to screen dimensions** — Every panel is exactly the height you set, so the page fits the screen as the layout map shows; content taller than its panel scrolls inside the panel. Off: panels grow to fit their content (the page may scroll). |
 | `layout_size` | `auto` · `wide` · `medium` · `narrow` | `auto` | **Layout size** — In a Sections view the card is only as wide as its section; widen the section or use a Panel view for the desktop layout. |
 | `row_height` | number 40–300 px |  | **Row height** — Height of one row unit (default 110). |
 | `gap` | number 0–32 px |  | **Gap** — Space between panels (default 12). |
@@ -102,6 +103,9 @@ Where the buttons go: `panel_bar: false` hides the bar; a Button Menu panel (`he
 | `rows` | number 0–10 |  | **Height** — Height in row units, in half steps (0 = fit content, 0.5 = half height). |
 | `display` | `grid` · `tile_popup` · `popup` |  | **Display** |
 | `in_bar` | `true` / `false` |  | **Panel button** — Adds a button for this panel to the button menu, to show or hide it (or open its pop-up). Off: no button, and the panel is always shown (unless hidden with the eye icon in the panel list). |
+| `collapsible` | `true` / `false` | `false` | **Collapse button** — A button in the panel's header that folds it down to just its title, to save space (e.g. maps). Your choice is remembered in this browser with Remember Panel Button States. |
+| `collapsed` | `true` / `false` | `false` | **Start collapsed** |
+| `content_scale` | number 40–200 % | `100` | **Content size** — Everything inside the panel bigger or smaller (text, icons, tiles), so it fits the space. |
 | `tile_background` | `default` · `translucent` · `solid` · `none` | `default` | **Panel background** |
 | `tile_shadow` | `true` / `false` | `true` | **Disable shadow** (the editor shows it as a *Disable …* checkbox; `false` = disabled) |
 | `tile_border` | `true` / `false` | `true` | **Disable border** (the editor shows it as a *Disable …* checkbox; `false` = disabled) |
@@ -174,6 +178,9 @@ Default size: 4 of 12 wide, fits its content.
 | `layout` | `scale` · `rows` · `bars` · `tiles` | `scale` | **Layout** |
 | `pollutants` | list of: `pm2_5` · `pm10` · `ozone` · `co2` |  | **Pollutants** — Default: all that are found. |
 | `extra` | mapping / list |  | **More readings** — More readings, e.g. - entity: sensor.erie_benzene with optional label, icon and thresholds: [moderate, elevated, high, very high] in the sensor's unit. Benzene and CO₂ have built-in thresholds. |
+| `tile_fill` | `true` / `false` | `false` | **Stretch tiles to fill the width** — Off: each tile is as wide as what's in it. |
+| `content_width` | number 30–200 % | `100` | **Horizontal spacing** — Width of tiles, chips and the gaps between columns. |
+| `content_height` | number 30–200 % | `100` | **Vertical spacing** — Row height, padding and the gaps between rows. |
 | `show_aqi` | `true` / `false` | `true` | **Show the AQI** |
 | `show_scale` | `true` / `false` |  | **AQI scale** — Rows, bars and tiles: AQI colour scale under the number (default: on for tiles only). |
 | `bar_height` | number 60–400 px |  | **Bar height** — Vertical bars: height (default 140). |
@@ -349,6 +356,8 @@ Default size: 4 of 12 wide, fits its content.
 | `view` | `plants` · `types` | `plants` | **Default view** |
 | `species` | list of text |  | **Species** — Species to show, in order, by Google code or name (e.g. JUNIPER, OAK, GRAMINALES). Blank shows the busiest. |
 | `max_rows` | number 0–20 | `6` | **Rows** — Rows when no species are listed (0 = all). |
+| `content_width` | number 30–200 % | `100` | **Horizontal spacing** — Width of tiles, chips and the gaps between columns. |
+| `content_height` | number 30–200 % | `100` | **Vertical spacing** — Row height, padding and the gaps between rows. |
 | `hide_off_season` | `true` / `false` | `true` | **Hide out-of-season species** — Hide species that are out of season. |
 | `hide_when_off_season` | `true` / `false` | `false` | **Hide the panel out of season** — Hide the whole panel when no species is in season (its panel button still opens it). |
 | `hide_when_none` | `true` / `false` | `false` | **Hide the panel when all are None** — Hide the whole panel when every species is at None today (its panel button still opens it). |

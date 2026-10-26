@@ -92,11 +92,11 @@ class WsfcAirQuality extends LitElement {
     panelStyles,
     css`
       :host { --g: #00e400; }
-      .top { display: flex; align-items: center; gap: 14px; cursor: pointer; }
-      .aqi { font-size: 40px; font-weight: 600; line-height: 1; min-width: 2.2ch; }
+      .top { display: flex; align-items: center; gap: calc(12px * var(--wsfc-sx, 1)); cursor: pointer; }
+      .aqi { font-size: 40px; font-weight: 600; line-height: 1; }
       .cat { font-size: 15px; font-weight: 500; }
       .sub { font-size: 12px; color: var(--wsfc-muted); }
-      .scale { position: relative; display: flex; height: 8px; border-radius: 4px; overflow: hidden; margin: 12px 0 4px; }
+      .scale { position: relative; display: flex; height: 8px; border-radius: 4px; overflow: hidden; margin: calc(12px * var(--wsfc-sy, 1)) 0 4px; }
       .scale span { flex: 1; opacity: 0.85; }
       .mark { position: absolute; top: -3px; width: 4px; height: 14px; margin-left: -2px; border-radius: 2px; background: var(--primary-text-color); box-shadow: 0 0 0 1px var(--card-background-color, #000); }
       .ticks { position: relative; height: 12px; font-size: 10px; color: var(--wsfc-muted); }
@@ -106,8 +106,10 @@ class WsfcAirQuality extends LitElement {
       small { font-size: 11px; font-weight: 400; color: var(--wsfc-muted); margin-left: 2px; }
 
       /* tiles */
-      .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 6px; margin-top: 10px; }
-      .tile { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 10px; background: rgba(127, 127, 127, 0.08); cursor: pointer; }
+      /* Each tile as wide as what's in it (or stretched with tile_fill). */
+      .tiles { display: flex; flex-wrap: wrap; gap: calc(6px * var(--wsfc-sy, 1)) calc(6px * var(--wsfc-sx, 1)); margin-top: calc(10px * var(--wsfc-sy, 1)); }
+      .tiles.fill { display: grid; grid-template-columns: repeat(auto-fill, minmax(calc(110px * var(--wsfc-sx, 1)), 1fr)); }
+      .tile { display: flex; align-items: center; gap: calc(8px * var(--wsfc-sx, 1)); padding: calc(5px * var(--wsfc-sy, 1)) calc(10px * var(--wsfc-sx, 1)) calc(5px * var(--wsfc-sy, 1)) calc(8px * var(--wsfc-sx, 1)); border-radius: 10px; background: rgba(127, 127, 127, 0.08); cursor: pointer; flex: 0 0 auto; }
       .dot { width: 10px; height: 10px; border-radius: 50%; flex: 0 0 auto; background: var(--c, var(--wsfc-muted)); }
       .tile .n { font-size: 11px; color: var(--wsfc-muted); }
       .tile .v { font-size: 14px; font-weight: 500; white-space: nowrap; }
@@ -115,8 +117,8 @@ class WsfcAirQuality extends LitElement {
       /* rows */
       .hdr { font-size: 13px; color: var(--wsfc-muted); margin: 2px 0 6px; }
       .hdr b { color: var(--primary-text-color); font-weight: 500; }
-      .rows { display: grid; grid-template-columns: 22px max-content minmax(40px, 1fr) max-content max-content; align-items: center; column-gap: 12px; margin-top: 6px; }
-      .row { display: grid; grid-template-columns: subgrid; grid-column: 1 / -1; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--divider-color, rgba(127, 127, 127, 0.25)); cursor: pointer; font-size: 14px; }
+      .rows { display: grid; grid-template-columns: 22px max-content minmax(40px, 1fr) max-content max-content; align-items: center; column-gap: calc(12px * var(--wsfc-sx, 1)); margin-top: 6px; }
+      .row { display: grid; grid-template-columns: subgrid; grid-column: 1 / -1; align-items: center; padding: calc(8px * var(--wsfc-sy, 1)) 0; border-bottom: 1px solid var(--divider-color, rgba(127, 127, 127, 0.25)); cursor: pointer; font-size: 14px; }
       .row:last-child { border-bottom: 0; }
       .row ha-icon { --mdc-icon-size: 20px; color: var(--wsfc-muted); }
       .track { height: 6px; border-radius: 3px; background: rgba(127, 127, 127, 0.22); overflow: hidden; }
@@ -139,8 +141,8 @@ class WsfcAirQuality extends LitElement {
         background: var(--c, #888); box-shadow: 0 0 0 3px var(--card-background-color, #1c1c1c), 0 1px 4px rgba(0, 0, 0, 0.5); }
       .seg.big { height: 14px; margin-top: 8px; }
       .seg.big .knob { width: 24px; height: 24px; margin: -12px 0 0 -12px; }
-      .srows { display: grid; grid-template-columns: 22px max-content minmax(60px, 1fr) max-content; align-items: center; column-gap: 12px; margin-top: 8px; }
-      .srow { display: grid; grid-template-columns: subgrid; grid-column: 1 / -1; align-items: center; padding: 8px 0; border-top: 1px solid var(--divider-color, rgba(127, 127, 127, 0.25)); cursor: pointer; }
+      .srows { display: grid; grid-template-columns: 22px max-content minmax(60px, 1fr) max-content; align-items: center; column-gap: calc(12px * var(--wsfc-sx, 1)); margin-top: calc(8px * var(--wsfc-sy, 1)); }
+      .srow { display: grid; grid-template-columns: subgrid; grid-column: 1 / -1; align-items: center; padding: calc(8px * var(--wsfc-sy, 1)) 0; border-top: 1px solid var(--divider-color, rgba(127, 127, 127, 0.25)); cursor: pointer; }
       .srow ha-icon { --mdc-icon-size: 20px; color: var(--wsfc-muted); }
       .srow .nm { font-size: 14px; line-height: 1.2; }
       .srow .nv { font-size: 12px; color: var(--secondary-text-color); white-space: nowrap; font-variant-numeric: tabular-nums; }
@@ -150,7 +152,7 @@ class WsfcAirQuality extends LitElement {
       .srow .plain { grid-column: 3 / -1; text-align: right; font-size: 14px; }
 
       /* vertical bars */
-      .bars { display: grid; grid-template-columns: 30px repeat(var(--n), minmax(36px, 1fr)); column-gap: 8px; margin-top: 10px; }
+      .bars { display: grid; grid-template-columns: 30px repeat(var(--n), minmax(calc(36px * var(--wsfc-sx, 1)), 1fr)); column-gap: calc(8px * var(--wsfc-sx, 1)); margin-top: calc(10px * var(--wsfc-sy, 1)); }
       .axis { position: relative; height: var(--h); font-size: 10px; color: var(--wsfc-muted); }
       .axis span { position: absolute; right: 0; transform: translateY(50%); }
       .col { display: flex; flex-direction: column; align-items: center; min-width: 0; cursor: pointer; }
@@ -258,7 +260,7 @@ class WsfcAirQuality extends LitElement {
 
   _tiles(m) {
     if (!m.rows.length) return nothing;
-    return html`<div class="tiles">${m.rows.map((r) => html`
+    return html`<div class="tiles ${this.config?.tile_fill ? "fill" : ""}">${m.rows.map((r) => html`
       <div class="tile" style=${this._color(r)} @click=${() => moreInfo(this, r.e)} title=${chipTitle(r) || r.e}>
         <span class="dot"></span>
         <div><div class="n">${r.label}</div><div class="v">${valueText(r)}</div></div>

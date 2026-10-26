@@ -21,6 +21,7 @@ import { flexBase, trackerConfig } from "../panels/flex.js";
 import { prune, clone } from "../card/config.js";
 import { METRICS, metricEntity } from "../card/metrics.js";
 import "./layout-map.js";
+import "./layout-probe.js";
 import { renderFields, fieldStyles } from "./fields.js";
 import { openConfigDialog } from "./config-io.js";
 import { setUnsaved, isLive, setLive } from "../card/unsaved.js";
@@ -66,6 +67,7 @@ const APPEARANCE_GROUPS = [
   ["Layout & behaviour", [
     { name: "layout", selector: { select: { options: [{ value: "auto", label: "Size to content" }, { value: "fullscreen", label: "Full screen (fills the view below the header)" }] } } },
     { name: "fit_height", when: (d) => d.layout === "fullscreen", selector: { boolean: {} }, default: true, helper: "Full screen: panels with a height share the screen height (row height is calculated)." },
+    { name: "fit_strict", label: "Strict fit to screen dimensions", when: (d) => d.layout === "fullscreen" && d.fit_height !== false, selector: { boolean: {} }, default: false, helper: "Every panel is exactly the height you set, so the page fits the screen as the layout map shows; content taller than its panel scrolls inside the panel. Off: panels grow to fit their content (the page may scroll)." },
     { name: "layout_size", selector: { select: { options: [{ value: "auto", label: "Automatic (from the card's width)" }, { value: "wide", label: "Wide — desktop layout" }, { value: "medium", label: "Medium — tablet layout" }, { value: "narrow", label: "Narrow — phone layout (stacked)" }] } }, helper: "In a Sections view the card is only as wide as its section; widen the section or use a Panel view for the desktop layout." },
     { name: "row_height", selector: { number: { min: 40, max: 300, mode: "box", unit_of_measurement: "px" } }, helper: "Height of one row unit (default 110)." },
     { name: "gap", selector: { number: { min: 0, max: 32, mode: "box", unit_of_measurement: "px" } }, helper: "Space between panels (default 12)." },
@@ -78,7 +80,7 @@ const GENERAL_DEFAULTS = { layout: "auto", panel_bar: true, remember: true, fit_
 
 const LABELS = {
   entity: "Weather entity", title: "Title", subtitle: "Subtitle", icon: "Icon", layout: "Layout", panel_bar: "Panel buttons",
-  remember: "Remember Panel Button States", station_device: "Weather station device", layout_size: "Layout size", fit_height: "Fit panels to the screen height", row_height: "Row height", gap: "Gap", span: "Width", rows: "Height", display: "Display",
+  remember: "Remember Panel Button States", station_device: "Weather station device", layout_size: "Layout size", fit_height: "Fit panels to the screen height", fit_strict: "Strict fit to screen dimensions", row_height: "Row height", gap: "Gap", span: "Width", rows: "Height", display: "Display",
   in_bar: "Panel button", tile_background: "Panel background", show: "Shown", metric: "Metric", label: "Label", color: "Color", digits: "Decimals", chart: "Sparkline",
   hours: "Sparkline hours", show_minmax: "Show today's min/max", series: "Series", ranges: "Range buttons", range: "Default range",
   show_readings: "Show current readings", left_min: "Left axis min", left_max: "Left axis max", right_min: "Right axis min",
@@ -471,7 +473,7 @@ class WeatherStationFlexCardEditor extends LitElement {
     const bar = c.panel_bar !== false && !this._panels.some((p) => p.type === "heading" && p.show_bar);
     // Dashboard header + the card's own margin, padding, button row and title.
     const chrome = 56 + (full ? 16 : 8) + 2 * gap + (bar ? 40 + gap : 0) + (c.title ? 44 + gap : 0);
-    return { w, h, chrome, gap, row: c.row_height || 110, fit: full && c.fit_height !== false, mode: c.layout_guide || "line" };
+    return { w, h, chrome, gap, row: c.row_height || 110, fit: full && c.fit_height !== false, strict: full && c.fit_height !== false && !!c.fit_strict, mode: c.layout_guide || "line" };
   }
 
   _screenGuide() {
@@ -505,7 +507,9 @@ class WeatherStationFlexCardEditor extends LitElement {
     return html`
       <p class="hint"><b>Drag</b> a panel to move it; drag its <b>right or bottom edge</b> (or the corner) to resize. Keyboard: arrows move, Shift+arrows resize. This is the desktop layout — tablets and phones adapt automatically. Dashed = hidden on load.</p>
       ${this._screenGuide()}
-      <wsfc-layout-map .panels=${this._panels} .guide=${this._guideSpec()} @layout-changed=${(e) => {
+      ${this._guideSpec() ? html`<wsfc-layout-probe .hass=${this.hass} .config=${this._config} .guide=${this._guideSpec()}
+        @probe-measured=${(e) => { this._measured = e.detail; this.requestUpdate(); }}></wsfc-layout-probe>` : nothing}
+      <wsfc-layout-map .panels=${this._panels} .guide=${this._guideSpec()} .measured=${this._guideSpec() ? this._measured : null} @layout-changed=${(e) => {
         this._flexEds.clear();
         this._openPanel = null;
         this._setPanels(e.detail.panels);

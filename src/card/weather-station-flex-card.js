@@ -70,6 +70,9 @@ class WeatherStationFlexCard extends LitElement {
     _popup: { state: true }, // index of the open pop-up panel, or null
     _focus: { state: true }, // index of an expanded grid panel, or null
     _size: { state: true }, // "wide" | "medium" | "narrow"
+    _collapsed: { state: true }, // Set of panel keys collapsed to their header
+    // Editor layout probe: the card's height on the target screen (px).
+    screenHeight: { attribute: false },
   };
 
   static getConfigElement() {
@@ -94,6 +97,47 @@ class WeatherStationFlexCard extends LitElement {
     this._popup = null;
     this._focus = null;
     this._hidden = this._loadHidden(panels);
+    this._collapsed = this._loadCollapsed(panels);
+  }
+
+  // Strict fit: full screen with fit on and "Strict fit to screen dimensions".
+  get _strict() {
+    return this._full && this._config.fit_height !== false && !!this._config.fit_strict;
+  }
+
+  // Collapse to the title header: panels with a header, in the grid.
+  _canCollapse(p) {
+    const m = panelMeta(p);
+    return !!p.collapsible && !m?.bare && p.type !== "hero" && !["metric", "stack", "clock", "chips"].includes(p.type) && p.display !== "tile_popup" && p.show_title !== false;
+  }
+
+  _isCollapsed(p, i) {
+    return this._collapsed.has(this._key(p, i));
+  }
+
+  _toggleCollapse(p, i) {
+    const s = new Set(this._collapsed);
+    const k = this._key(p, i);
+    s.has(k) ? s.delete(k) : s.add(k);
+    this._collapsed = s;
+    if (this._config.remember !== false) {
+      try {
+        localStorage.setItem(`${this._storageKey()}:collapsed`, JSON.stringify({ sig: this._sig(this._config.panels), collapsed: [...s] }));
+      } catch (_e) { /* ignore */ }
+    }
+    this.requestUpdate();
+    this._scheduleFit?.();
+  }
+
+  // Start collapsed (per panel), or as left last time when remembering is on.
+  _loadCollapsed(panels) {
+    const def = new Set(panels.map((p, i) => (p.collapsible && p.collapsed ? this._key(p, i) : null)).filter(Boolean));
+    if (this._config.remember === false || this.preview) return def;
+    try {
+      const saved = JSON.parse(localStorage.getItem(`${this._storageKey()}:collapsed`) || "null");
+      if (saved?.sig === this._sig(panels)) return new Set(saved.collapsed);
+    } catch (_e) { /* ignore */ }
+    return def;
   }
 
   // A panel's identity for remembering its toggle: explicit id, else type +
@@ -291,7 +335,7 @@ class WeatherStationFlexCard extends LitElement {
     ].join(";");
     const barInHeading = c.panels.some((p) => p.type === "heading" && p.show_bar);
     return html`
-      <ha-card class=${`wsfc ${full ? "full" : ""} ${this._layoutSize} ${bg ? "animated" : ""} ${lite ? "lite" : ""}`} style=${style}>
+      <ha-card class=${`wsfc ${full ? "full" : ""} ${this._strict ? "strict" : ""} ${this._layoutSize} ${bg ? "animated" : ""} ${lite ? "lite" : ""}`} style=${style + (this.screenHeight ? `;height:${this.screenHeight}px` : "")}>
         ${this.preview && isUnsaved() ? html`<div class="unsaved" role="status">✎ Unsaved changes — press Save in the editor to keep them</div>` : nothing}
         ${c.background === "image" ? this._renderImage() : bg && !lite ? this._renderBackground() : nothing}
         ${c.title ? this._renderTitle() : nothing}
@@ -474,13 +518,24 @@ class WeatherStationFlexCard extends LitElement {
       // Panels that fit their content to the panel (Wind) get a fixed height, so
       // a tall rose shrinks instead of stretching the row and its neighbours.
       const fit = !!meta.fit && rows > 0 && p.fit !== false && this._focus == null;
+      // Strict fit: every panel is exactly its rows tall; taller content scrolls inside it.
+      const strict = this._strict && rows > 0 && this._focus == null;
+      const collapsible = this._canCollapse(p) && this._focus == null;
+      const collapsed = collapsible && this._isCollapsed(p, i);
       const h = `calc(${rows} * var(--wsfc-row) + ${rows - 1} * var(--wsfc-gap))`;
-      const style = `grid-column: span ${span};grid-row: span ${rows ? Math.max(1, Math.round(rows * 2)) : 2};${rows ? `min-height:${h};` : ""}`;
+      const style = collapsed
+        ? `grid-column: span ${span};grid-row: span 1;`
+        : `grid-column: span ${span};grid-row: span ${rows ? Math.max(1, Math.round(rows * 2)) : 2};${rows ? `min-height:${h};` : ""}${strict ? `height:${h};` : ""}`;
       const bare = meta.bare || p.type === "hero";
       const tapToOpen = p.display === "tile_popup";
       const expandable = !bare && !tapToOpen && !["metric", "stack", "clock", "chips"].includes(p.type) && size !== "narrow";
       const bg = p.tile_background && p.tile_background !== "default" ? `bg-${p.tile_background}` : "";
-      return html`<section class="tile ${p.type} ${meta.bare ? "bare" : ""} ${bg} ${tileFx(p)} ${rows ? "" : "auto"} ${fit ? "fit" : ""} ${tapToOpen ? "tap" : ""}" style=${style}>
+      return html`<section class="tile ${p.type} ${meta.bare ? "bare" : ""} ${bg} ${tileFx(p)} ${rows ? "" : "auto"} ${fit || (strict && !collapsed) ? "fit" : ""} ${strict && !fit && !collapsed ? "strict" : ""} ${collapsed ? "collapsed" : ""} ${tapToOpen ? "tap" : ""} ${collapsible ? "can-collapse" : ""}" style=${style} data-i=${i}>
+        ${collapsible
+          ? html`<button class="collapse" type="button" @click=${() => this._toggleCollapse(p, i)} aria-expanded=${String(!collapsed)}
+              aria-label=${`${collapsed ? "Expand" : "Collapse"} ${p.title || this._autoTitle(p)}`} title=${collapsed ? "Show" : "Collapse to its title"}>
+              <ha-icon icon=${collapsed ? "mdi:chevron-down" : "mdi:chevron-up"}></ha-icon></button>`
+          : nothing}
         ${tapToOpen
           ? html`<button class="tap-open" type="button" aria-haspopup="dialog" aria-label=${`Open ${p.title || this._autoTitle(p)}`}
               @click=${() => (this._popup = i)}><span><ha-icon icon="mdi:arrow-expand"></ha-icon></span></button>`
@@ -526,7 +581,14 @@ class WeatherStationFlexCard extends LitElement {
     el.config = p;
     el.station = this._station;
     el.cardBg = this._animatedBg;
-    el.lite = this._lite;
+    // A collapsed panel is paused too (a folded map stops loading and animating).
+    el.lite = this._lite || (!popup && this._canCollapse(p) && this._focus == null && this._isCollapsed(p, i));
+    // Content size (zoom) and, for panels that use them, horizontal / vertical spacing.
+    const z = Number(p.content_scale) || 100;
+    el.style.zoom = z !== 100 ? String(Math.max(0.4, Math.min(2, z / 100))) : "";
+    const sx = Number(p.content_width) || 100, sy = Number(p.content_height) || 100;
+    el.style.setProperty("--wsfc-sx", String(sx / 100));
+    el.style.setProperty("--wsfc-sy", String(sy / 100));
     el.fit = !popup && !!panelMeta(p)?.fit && rowsOf(p) > 0 && p.fit !== false && this._focus == null;
     el.hass = this.hass;
     if (p.type === "heading") el.bar = p.show_bar && this._config.panel_bar !== false ? this._renderBar() : null;
@@ -593,7 +655,23 @@ class WeatherStationFlexCard extends LitElement {
        the tile fills its rows (at least its own height) and the panel shrinks
        its content to fit. */
     .tile.fit { overflow: hidden; contain: size; }
-    .tile.fit > :not(.expand):not(.tap-open) { flex: 1 1 0; min-height: 0; }
+    .tile.fit > :not(.expand):not(.tap-open):not(.collapse) { flex: 1 1 0; min-height: 0; }
+    /* Strict fit: content taller than the panel scrolls inside it. */
+    .tile.strict > :not(.expand):not(.tap-open):not(.collapse) { overflow: auto; scrollbar-width: thin; }
+    /* Collapsed to the title header. */
+    .tile.collapsed { min-height: 0 !important; height: auto !important; max-height: 56px; overflow: hidden; contain: none; }
+    .tile.collapsed > :not(.expand):not(.tap-open):not(.collapse) { max-height: 32px; overflow: hidden; }
+    .collapse {
+      position: absolute; top: 8px; right: 34px; z-index: 3;
+      border: 0; background: transparent; color: var(--secondary-text-color);
+      cursor: pointer; padding: 4px; border-radius: 50%; line-height: 0;
+    }
+    .tile:not(:has(.expand)) .collapse { right: 8px; }
+    .collapse ha-icon { --mdc-icon-size: 18px; }
+    .collapse:hover { color: var(--primary-text-color); }
+    .collapse:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 2px; }
+    .tile.can-collapse .collapse ~ * { --wsfc-head-pad: 56px; }
+    .tile.can-collapse:not(:has(.expand)) .collapse ~ * { --wsfc-head-pad: 28px; }
     .tile.tap { cursor: pointer; }
     /* The live preview never takes the pointer (a map would swallow taps), and
        its own stacking (Leaflet panes) stays under the open button. */
