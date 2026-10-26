@@ -31,6 +31,10 @@ import "../panels/pollen.js";
 import "../panels/air-quality.js";
 import "../panels/clock.js";
 import "../panels/records.js";
+import "../panels/watch.js";
+import "../panels/rain.js";
+import "../panels/garden.js";
+import "../panels/lightning.js";
 import "../editor/editor.js";
 
 const NARROW_PX = 720;

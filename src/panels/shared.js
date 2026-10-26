@@ -165,3 +165,27 @@ export const pausedStyles = css`
 export function paused(icon, what) {
   return html`<div class="paused" role="img" aria-label="${what} paused while editing"><ha-icon icon=${icon}></ha-icon><span>${what} — paused while editing</span></div>`;
 }
+
+// Label / value rows used by the records, rain, garden and lightning panels.
+export const statStyles = css`
+  .sec { margin-top: calc(10px * var(--wsfc-sy, 1)); }
+  .sec:first-of-type { margin-top: 0; }
+  .sec h4 { margin: 0 0 4px; font-size: 12px; font-weight: 600; color: var(--wsfc-muted); text-transform: uppercase; letter-spacing: 0.04em; display: flex; gap: 6px; align-items: baseline; }
+  .sec h4 small { text-transform: none; letter-spacing: 0; font-weight: 400; }
+  .row { display: grid; grid-template-columns: 1fr auto; gap: 2px calc(10px * var(--wsfc-sx, 1)); align-items: baseline; padding: calc(4px * var(--wsfc-sy, 1)) 0;
+    border-bottom: 1px solid var(--divider-color, rgba(127, 127, 127, 0.2)); }
+  .row:last-child { border-bottom: 0; }
+  .row > span { font-size: 13px; }
+  .row b { font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; }
+  .row small { grid-column: 2; text-align: right; font-size: 11px; color: var(--wsfc-muted); margin-top: -2px; }
+  .row.click { cursor: pointer; }
+  .row.hot b { color: var(--wsfc-temp); }
+  .row.cold b { color: var(--wsfc-hum); }
+  .src { margin-top: 8px; font-size: 11px; color: var(--wsfc-muted); line-height: 1.4; }
+  .note { font-size: 12px; color: var(--wsfc-muted); line-height: 1.45; margin-top: 6px; }
+`;
+
+/** A label / value row (small: a second line under the value). */
+export function statRow(label, value, small, cls = "", onClick) {
+  return html`<div class="row ${cls} ${onClick ? "click" : ""}" @click=${onClick || nothing}><span>${label}</span><b>${value}</b>${small ? html`<small>${small}</small>` : nothing}</div>`;
+}

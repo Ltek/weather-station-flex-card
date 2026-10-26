@@ -113,6 +113,17 @@ function stationStates() {
     sensor(P + "uv_index", 4, "UV index", undefined, "GW2000B UV Index"),
     sensor(P + "rain_rate", 0, "in/h", "precipitation_intensity", "GW2000B Rain Rate"),
     sensor(P + "daily_rain", 0.02, "in", "precipitation", "GW2000B Daily Rain"),
+    sensor(P + "event_rain", 0.06, "in", "precipitation", "GW2000B Event Rain"),
+    sensor(P + "24h_rain", 0.04, "in", "precipitation", "GW2000B 24h Rain"),
+    sensor(P + "weekly_rain", 0.06, "in", "precipitation", "GW2000B Weekly Rain"),
+    sensor(P + "monthly_rain", 0.71, "in", "precipitation", "GW2000B Monthly Rain"),
+    sensor(P + "yearly_rain", 8.3, "in", "precipitation", "GW2000B Yearly Rain"),
+    ...(params.get("lightning") ? [
+      sensor(P + "lightning_strikes", 7, "", undefined, "GW2000B Lightning Strikes"),
+      sensor(P + "lightning_strikes_distance", 9, "km", "distance", "GW2000B Lightning Strikes Distance"),
+      { ...sensor(P + "last_lightning_strike", new Date(Date.now() - 12 * 60e3).toISOString(), "", "timestamp", "GW2000B Last Lightning Strike") },
+    ] : []),
+    ...(params.get("soil") ? [sensor(P + "soil_moisture_1", 34, "%", "moisture", "GW2000B Soil Moisture 1")] : []),
   ];
 }
 
@@ -182,7 +193,7 @@ function buildHass() {
   erie("sensor.erie_benzene", 1.8, "ppb");
   erie("sensor.erie_ethane", 3.53, "ppb");
   // CoAgMET area records (coagmet_records package), as Home Assistant shows it.
-  add("sensor.coagmet_area_records", "2026-10-25", { friendly_name: "CoAgMET area records", icon: "mdi:trophy-outline", ...{"coagmet_station": "lmt01", "network": "nw", "station_name": "Longmont South", "location": "1 mile northwest of HWY 287 and Niwot Rd", "latitude": 40.0733, "longitude": -105.054, "elevation_ft": 5085, "since": "1994-01-01", "days": 11986, "units": "us", "source": "CoAgMET, Colorado State University", "warmest": {"value": 104.0, "date": "2026-08-03"}, "coldest": {"value": -23.02, "date": "2022-12-22"}, "gust": {"value": 77.7, "date": "2007-06-24"}, "wettest": {"value": 3.01, "date": "2013-09-11"}, "today": {"date": "10-26", "years": 32, "high": {"value": 81.5, "date": "1999-10-26"}, "low": {"value": -3.92, "date": "2020-10-26"}, "wettest": {"value": 1.05, "date": "2006-10-26"}}, "month": {"month": 10, "warmest": {"value": 92.6, "date": "2023-10-02"}, "coldest": {"value": -6.25, "date": "2020-10-27"}, "gust": {"value": 50.05, "date": "2012-10-16"}, "wettest": {"value": 1.05, "date": "2017-10-02"}}, "frost": {"season_start": "2026-07-01", "first": {"date": "2026-10-17", "value": 30.6}, "nights": 1, "typical_first": "10-08"}, "gdd": {"since": "2026-01-01", "value": 3857, "base": 50}} }, { platform: "command_line" });
+  if (!params.get("nocoag")) add("sensor.coagmet_area_records", "2026-10-25", { friendly_name: "CoAgMET area records", icon: "mdi:trophy-outline", ...{"coagmet_station": "lmt01", "network": "nw", "station_name": "Longmont South", "location": "1 mile northwest of HWY 287 and Niwot Rd", "latitude": 40.0733, "longitude": -105.054, "elevation": 1550, "since": "1994-01-01", "days": 11986, "daily_units": {"temperature_2m_max": "\u00b0F", "temperature_2m_min": "\u00b0F", "precipitation_sum": "inch", "wind_gusts_10m_max": "mp/h", "et0_fao_evapotranspiration": "inch"}, "source": "CoAgMET, Colorado State University", "kind": "measured", "records": {"temperature_2m_max": {"value": 104.0, "date": "2026-08-03"}, "temperature_2m_min": {"value": -23.02, "date": "2022-12-22"}, "wind_gusts_10m_max": {"value": 77.7, "date": "2007-06-24"}, "precipitation_sum": {"value": 3.01, "date": "2013-09-11"}}, "records_today": {"date": "10-26", "years": 32, "temperature_2m_max": {"value": 81.5, "date": "1999-10-26"}, "temperature_2m_min": {"value": -3.92, "date": "2020-10-26"}, "precipitation_sum": {"value": 1.05, "date": "2006-10-26"}}, "records_month": {"month": 10, "temperature_2m_max": {"value": 92.6, "date": "2023-10-02"}, "temperature_2m_min": {"value": -6.25, "date": "2020-10-27"}, "wind_gusts_10m_max": {"value": 50.05, "date": "2012-10-16"}, "precipitation_sum": {"value": 1.05, "date": "2017-10-02"}}, "frost": {"season_start": "2026-07-01", "first": {"date": "2026-10-17", "value": 30.6}, "last": {"date": "2026-10-17", "value": 30.6}, "nights": 1, "typical_first": "10-08", "threshold": 32}, "growing_degree_days": {"since": "2026-01-01", "value": 3857, "base": 50, "cap": 86}, "precipitation": {"month_sum": 0.68, "month_normal": 0.96, "year_sum": 8.11, "year_normal_to_date": 11.97, "last_7_days": 0.02, "last": {"date": "2026-10-24", "value": 0.02}, "years": 32}, "evapotranspiration": {"last_7_days": 0.61, "days": [{"date": "2026-10-19", "value": 0.073}, {"date": "2026-10-20", "value": 0.088}, {"date": "2026-10-21", "value": 0.103}, {"date": "2026-10-22", "value": 0.07}, {"date": "2026-10-23", "value": 0.135}, {"date": "2026-10-24", "value": 0.074}, {"date": "2026-10-25", "value": 0.064}]}} }, { platform: "command_line" });
   an("sensor.airnow_reporting_area", "Denver", { friendly_name: "AirNow Reporting area" }, "station");
   return {
     ...base,
@@ -292,6 +303,7 @@ const config = () => ({
       extra: [{ entity: "sensor.erie_benzene", label: "Benzene" }, { entity: "sensor.erie_ethane", label: "Ethane" }] })),
     { type: "statistics", preset: "air_quality", span: 6, rows: 3 }, { type: "metric", metric: "aqi" }, { type: "metric", metric: "pm2_5" },
   ] } : {}),
+  ...(params.get("panels") === "garden" ? { panels: [{ type: "hero", span: 12, rows: 0 }, { type: "vpd", span: 3 }, { type: "frost_watch", span: 3 }, { type: "rain", span: 3 }, { type: "lightning", span: 3 }, { type: "garden", span: 4 }, { type: "records", span: 4 }, { type: "records", span: 4, area_source: "open_meteo", show_station: false, title: "Records (Open-Meteo)" }] } : {}),
   ...(params.get("panels") === "records" ? { panels: [{ type: "records", span: 4 }, { type: "records", span: 4, show_station: false, show_month: false, title: "Area only" }, { type: "hero", span: 4 }] } : {}),
   ...(params.get("panels") === "legacy" ? { panels: LEGACY_PANELS } : {}),
 });

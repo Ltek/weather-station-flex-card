@@ -125,13 +125,40 @@ The embedded section editor saves its changes under `flex:` (the same settings a
       thresholds: [2, 4, 8, 16]      # moderate, elevated, high, very high
 ```
 
-### Weather records with area records (Colorado)
+### Weather records, rain and the garden
 
-The panel shows your station's own records from Home Assistant's statistics. For decades of area records now, install the CoAgMET package from [`extras/coagmet`](../extras/coagmet): copy `coagmet_records.py` to `/config/` and `coagmet_records.yaml` to `/config/packages/`, then restart. It defaults to Longmont South (`lmt01`, Northern Water network, since 1994); change the station id in the YAML for another CoAgMET or Northern Water station. The panel finds `sensor.coagmet_area_records` on its own.
+Area data comes from the CoAgMET package (Colorado, measured) when it's installed, else from Open-Meteo (anywhere, modelled). Both use Open-Meteo's daily names (`temperature_2m_max`, `temperature_2m_min`, `precipitation_sum`, `wind_gusts_10m_max`, `et0_fao_evapotranspiration`), so the panels read them the same way.
+
+CoAgMET package: copy `extras/coagmet/coagmet_records.py` to `/config/` and `coagmet_records.yaml` to `/config/packages/`, then restart. It defaults to Longmont South (`lmt01`, Northern Water network, since 1994); change the station id in the YAML for another CoAgMET or Northern Water station.
 
 ```yaml
 - type: records
-  show_month: false        # just this station, today's date and all-time
+  area_source: auto          # auto | coagmet | open_meteo | off
+- type: rain
+  rows: [rain_today, rain_24h, rain_event, rain_week, rain_month, rain_year, last_rain]
+- type: garden
+  outlook_source: forecast   # or open_meteo
+- type: vpd
+- type: frost_watch
+  frost_low: 34              # frost tonight when the forecast low is at or below (your units)
+- type: lightning            # hidden until a lightning sensor exists
+```
+
+### Full screen that fits exactly, maps folded at load
+
+```yaml
+layout: fullscreen
+fit_strict: true             # every panel exactly its rows; tall content scrolls inside
+layout_screen: 1280x800      # the editor's layout map shows this screen at load
+panels:
+  - type: radar
+    collapsible: true
+    collapsed: true          # starts folded to its title (and paused)
+  - type: air_quality
+    layout: tiles
+    content_scale: 85        # everything inside smaller
+    content_width: 70        # narrower tiles and gaps
+    content_height: 60       # tighter rows
 ```
 
 ## Notes

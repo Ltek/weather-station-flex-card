@@ -7,14 +7,19 @@
 #
 # Once a day coagmet_records.py downloads the station's daily history, drops
 # impossible readings (instrument faults), and stores a small summary on
-# sensor.coagmet_area_records:
-#   warmest / coldest / gust / wettest   all-time records (value, date)
-#   today    records for today's calendar date (and how many years)
-#   month    records for this month
-#   frost    this season's first frost (from July 1), frost nights, the typical
-#            first-frost date
-#   gdd      growing degree days since January 1 (86/50 method, base 50 °F)
-# The card's Records and Frost & garden panels find this sensor on their own.
+# sensor.coagmet_area_records. Values use Open-Meteo's daily variable names
+# (temperature_2m_max, temperature_2m_min, precipitation_sum,
+# wind_gusts_10m_max, et0_fao_evapotranspiration) with a daily_units map:
+#   records              all-time records (value, date) per variable
+#   records_today        records for today's calendar date (and how many years)
+#   records_month        records for this month
+#   frost                this season's first / last frost (from July 1), frost
+#                        nights, the typical first-frost date
+#   growing_degree_days  since January 1 (86/50 method, base 50 °F)
+#   precipitation        this month and year so far, against the station's normal;
+#                        last 7 days; the last day with rain
+#   evapotranspiration   water lost by a reference lawn, last 7 days
+# The card's Weather records, Rain totals and Frost & garden panels find it.
 #
 # Install:
 #   1. Copy coagmet_records.py to /config/coagmet_records.py
@@ -42,19 +47,19 @@ command_line:
         - location
         - latitude
         - longitude
-        - elevation_ft
+        - elevation
         - since
         - days
-        - units
+        - daily_units
         - source
-        - warmest
-        - coldest
-        - gust
-        - wettest
-        - today
-        - month
+        - kind
+        - records
+        - records_today
+        - records_month
         - frost
-        - gdd
+        - growing_degree_days
+        - precipitation
+        - evapotranspiration
         - error
 
 # The summary changes once a day; keep its attributes out of the recorder.

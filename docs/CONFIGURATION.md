@@ -169,6 +169,20 @@ Default size: 12 of 12 wide, 3 rows high. Also takes `flex:`: Weather Flex secti
 | `fact_value_weight` | `400` · `500` · `700` | `400` | **Value weight** |
 | `fact_value_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Value color** — Not set: primary text. |
 
+### Air dryness (VPD) — `type: vpd`
+
+Default size: 4 of 12 wide, fits its content.
+
+| Option | Value | Default | What it does |
+|---|---|---|---|
+| `entity` | entity id (`sensor.*`) |  | **VPD sensor** — Default: the station's own VPD sensor, else worked out from temperature and humidity. |
+| `show_plant` | `true` / `false` | `true` | **Plant picture** |
+| `show_advice` | `true` / `false` | `true` | **Garden advice** — What the reading means this season. |
+| `show_scale` | `true` / `false` | `true` | **Colour scale** |
+| `show_note` | `true` / `false` | `true` | **Explanation** |
+| `content_width` | number 30–200 % | `100` | **Horizontal spacing** |
+| `content_height` | number 30–200 % | `100` | **Vertical spacing** |
+
 ### Air quality — `type: air_quality`
 
 Default size: 4 of 12 wide, fits its content.
@@ -294,6 +308,39 @@ Default size: 8 of 12 wide, 4 rows high. Also takes `flex:`: Weather Flex sectio
 
 No options of its own beyond `flex:`.
 
+### Frost & heat watch — `type: frost_watch`
+
+Default size: 4 of 12 wide, fits its content.
+
+| Option | Value | Default | What it does |
+|---|---|---|---|
+| `use_forecast` | `true` / `false` | `true` | **Use tonight's forecast low** — Also warn about frost later tonight (lowest hourly forecast in the next 18 hours). |
+| `show_note` | `true` / `false` | `true` | **Unofficial note** |
+| `heat_danger` | number |  | **Heat danger at feels-like** — In your temperature unit. Default 103 °F / 39 °C. |
+| `heat_caution` | number |  | **Heat caution at feels-like** — Default 90 °F / 32 °C. |
+| `frost_temp` | number |  | **Frost possible at or below** — Air temperature, any time. Default 36 °F / 2 °C. |
+| `frost_night_temp` | number |  | **Calm, dry night: frost at or below** — With a dew point at or below freezing and light wind. Default 41 °F / 5 °C. |
+| `frost_low` | number |  | **Frost tonight when the low is at or below** — Default 34 °F / 1 °C. |
+
+### Frost & the garden — `type: garden`
+
+Default size: 4 of 12 wide, fits its content.
+
+| Option | Value | Default | What it does |
+|---|---|---|---|
+| `show_outlook` | `true` / `false` | `true` | **Frost outlook (next nights)** |
+| `outlook_source` | `forecast` · `open_meteo` | `forecast` | **Outlook from** |
+| `show_season` | `true` / `false` | `true` | **Frost this season** |
+| `show_gdd` | `true` / `false` | `true` | **Growing degree days** |
+| `show_soil` | `true` / `false` | `true` | **Soil temperature and moisture** — The station's soil sensors, else the Soil Temperature integration, else Open-Meteo. |
+| `show_water` | `true` / `false` | `true` | **Water balance (last 7 days)** |
+| `open_meteo` | `true` / `false` | `true` | **Use Open-Meteo** — Forecast lows, soil and evapotranspiration for your location (free, no key). |
+| `area_source` | `auto` · `coagmet` · `open_meteo` · `off` | `auto` | **Area data from** |
+| `soil_temperature_entity` | entity id (`sensor.*`) |  | **Soil temperature sensor** |
+| `soil_moisture_entity` | entity id (`sensor.*`) |  | **Soil moisture sensor** |
+| `content_width` | number 30–200 % | `100` | **Horizontal spacing** |
+| `content_height` | number 30–200 % | `100` | **Vertical spacing** |
+
 ### Graph — `type: graph`
 
 Default size: 6 of 12 wide, 3 rows high.
@@ -323,13 +370,26 @@ Default size: 8 of 12 wide, 3 rows high. Also takes `flex:`: Weather Flex sectio
 
 No options of its own beyond `flex:`.
 
+### Lightning — `type: lightning`
+
+Default size: 4 of 12 wide, fits its content.
+
+| Option | Value | Default | What it does |
+|---|---|---|---|
+| `near_km` | number 1–40 | `16` | **Warn within (km)** — Default 16 km (10 miles). |
+| `near_minutes` | number 5–120 | `30` | **…for (minutes after a strike)** |
+| `show_note` | `true` / `false` | `true` | **Note** |
+| `distance_entity` | entity id (`sensor.*`) |  | **Distance sensor** — Found on its own (e.g. Ecowitt WH57). |
+| `count_entity` | entity id (`sensor.*`) |  | **Strikes sensor** |
+| `time_entity` | entity id (`sensor.*`) |  | **Last strike time sensor** |
+
 ### Metric tile — `type: metric`
 
 Default size: 2 of 12 wide, 2 rows high.
 
 | Option | Value | Default | What it does |
 |---|---|---|---|
-| `metric` | `temperature` · `apparent_temperature` · `dew_point` · `humidity` · `pressure` · `wind_speed` · `wind_gust_speed` · `uv_index` · `solar_radiation` · `illuminance` · `rain_rate` · `rain_today` · `rain_24h` · `rain_event` · `battery` · `battery_voltage` · `capacitor` · `signal` · `signal_quality` · `rssi` · `online` · `hardware_id` · `vpd` · `indoor_temperature` · `aqi` · `pm2_5` · `pm10` · `ozone` · `co2` · `indoor_humidity` |  | **Metric** — Resolved through Weather Sources; set an entity to use any sensor instead. |
+| `metric` | `temperature` · `apparent_temperature` · `dew_point` · `humidity` · `pressure` · `wind_speed` · `wind_gust_speed` · `uv_index` · `solar_radiation` · `illuminance` · `rain_rate` · `rain_today` · `rain_24h` · `rain_event` · `rain_hour` · `rain_week` · `rain_month` · `rain_year` · `lightning_distance` · `lightning_count` · `lightning_time` · `soil_moisture` · `soil_temperature` · `battery` · `battery_voltage` · `capacitor` · `signal` · `signal_quality` · `rssi` · `online` · `hardware_id` · `vpd` · `indoor_temperature` · `aqi` · `pm2_5` · `pm10` · `ozone` · `co2` · `indoor_humidity` |  | **Metric** — Resolved through Weather Sources; set an entity to use any sensor instead. |
 | `entity` | entity id |  | **Sensor** |
 | `label` | text |  | **Label** |
 | `color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Color** — Not set: the metric's color. |
@@ -392,6 +452,18 @@ Default size: 6 of 12 wide, 4 rows high.
 | `owm_opacity` | number 0.1–1 |  | **Layer opacity** |
 | `base_map_url` | text |  | **Custom tile URL** — Custom XYZ tile URL (overrides base map). |
 | `base_map_attribution` | text |  | **Custom tile attribution** |
+
+### Rain totals — `type: rain`
+
+Default size: 4 of 12 wide, fits its content.
+
+| Option | Value | Default | What it does |
+|---|---|---|---|
+| `rows` | list of: `rain_rate` · `rain_hour` · `rain_today` · `rain_24h` · `rain_event` · `rain_week` · `rain_month` · `rain_year` · `last_rain` |  | **Rows** — In this order. Week, month and year come from Home Assistant's history when the station has no sensor for them. |
+| `show_normal` | `true` / `false` | `true` | **Against the normal** — This month and year so far against the area's normal (CoAgMET or Open-Meteo). |
+| `area_source` | `auto` · `coagmet` · `open_meteo` · `off` | `auto` | **Area data from** |
+| `content_width` | number 30–200 % | `100` | **Horizontal spacing** |
+| `content_height` | number 30–200 % | `100` | **Vertical spacing** |
 
 ### Sky Tracker — `type: sky_tracker`
 
@@ -495,6 +567,7 @@ Default size: 4 of 12 wide, fits its content.
 | `show_all_time` | `true` / `false` | `true` | **All-time area records** |
 | `show_badge` | `true` / `false` | `true` | **Record badge** — A badge when today beats the area record for its date. |
 | `show_source` | `true` / `false` | `true` | **Source line** |
+| `area_source` | `auto` · `coagmet` · `open_meteo` · `off` | `auto` | **Area records from** |
 | `records_entity` | entity id (`sensor.*`) |  | **Area records sensor** — Found on its own: the sensor from the coagmet_records package (CoAgMET / Northern Water, Colorado). |
 
 ### Wind — `type: wind`
@@ -746,13 +819,40 @@ The embedded section editor saves its changes under `flex:` (the same settings a
       thresholds: [2, 4, 8, 16]      # moderate, elevated, high, very high
 ```
 
-### Weather records with area records (Colorado)
+### Weather records, rain and the garden
 
-The panel shows your station's own records from Home Assistant's statistics. For decades of area records now, install the CoAgMET package from [`extras/coagmet`](../extras/coagmet): copy `coagmet_records.py` to `/config/` and `coagmet_records.yaml` to `/config/packages/`, then restart. It defaults to Longmont South (`lmt01`, Northern Water network, since 1994); change the station id in the YAML for another CoAgMET or Northern Water station. The panel finds `sensor.coagmet_area_records` on its own.
+Area data comes from the CoAgMET package (Colorado, measured) when it's installed, else from Open-Meteo (anywhere, modelled). Both use Open-Meteo's daily names (`temperature_2m_max`, `temperature_2m_min`, `precipitation_sum`, `wind_gusts_10m_max`, `et0_fao_evapotranspiration`), so the panels read them the same way.
+
+CoAgMET package: copy `extras/coagmet/coagmet_records.py` to `/config/` and `coagmet_records.yaml` to `/config/packages/`, then restart. It defaults to Longmont South (`lmt01`, Northern Water network, since 1994); change the station id in the YAML for another CoAgMET or Northern Water station.
 
 ```yaml
 - type: records
-  show_month: false        # just this station, today's date and all-time
+  area_source: auto          # auto | coagmet | open_meteo | off
+- type: rain
+  rows: [rain_today, rain_24h, rain_event, rain_week, rain_month, rain_year, last_rain]
+- type: garden
+  outlook_source: forecast   # or open_meteo
+- type: vpd
+- type: frost_watch
+  frost_low: 34              # frost tonight when the forecast low is at or below (your units)
+- type: lightning            # hidden until a lightning sensor exists
+```
+
+### Full screen that fits exactly, maps folded at load
+
+```yaml
+layout: fullscreen
+fit_strict: true             # every panel exactly its rows; tall content scrolls inside
+layout_screen: 1280x800      # the editor's layout map shows this screen at load
+panels:
+  - type: radar
+    collapsible: true
+    collapsed: true          # starts folded to its title (and paused)
+  - type: air_quality
+    layout: tiles
+    content_scale: 85        # everything inside smaller
+    content_width: 70        # narrower tiles and gaps
+    content_height: 60       # tighter rows
 ```
 
 ## Notes

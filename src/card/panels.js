@@ -4,6 +4,7 @@ import { METRICS } from "./metrics.js";
 import { pollenModel } from "./pollen.js";
 import { WINDROSE_PRESETS } from "../panels/windrose.js";
 import { factsFields } from "../panels/astro-facts.js";
+import { lightningIds } from "../panels/lightning.js";
 
 const opt = (pairs) => pairs.map(([value, label]) => ({ value, label }));
 const RANGES = ["6h", "12h", "24h", "48h", "7d", "30d", "90d", "365d"];
@@ -272,7 +273,71 @@ export const PANEL_TYPES = {
       { name: "show_all_time", label: "All-time area records", selector: { boolean: {} }, default: true },
       { name: "show_badge", label: "Record badge", selector: { boolean: {} }, default: true, helper: "A badge when today beats the area record for its date." },
       { name: "show_source", label: "Source line", selector: { boolean: {} }, default: true },
-      { name: "records_entity", label: "Area records sensor", selector: { entity: { domain: "sensor" } }, helper: "Found on its own: the sensor from the coagmet_records package (CoAgMET / Northern Water, Colorado)." },
+      { name: "area_source", label: "Area records from", selector: { select: { options: opt([["auto", "Automatic — CoAgMET sensor, else Open-Meteo"], ["coagmet", "CoAgMET sensor only (Colorado, measured)"], ["open_meteo", "Open-Meteo only (anywhere, modelled since 1940)"], ["off", "None — this station only"]]) } }, default: "auto" },
+      { name: "records_entity", label: "Area records sensor", when: (d) => d.area_source !== "open_meteo" && d.area_source !== "off", selector: { entity: { domain: "sensor" } }, helper: "Found on its own: the sensor from the coagmet_records package (CoAgMET / Northern Water, Colorado)." },
+    ],
+  },
+  vpd: {
+    tag: "wsfc-panel-vpd", label: "Air dryness (VPD)", icon: "mdi:water-opacity", span: 4, rows: 0,
+    schema: [
+      { name: "entity", label: "VPD sensor", selector: ent("sensor"), helper: "Default: the station's own VPD sensor, else worked out from temperature and humidity." },
+      { name: "show_plant", label: "Plant picture", selector: { boolean: {} }, default: true },
+      { name: "show_advice", label: "Garden advice", selector: { boolean: {} }, default: true, helper: "What the reading means this season." },
+      { name: "show_scale", label: "Colour scale", selector: { boolean: {} }, default: true },
+      { name: "show_note", label: "Explanation", selector: { boolean: {} }, default: true },
+      { name: "content_width", label: "Horizontal spacing", selector: { number: { min: 30, max: 200, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100 },
+      { name: "content_height", label: "Vertical spacing", selector: { number: { min: 30, max: 200, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100 },
+    ],
+  },
+  frost_watch: {
+    tag: "wsfc-panel-frost-watch", label: "Frost & heat watch", icon: "mdi:snowflake-thermometer", span: 4, rows: 0,
+    schema: [
+      { name: "use_forecast", label: "Use tonight's forecast low", selector: { boolean: {} }, default: true, helper: "Also warn about frost later tonight (lowest hourly forecast in the next 18 hours)." },
+      { name: "show_note", label: "Unofficial note", selector: { boolean: {} }, default: true },
+      { name: "heat_danger", section: "Thresholds", label: "Heat danger at feels-like", selector: { number: { mode: "box", step: 1 } }, helper: "In your temperature unit. Default 103 °F / 39 °C." },
+      { name: "heat_caution", section: "Thresholds", label: "Heat caution at feels-like", selector: { number: { mode: "box", step: 1 } }, helper: "Default 90 °F / 32 °C." },
+      { name: "frost_temp", section: "Thresholds", label: "Frost possible at or below", selector: { number: { mode: "box", step: 0.5 } }, helper: "Air temperature, any time. Default 36 °F / 2 °C." },
+      { name: "frost_night_temp", section: "Thresholds", label: "Calm, dry night: frost at or below", selector: { number: { mode: "box", step: 0.5 } }, helper: "With a dew point at or below freezing and light wind. Default 41 °F / 5 °C." },
+      { name: "frost_low", section: "Thresholds", label: "Frost tonight when the low is at or below", selector: { number: { mode: "box", step: 0.5 } }, helper: "Default 34 °F / 1 °C." },
+    ],
+  },
+  rain: {
+    tag: "wsfc-panel-rain", label: "Rain totals", icon: "mdi:weather-rainy", span: 4, rows: 0,
+    schema: [
+      { name: "rows", label: "Rows", selector: { select: { multiple: true, options: opt([["rain_rate", "Raining now (rate)"], ["rain_hour", "Last hour"], ["rain_today", "Today"], ["rain_24h", "Last 24 hours"], ["rain_event", "This rain event"], ["rain_week", "This week"], ["rain_month", "This month"], ["rain_year", "This year"], ["last_rain", "Last rain"]]) } }, helper: "In this order. Week, month and year come from Home Assistant's history when the station has no sensor for them." },
+      { name: "show_normal", label: "Against the normal", selector: { boolean: {} }, default: true, helper: "This month and year so far against the area's normal (CoAgMET or Open-Meteo)." },
+      { name: "area_source", label: "Area data from", selector: { select: { options: opt([["auto", "Automatic — CoAgMET sensor, else Open-Meteo"], ["coagmet", "CoAgMET sensor only (Colorado, measured)"], ["open_meteo", "Open-Meteo only (anywhere, modelled)"], ["off", "None"]]) } }, default: "auto" },
+      { name: "content_width", label: "Horizontal spacing", selector: { number: { min: 30, max: 200, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100 },
+      { name: "content_height", label: "Vertical spacing", selector: { number: { min: 30, max: 200, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100 },
+    ],
+  },
+  garden: {
+    tag: "wsfc-panel-garden", label: "Frost & the garden", icon: "mdi:sprout", span: 4, rows: 0,
+    schema: [
+      { name: "show_outlook", label: "Frost outlook (next nights)", selector: { boolean: {} }, default: true },
+      { name: "outlook_source", label: "Outlook from", when: (d) => d.show_outlook !== false, selector: { select: { options: opt([["forecast", "Weather forecast (the card's weather entity)"], ["open_meteo", "Open-Meteo"]]) } }, default: "forecast" },
+      { name: "show_season", label: "Frost this season", selector: { boolean: {} }, default: true },
+      { name: "show_gdd", label: "Growing degree days", selector: { boolean: {} }, default: true },
+      { name: "show_soil", label: "Soil temperature and moisture", selector: { boolean: {} }, default: true, helper: "The station's soil sensors, else the Soil Temperature integration, else Open-Meteo." },
+      { name: "show_water", label: "Water balance (last 7 days)", selector: { boolean: {} }, default: true },
+      { name: "open_meteo", label: "Use Open-Meteo", selector: { boolean: {} }, default: true, helper: "Forecast lows, soil and evapotranspiration for your location (free, no key)." },
+      { name: "area_source", label: "Area data from", selector: { select: { options: opt([["auto", "Automatic — CoAgMET sensor, else Open-Meteo"], ["coagmet", "CoAgMET sensor only (Colorado, measured)"], ["open_meteo", "Open-Meteo only (anywhere, modelled)"], ["off", "None"]]) } }, default: "auto" },
+      { name: "soil_temperature_entity", label: "Soil temperature sensor", selector: ent("sensor") },
+      { name: "soil_moisture_entity", label: "Soil moisture sensor", selector: ent("sensor") },
+      { name: "content_width", label: "Horizontal spacing", selector: { number: { min: 30, max: 200, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100 },
+      { name: "content_height", label: "Vertical spacing", selector: { number: { min: 30, max: 200, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100 },
+    ],
+  },
+  lightning: {
+    tag: "wsfc-panel-lightning", label: "Lightning", icon: "mdi:flash", span: 4, rows: 0,
+    hideWhen: (p, hass, station) => { const i = lightningIds(p, station, hass); return !hass?.states?.[i.distance] && !hass?.states?.[i.count]; },
+    schema: [
+      { name: "near_km", label: "Warn within (km)", selector: { number: { min: 1, max: 40, mode: "box" } }, default: 16, helper: "Default 16 km (10 miles)." },
+      { name: "near_minutes", label: "…for (minutes after a strike)", selector: { number: { min: 5, max: 120, mode: "box" } }, default: 30 },
+      { name: "show_note", label: "Note", selector: { boolean: {} }, default: true },
+      { name: "distance_entity", label: "Distance sensor", selector: ent("sensor"), helper: "Found on its own (e.g. Ecowitt WH57)." },
+      { name: "count_entity", label: "Strikes sensor", selector: ent("sensor") },
+      { name: "time_entity", label: "Last strike time sensor", selector: ent("sensor") },
     ],
   },
   pollen: {

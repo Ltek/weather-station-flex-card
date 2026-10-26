@@ -10,7 +10,7 @@ https://github.com/Ltek/weather-station-flex-card
 
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Ltek&repository=weather-station-flex-card&category=plugin)
 
-Current build: **v2026.10.26.63** · full history in [CHANGELOG.md](CHANGELOG.md)
+Current build: **v2026.10.26.64** · full history in [CHANGELOG.md](CHANGELOG.md)
 
 ---
 
@@ -61,8 +61,13 @@ Current build: **v2026.10.26.63** · full history in [CHANGELOG.md](CHANGELOG.md
 - **Air quality** — the US AQI with its EPA category on a colour scale, and PM2.5, PM10, ozone and CO₂ rated by EPA standards; benzene and other readings rated by health guidelines. Scale, rows, vertical bars or tiles. Reads your station's own air sensors or Home Assistant's AirNow integration.
 - **Pollen** — every species with its level, today's value and tomorrow's trend, the main allergen today, and a 12-month season strip, from the Pollen Levels integration (Google). Out-of-season species can hide, and so can the whole panel when there's nothing in the air.
 
-### Records
-- **Weather records** — your station's warmest, coldest, strongest gust and wettest day, building up from Home Assistant's own history, plus decades of area records from a nearby CoAgMET / Northern Water station in Colorado (records for today's date, this month and all-time) and a badge when today beats the record for its date. A small Home Assistant package fetches them once a day — free, no account.
+### Records, rain & the garden
+- **Weather records** — your station's warmest, coldest, strongest gust and wettest day, building up from Home Assistant's own history, plus decades of area records — records for today's date, this month and all-time — with a badge when today beats the record for its date. Area records come from a nearby CoAgMET / Northern Water station in Colorado (measured, via a small package) or, anywhere in the world, from Open-Meteo's history since 1940 (modelled, no setup).
+- **Rain totals** — last hour, today, last 24 hours, this rain event, week, month and year (worked out from Home Assistant's history when the station has no sensor for them), the last day it rained, and this month and year against the area's normal.
+- **Frost & the garden** — the coming nights' lows with frost marked, this season's first frost against the usual date, frost nights, growing degree days, soil temperature and moisture with what's ready to plant, and last week's rain against what the garden lost to the air.
+- **Air dryness (VPD)** — how thirsty the air is, on a colour scale, with what it means for the garden this season and a plant that droops as the air dries.
+- **Frost & heat watch** — heat danger, heat caution, frost now or frost tonight, from the station's readings and tonight's forecast low.
+- **Lightning** — the latest strike's distance and time, strikes today and a "head indoors" warning when lightning is close (Ecowitt WH57); hidden when there's no sensor.
 
 ### Station & more
 - **Station health** — battery (percent and voltage), capacitor, signal strength and quality, RSSI, online state and hardware ID for every station device, and how long ago the last reading came in.
@@ -107,9 +112,10 @@ Only what you change is saved, so the stored config stays short. Prefer YAML? Ev
 | [Wind Rose Card](https://github.com/aukedejong/lovelace-windrose-card) | Optional | The full-featured wind rose |
 | [AirNow](https://www.home-assistant.io/integrations/airnow/) or an air-quality sensor | Optional | Air quality panel, AQI and ozone readings |
 | [Pollen Levels](https://github.com/eXPerience83/pollenlevels) (Google Pollen API) | Optional | Pollen panel |
-| The CoAgMET records package ([`extras/coagmet`](extras/coagmet)), Colorado | Optional | Area records in the Weather records panel |
+| The CoAgMET records package ([`extras/coagmet`](extras/coagmet)), Colorado | Optional | Measured area records, rain normals, frost dates and garden water use |
+| An Ecowitt WH57 lightning sensor, WH51 soil sensor | Optional | Lightning panel, soil moisture |
 
-Radar (RainViewer) and the Windy map need no account.
+Radar (RainViewer), the Windy map and Open-Meteo need no account.
 
 ---
 

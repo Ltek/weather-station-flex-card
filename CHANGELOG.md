@@ -1,5 +1,16 @@
 # Changelog
 
+## v2026.10.26.64
+
+- **Open-Meteo names everywhere.** The CoAgMET package now writes Open-Meteo's daily variable names (`temperature_2m_max`, `temperature_2m_min`, `precipitation_sum`, `wind_gusts_10m_max`, `et0_fao_evapotranspiration`) with a `daily_units` map, in blocks `records`, `records_today`, `records_month`, `frost`, `growing_degree_days`, `precipitation` and `evapotranspiration`. The card works these out the same way from Open-Meteo, so either source reads alike (a test checks both give identical results). **Re-copy both package files** if you installed the earlier version.
+- **Weather records: Open-Meteo fallback.** Area records from the CoAgMET sensor when it's there, else Open-Meteo's history for your location since 1940 (modelled; labelled as such). New option **Area records from**: automatic, CoAgMET, Open-Meteo or none.
+- **New panel: Rain totals** — raining now, last hour, today, last 24 hours, this rain event, week, month, year (from Home Assistant's history when there's no sensor) and the last day it rained, with this month and year to date against the area's normal.
+- **New panel: Frost & the garden** — the next nights' lows with frost marked (weather forecast or Open-Meteo), this season's first frost against the usual date, frost nights, growing degree days (86/50), soil temperature and moisture with what's ready to sow (soil sensors, the Soil Temperature integration, or Open-Meteo), and last week's rain against evapotranspiration.
+- **New panel: Air dryness (VPD)** — the station's VPD sensor or worked out from temperature and humidity, on a colour scale, with seasonal garden advice and a plant that droops.
+- **New panel: Frost & heat watch** — heat danger / heat caution / frost now / frost tonight / calm from the live readings and tonight's lowest hourly forecast; thresholds adjustable.
+- **New panel: Lightning** — latest strike distance and time, strikes today, sensor battery, and a "head indoors" warning within 10 miles in the last 30 minutes; hidden without a sensor.
+- New metrics found on their own: rain last hour / week / month / year, lightning distance / strikes / last strike, soil moisture and soil temperature.
+
 ## v2026.10.26.63
 
 - **Strict fit to screen dimensions** (Layout, full screen with Fit on): every panel is exactly the height you set, so the page fits the screen as the layout map shows; content taller than its panel scrolls inside the panel. Off (the default) keeps today's behaviour, where panels grow to fit their content.

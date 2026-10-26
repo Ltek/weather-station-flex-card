@@ -6,14 +6,12 @@ import { LitElement, html, css, nothing } from "lit";
 import { panelStyles, head, fmt, moreInfo } from "./shared.js";
 import { metricEntity } from "../card/metrics.js";
 import { fetchStatistics, fetchToday } from "../card/history.js";
+import { areaSummary, areaSensor, convert, TMAX, TMIN, PRECIP, GUST } from "../card/climate.js";
 
 const DIRS = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"];
 
-/** The area-records sensor: the configured one, else any with CoAgMET attributes. */
-export function recordsEntity(hass, c = {}) {
-  if (c.records_entity) return hass?.states?.[c.records_entity] ? c.records_entity : null;
-  return Object.keys(hass?.states || {}).find((id) => id.startsWith("sensor.") && hass.states[id].attributes?.coagmet_station) || null;
-}
+/** The area-records sensor (see card/climate.js). */
+export const recordsEntity = areaSensor;
 
 /** Distance (mi or km) and compass direction from home to a point. */
 export function fromHome(hass, lat, lon, metric) {
@@ -25,25 +23,10 @@ export function fromHome(hass, lat, lon, metric) {
   return { dist: metric ? km : km * 0.621371, unit: metric ? "km" : "mi", dir };
 }
 
-// The sensor reports US units; show them in Home Assistant's.
-function units(hass) {
-  const metric = hass?.config?.unit_system?.temperature === "°C";
-  return {
-    metric,
-    temp: (f) => (metric ? ((f - 32) * 5) / 9 : f),
-    tUnit: metric ? "°C" : "°F",
-    speed: (mph) => (metric ? mph * 1.609344 : mph),
-    sUnit: metric ? "km/h" : "mph",
-    rain: (inch) => (metric ? inch * 25.4 : inch),
-    rUnit: metric ? "mm" : "in",
-    rDigits: metric ? 0 : 2,
-  };
-}
-
 const parseDay = (s) => (s ? new Date(`${s}T12:00:00`) : null);
 
 class WsfcRecords extends LitElement {
-  static properties = { hass: { attribute: false }, config: { attribute: false }, station: { attribute: false }, _own: { state: true }, _today: { state: true } };
+  static properties = { hass: { attribute: false }, config: { attribute: false }, station: { attribute: false }, _own: { state: true }, _today: { state: true }, _area: { state: true } };
   static styles = [
     panelStyles,
     css`
@@ -102,6 +85,7 @@ class WsfcRecords extends LitElement {
           wettest: pick(ids.rain, "max", (a, b) => a > b && a > 0),
         };
       }
+      this._area = await areaSummary(this.hass, this.config || {});
       if (ids.temp) {
         const h = (await fetchToday(this.hass, [ids.temp]))[ids.temp] || [];
         const v = h.map((p) => p.v).filter((x) => x != null);
@@ -118,68 +102,76 @@ class WsfcRecords extends LitElement {
   render() {
     if (!this.hass) return nothing;
     const c = this.config || {};
-    const u = units(this.hass);
     const lang = this.hass.locale?.language;
     const dayFmt = new Intl.DateTimeFormat(lang, { day: "numeric", month: "short", year: "numeric" });
     const mdFmt = new Intl.DateTimeFormat(lang, { day: "numeric", month: "long" });
     const monFmt = new Intl.DateTimeFormat(lang, { month: "long" });
-    const rid = recordsEntity(this.hass, c);
-    const a = rid ? this.hass.states[rid].attributes : null;
-    const area = a && !a.error ? a : null;
+    const area = c.area_source === "off" ? null : this._area;
+    const U = area?.daily_units || {};
     const own = this._own;
     const hasOwn = own && own.days > 0 && (own.warmest || own.coldest);
+    const metricHA = this.hass.config?.unit_system?.temperature === "°C";
 
-    const t = (v) => (v == null ? "—" : `${fmt(u.temp(v), 1)} ${u.tUnit}`);
-    const sp = (v) => (v == null ? "—" : `${fmt(u.speed(v), 0)} ${u.sUnit}`);
-    const rn = (v) => (v == null ? "—" : `${fmt(u.rain(v), u.rDigits)} ${u.rUnit}`);
+    // An area value (in its daily_units) in Home Assistant's units.
+    const v = (k, r, digits) => {
+      const x = r && convert(r.value, U[k], this.hass);
+      return x ? `${fmt(x.value, digits ?? (k === PRECIP ? (metricHA ? 0 : 2) : k === GUST ? 0 : 1))} ${x.unit}` : "—";
+    };
+    const num = (k, r) => (r ? convert(r.value, U[k], this.hass)?.value : null);
     const year = (r) => (r?.date ? r.date.slice(0, 4) : "");
     const date = (r) => (r?.date ? dayFmt.format(parseDay(r.date)) : "");
     const row = (label, value, small, cls = "") => html`<div class="row ${cls}"><span>${label}</span><b>${value}</b>${small ? html`<small>${small}</small>` : nothing}</div>`;
     const four = (r, when) => html`
-      ${row("Warmest", t(r.warmest?.value), when(r.warmest), "hot")}
-      ${row("Coldest", t(r.coldest?.value), when(r.coldest), "cold")}
-      ${row("Strongest gust", sp(r.gust?.value), when(r.gust))}
-      ${row("Wettest day", r.wettest ? rn(r.wettest.value) : "None yet", when(r.wettest))}`;
+      ${row("Warmest", v(TMAX, r[TMAX]), when(r[TMAX]), "hot")}
+      ${row("Coldest", v(TMIN, r[TMIN]), when(r[TMIN]), "cold")}
+      ${r[GUST] !== undefined ? row("Strongest gust", v(GUST, r[GUST]), when(r[GUST])) : nothing}
+      ${row("Wettest day", r[PRECIP] ? v(PRECIP, r[PRECIP]) : "None yet", when(r[PRECIP]))}`;
+    const name = area?.kind === "modelled" ? "Open-Meteo (modelled)" : area?.station_name;
 
     // Badge: today so far beats the area record for this date.
     let badge = nothing;
-    const td = area?.today, now = this._today;
+    const td = area?.records_today, now = this._today;
     if (c.show_badge !== false && td && now && td.years >= 5) {
-      const name = mdFmt.format(new Date());
+      const day = mdFmt.format(new Date());
       const since = (area.since || "").slice(0, 4);
-      if (td.high && u.temp(now.high) > u.temp(td.high.value)) badge = html`<div class="badge"><ha-icon icon="mdi:thermometer-high"></ha-icon>Warmest ${name} at ${area.station_name} since ${since}</div>`;
-      else if (td.low && u.temp(now.low) < u.temp(td.low.value)) badge = html`<div class="badge cold"><ha-icon icon="mdi:snowflake-thermometer"></ha-icon>Coldest ${name} at ${area.station_name} since ${since}</div>`;
+      const hi = num(TMAX, td[TMAX]), lo = num(TMIN, td[TMIN]);
+      if (hi != null && now.high > hi) badge = html`<div class="badge"><ha-icon icon="mdi:thermometer-high"></ha-icon>Warmest ${day} ${area.kind === "modelled" ? "in Open-Meteo's history" : `at ${area.station_name}`} since ${since}</div>`;
+      else if (lo != null && now.low < lo) badge = html`<div class="badge cold"><ha-icon icon="mdi:snowflake-thermometer"></ha-icon>Coldest ${day} ${area.kind === "modelled" ? "in Open-Meteo's history" : `at ${area.station_name}`} since ${since}</div>`;
     }
 
     // This station's records, already in its own units.
     const ownRows = c.show_station !== false && hasOwn
       ? html`<div class="sec"><h4>This station <small>since ${dayFmt.format(new Date(own.since))}</small></h4>
-          ${row("Warmest", own.warmest ? `${fmt(own.warmest.value, 1)} ${this._unit("temp", u.tUnit)}` : "—", own.warmest && dayFmt.format(new Date(own.warmest.t)), "hot")}
-          ${row("Coldest", own.coldest ? `${fmt(own.coldest.value, 1)} ${this._unit("temp", u.tUnit)}` : "—", own.coldest && dayFmt.format(new Date(own.coldest.t)), "cold")}
-          ${own.gust ? row("Strongest gust", `${fmt(own.gust.value, 0)} ${this._unit("gust", u.sUnit)}`, dayFmt.format(new Date(own.gust.t))) : nothing}
-          ${own.wettest ? row("Wettest day", `${fmt(own.wettest.value, u.rDigits)} ${this._unit("rain", u.rUnit)}`, dayFmt.format(new Date(own.wettest.t))) : nothing}
+          ${row("Warmest", own.warmest ? `${fmt(own.warmest.value, 1)} ${this._unit("temp", metricHA ? "°C" : "°F")}` : "—", own.warmest && dayFmt.format(new Date(own.warmest.t)), "hot")}
+          ${row("Coldest", own.coldest ? `${fmt(own.coldest.value, 1)} ${this._unit("temp", metricHA ? "°C" : "°F")}` : "—", own.coldest && dayFmt.format(new Date(own.coldest.t)), "cold")}
+          ${own.gust ? row("Strongest gust", `${fmt(own.gust.value, 0)} ${this._unit("gust", metricHA ? "km/h" : "mph")}`, dayFmt.format(new Date(own.gust.t))) : nothing}
+          ${own.wettest ? row("Wettest day", `${fmt(own.wettest.value, metricHA ? 0 : 2)} ${this._unit("rain", metricHA ? "mm" : "in")}`, dayFmt.format(new Date(own.wettest.t))) : nothing}
         </div>`
       : nothing;
 
     let areaSecs = nothing;
-    if (area) {
-      const loc = fromHome(this.hass, Number(area.latitude), Number(area.longitude), u.metric);
+    if (area?.records) {
+      const loc = fromHome(this.hass, Number(area.latitude), Number(area.longitude), metricHA);
+      const near = loc && area.kind !== "modelled" ? `, ${fmt(loc.dist, 1)} ${loc.unit} ${loc.dir}` : "";
       areaSecs = html`
         ${c.show_today !== false && td ? html`<div class="sec"><h4>${mdFmt.format(new Date())} <small>${td.years} years</small></h4>
-          ${row("Record high", t(td.high?.value), year(td.high), "hot")}
-          ${row("Record low", t(td.low?.value), year(td.low), "cold")}
-          ${td.wettest ? row("Wettest", rn(td.wettest.value), year(td.wettest)) : nothing}
+          ${row("Record high", v(TMAX, td[TMAX]), year(td[TMAX]), "hot")}
+          ${row("Record low", v(TMIN, td[TMIN]), year(td[TMIN]), "cold")}
+          ${td[PRECIP] ? row("Wettest", v(PRECIP, td[PRECIP]), year(td[PRECIP])) : nothing}
         </div>` : nothing}
-        ${c.show_month !== false && area.month ? html`<div class="sec"><h4>${monFmt.format(new Date(2000, (area.month.month || 1) - 1, 15))}</h4>${four(area.month, date)}</div>` : nothing}
-        ${c.show_all_time !== false ? html`<div class="sec"><h4>All-time <small>since ${(area.since || "").slice(0, 4)}</small></h4>${four(area, date)}</div>` : nothing}
-        ${c.show_source !== false ? html`<div class="src" @click=${() => moreInfo(this, rid)}>Area records: ${area.station_name}${loc ? `, ${fmt(loc.dist, 1)} ${loc.unit} ${loc.dir}` : ""} · ${area.source || "CoAgMET"}${/^\d{4}-\d\d-\d\d$/.test(this.hass.states[rid].state) ? ` · through ${dayFmt.format(parseDay(this.hass.states[rid].state))}` : ""}</div>` : nothing}`;
+        ${c.show_month !== false && area.records_month ? html`<div class="sec"><h4>${monFmt.format(new Date(2000, (area.records_month.month || 1) - 1, 15))}</h4>${four(area.records_month, date)}</div>` : nothing}
+        ${c.show_all_time !== false ? html`<div class="sec"><h4>All-time <small>since ${(area.since || "").slice(0, 4)}</small></h4>${four(area.records, date)}</div>` : nothing}
+        ${c.show_source !== false ? html`<div class="src" @click=${() => area.entity && moreInfo(this, area.entity)}>Area records: ${name}${near} · ${area.source}${area.through ? ` · through ${dayFmt.format(parseDay(area.through))}` : ""}${area.kind === "modelled" ? " · model estimates smooth out extremes" : ""}</div>` : nothing}`;
     }
 
     let note = nothing;
-    if (!area && !hasOwn) {
-      note = html`<div class="note">${a?.error
-        ? html`Area records unavailable: ${a.error}`
-        : html`No records yet. Your station's own records appear as Home Assistant collects daily statistics; for area records now, install the <code>coagmet_records</code> package (see the configuration guide).`}</div>`;
+    if (!area?.records && !hasOwn) {
+      const id = areaSensor(this.hass, c), err = id && this.hass.states[id].attributes?.error;
+      note = html`<div class="note">${err
+        ? html`Area records unavailable: ${err}`
+        : this._loadedAt
+          ? html`No records yet. Your station's own records appear as Home Assistant collects daily statistics.`
+          : html`Loading records…`}</div>`;
     }
 
     return html`${head(c, "mdi:trophy-outline", "Weather records")}${badge}${ownRows}${areaSecs}${note}`;

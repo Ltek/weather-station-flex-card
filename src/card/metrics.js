@@ -23,6 +23,17 @@ export const METRICS = {
   },
   rain_24h: { label: "Rain 24h", icon: "mdi:weather-rainy", color: "#1e88e5", digits: 2, find: /24[\s_-]?h(ours?)?[\s_-]?(piezo[\s_-]?)?rain|rain(fall)?[\s_-]?24[\s_-]?h/i },
   rain_event: { label: "Rain event", icon: "mdi:weather-rainy", color: "#1e88e5", digits: 2, find: /event[\s_-]?(piezo[\s_-]?)?rain|rain[\s_-]?event/i },
+  rain_hour: { label: "Rain last hour", icon: "mdi:weather-rainy", color: "#1e88e5", digits: 2, find: /(hourly|1[\s_-]?h(our)?)[\s_-]?(piezo[\s_-]?)?rain|rain(fall)?[\s_-]?(last[\s_-]?)?(1[\s_-]?)?hour(ly)?\b/i },
+  rain_week: { label: "Rain this week", icon: "mdi:weather-rainy", color: "#1e88e5", digits: 2, find: /weekly[\s_-]?(piezo[\s_-]?)?rain|rain(fall)?[\s_-]?(this[\s_-]?)?week/i },
+  rain_month: { label: "Rain this month", icon: "mdi:weather-rainy", color: "#1e88e5", digits: 2, find: /monthly[\s_-]?(piezo[\s_-]?)?rain|rain(fall)?[\s_-]?(this[\s_-]?)?month/i },
+  rain_year: { label: "Rain this year", icon: "mdi:weather-rainy", color: "#1e88e5", digits: 2, find: /yearly[\s_-]?(piezo[\s_-]?)?rain|rain(fall)?[\s_-]?(this[\s_-]?)?year/i },
+  // Add-on sensors on their own Ecowitt devices (WH57 lightning, WH51 soil):
+  // searched across every Ecowitt device, like the diagnostics below.
+  lightning_distance: { label: "Lightning distance", icon: "mdi:map-marker-distance", color: "#ffca28", digits: 0, find: /lightning.*(distance|dist\b)|distance.*lightning/i, health: true, avoid: /batt/i },
+  lightning_count: { label: "Lightning strikes", icon: "mdi:flash", color: "#ffca28", digits: 0, find: /lightning.*(strike|count|num\b)|strikes?[\s_-]?(today|count)/i, health: true, avoid: /distance|dist\b|time|last|batt/i },
+  lightning_time: { label: "Last lightning strike", icon: "mdi:clock-alert-outline", color: "#ffca28", digits: null, find: /lightning.*(time|last)|last.*(strike|lightning)/i, health: true, avoid: /batt|distance/i },
+  soil_moisture: { label: "Soil moisture", icon: "mdi:water-percent", color: "#8d6e63", digits: 0, find: /soil[\s_-]?moist(ure)?|soilmoisture/i, health: true, avoid: /batt|ad\b|raw/i },
+  soil_temperature: { label: "Soil temperature", icon: "mdi:thermometer-lines", color: "#8d6e63", digits: 1, find: /soil[\s_-]?temp/i, health: true, avoid: /batt|average|avg|forecast/i },
   // Diagnostics: searched across every Ecowitt device (see findHealthEntity).
   battery: { label: "Station battery", icon: "mdi:battery", color: "#66bb6a", digits: null, find: /batt/i, health: true, unit: /%/, avoid: /volt/i },
   battery_voltage: { label: "Battery voltage", icon: "mdi:battery-charging", color: "#66bb6a", digits: 2, find: /batt.*volt|volt.*batt/i, health: true },
