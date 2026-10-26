@@ -334,6 +334,7 @@ export const PANEL_TYPES = {
     schema: [
       { name: "near_km", label: "Warn within (km)", selector: { number: { min: 1, max: 40, mode: "box" } }, default: 16, helper: "Default 16 km (10 miles)." },
       { name: "near_minutes", label: "…for (minutes after a strike)", selector: { number: { min: 5, max: 120, mode: "box" } }, default: 30 },
+      { name: "show_battery", label: "Sensor battery", selector: { boolean: {} }, default: true },
       { name: "show_note", label: "Note", selector: { boolean: {} }, default: true },
       { name: "distance_entity", label: "Distance sensor", selector: ent("sensor"), helper: "Found on its own (e.g. Ecowitt WH57)." },
       { name: "count_entity", label: "Strikes sensor", selector: ent("sensor") },
@@ -455,15 +456,31 @@ export const NO_TITLE = new Set(["hero", "stack", "clock"]);
 // Types that show a title only when one is set.
 export const TITLE_WHEN_SET = new Set(["chips", "sky_tracker", "card"]);
 
+// Folding a panel down to its title header (per panel; the colours, title tap
+// and hint text also have card-wide defaults under Appearance).
+export const COLLAPSE_COLORS = [
+  { name: "collapsed_icon_color", label: "Collapsed icon color", selector: { text: {} }, helper: "Not set: the theme's disabled colour." },
+  { name: "collapsed_text_color", label: "Collapsed title color", selector: { text: {} }, helper: "Not set: the theme's disabled text colour." },
+  { name: "expanded_icon_color", label: "Expanded icon color", selector: { text: {} }, helper: "Not set: the theme's state icon colour." },
+  { name: "expanded_text_color", label: "Expanded title color", selector: { text: {} }, helper: "Not set: the theme's text colour." },
+];
+export const COLLAPSE_FIELDS = [
+  { name: "collapsible", label: "Collapse button", selector: { boolean: {} }, default: false, helper: "Fold the panel down to its title header to save space (e.g. maps). A folded map is paused. With Remember Panel Button States, this browser remembers what you folded." },
+  { name: "collapsed", label: "Start collapsed", when: (d) => !!d.collapsible, selector: { boolean: {} }, default: false },
+  { name: "collapse_title_tap", label: "Tap the title to fold / unfold", when: (d) => !!d.collapsible, selector: { select: { options: opt([["default", "Card default (Appearance)"], ["on", "On"], ["off", "Off"]]) } }, default: "default" },
+  { name: "show_collapse_hint", label: "Hint under the title while folded", when: (d) => !!d.collapsible, selector: { select: { options: opt([["default", "Card default (Appearance)"], ["on", "Show"], ["off", "Hide"]]) } }, default: "default" },
+  { name: "collapse_hint", label: "Hint text", when: (d) => !!d.collapsible && d.show_collapse_hint !== "off", selector: { text: {} }, helper: "Default \"Tap title to show\"." },
+  ...COLLAPSE_COLORS.map((f) => ({ ...f, when: (d) => !!d.collapsible })),
+];
+
 export const COMMON_SCHEMA = [
   ...TITLE_FIELDS,
   { name: "span", selector: { number: { min: 1, max: 12, mode: "slider" } }, helper: "Width in twelfths of the card." },
   { name: "rows", selector: { number: { min: 0, max: 10, step: 0.5, mode: "slider" } }, helper: "Height in row units, in half steps (0 = fit content, 0.5 = half height)." },
   { name: "display", selector: { select: { options: opt([["grid", "In the grid"], ["tile_popup", "In the grid — tap it to open larger"], ["popup", "Pop-up only (from its panel button)"]]) } } },
   { name: "in_bar", selector: { boolean: {} }, helper: "Adds a button for this panel to the button menu, to show or hide it (or open its pop-up). Off: no button, and the panel is always shown (unless hidden with the eye icon in the panel list)." },
-  { name: "collapsible", label: "Collapse button", selector: { boolean: {} }, default: false, helper: "A button in the panel's header that folds it down to just its title, to save space (e.g. maps). Your choice is remembered in this browser with Remember Panel Button States." },
-  { name: "collapsed", label: "Start collapsed", when: (d) => !!d.collapsible, selector: { boolean: {} }, default: false },
   { name: "content_scale", label: "Content size", selector: { number: { min: 40, max: 200, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100, helper: "Everything inside the panel bigger or smaller (text, icons, tiles), so it fits the space." },
+  ...COLLAPSE_FIELDS.map((f) => ({ ...f, section: "Collapse" })),
   // Turn this panel's Appearance defaults off (shown as their own group).
   { name: "tile_background", section: "Default Overrides", label: "Panel background", selector: { select: { options: opt([["default", "Default"], ["translucent", "See-through (uses Panel opacity)"], ["solid", "Solid"], ["none", "None"]]) } }, default: "default" },
   { name: "tile_shadow", section: "Default Overrides", label: "Disable shadow", invert: true, selector: { boolean: {} }, default: true },

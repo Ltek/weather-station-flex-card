@@ -61,7 +61,7 @@ class WsfcLightning extends LitElement {
       ${near ? html`<div class="warn" role="alert"><ha-icon icon="mdi:flash-alert"></ha-icon>Lightning within ${us ? "10 miles" : "16 km"} — head indoors and stay there until 30 minutes after the last strike.</div>` : nothing}
       ${dist ? statRow("Latest strike", shownDist, t ? `${when} · ${agoTxt}` : "", "", () => moreInfo(this, dist.entity)) : nothing}
       ${count ? statRow("Strikes today", Number.isFinite(count.value) ? fmt(count.value, 0) : String(count.value), "", "", () => moreInfo(this, count.entity)) : nothing}
-      ${batt ? statRow("Sensor battery", `${Number.isFinite(batt.value) ? fmt(batt.value, batt.unit === "V" ? 2 : 0) : batt.value}${batt.unit ? ` ${batt.unit}` : ""}`, "", "", () => moreInfo(this, batt.entity)) : nothing}
+      ${batt && c.show_battery !== false ? statRow("Sensor battery", `${Number.isFinite(batt.value) ? fmt(batt.value, batt.unit === "V" ? 2 : 0) : batt.value}${batt.unit ? ` ${batt.unit}` : ""}`, "", "", () => moreInfo(this, batt.entity)) : nothing}
       ${c.show_note === false ? nothing : html`<div class="note">Strike distances are estimates, out to about 40 km (25 miles).</div>`}`;
   }
 }

@@ -1,5 +1,14 @@
 # Changelog
 
+## v2026.10.26.65
+
+- **Fix: every panel with a title can fold.** "Tap to open larger" panels (e.g. a Radar tile) had no collapse button and couldn't fold; Wind folded to an empty strip. While folded, a tap-to-open panel unfolds instead of opening its pop-up.
+- **Tap the title to fold / unfold** (on by default), with a **hint under the title while folded** ("Tap title to show", your own text, or off). The fold button is bigger (36 px target) and takes the title's icon colour.
+- **Title colours, folded and unfolded:** collapsed icon / title (default: the theme's disabled colours) and expanded icon / title (default: the theme's state icon colour; title in the theme's text colour). Card-wide defaults in Appearance → Collapsible panels; each panel can override them.
+- **Panel settings in flat expandable sections** (design system): Layout, Collapse, Default Overrides and the panel's own options each open on their own, with an accent border when open; the panel's options are open by default.
+- **Lightning: Sensor battery** can be hidden.
+- Color pickers offer the theme's Disabled and State icon colours.
+
 ## v2026.10.26.64
 
 - **Open-Meteo names everywhere.** The CoAgMET package now writes Open-Meteo's daily variable names (`temperature_2m_max`, `temperature_2m_min`, `precipitation_sum`, `wind_gusts_10m_max`, `et0_fao_evapotranspiration`) with a `daily_units` map, in blocks `records`, `records_today`, `records_month`, `frost`, `growing_degree_days`, `precipitation` and `evapotranspiration`. The card works these out the same way from Open-Meteo, so either source reads alike (a test checks both give identical results). **Re-copy both package files** if you installed the earlier version.

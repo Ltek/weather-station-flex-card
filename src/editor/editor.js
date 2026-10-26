@@ -15,7 +15,7 @@
 // Its entity/metric_sources edits are global and go to the card's top level.
 import { LitElement, html, css, nothing } from "lit";
 import { CARD_VERSION, CARD_NAME, CARD_TYPE } from "../card/constants.js";
-import { PANEL_TYPES, COMMON_SCHEMA, STACK_CHILD_SCHEMA, NO_TITLE, TITLE_WHEN_SET, panelMeta, spanOf, rowsOf, inBarOf, normalizePanels } from "../card/panels.js";
+import { PANEL_TYPES, COMMON_SCHEMA, COLLAPSE_COLORS, STACK_CHILD_SCHEMA, NO_TITLE, TITLE_WHEN_SET, panelMeta, spanOf, rowsOf, inBarOf, normalizePanels } from "../card/panels.js";
 import { CORE_EDITOR_TAG, flexOverride, deepMerge } from "../card/core.js";
 import { flexBase, trackerConfig } from "../panels/flex.js";
 import { prune, clone } from "../card/config.js";
@@ -27,6 +27,7 @@ import { openConfigDialog } from "./config-io.js";
 import { setUnsaved, isLive, setLive } from "../card/unsaved.js";
 import { detected } from "../card/detected.js";
 import { ANIM_SPEEDS } from "../card/animation-speed.js";
+import { canCollapseType } from "../card/weather-station-flex-card.js";
 import { metricSensor, entityValue, integrationOf } from "../card/resolve.js";
 import "./sources.js";
 import "./series-editor.js";
@@ -52,6 +53,12 @@ const APPEARANCE_GROUPS = [
     { name: "background_image_url", when: (d) => d.background === "image", selector: { text: { type: "url" } }, helper: "Image background: or an image URL (wins over the upload), e.g. /local/images/sky.jpg." },
     { name: "background_image_fit", when: (d) => d.background === "image", selector: { select: { options: [{ value: "cover", label: "Fill (crop to fit)" }, { value: "contain", label: "Fit (whole image)" }, { value: "tile", label: "Tile" }] } }, default: "cover" },
     { name: "background_dim", when: (d) => d.background === "image", selector: { number: { min: 0, max: 0.9, step: 0.05, mode: "slider" } }, default: 0.25, helper: "Image background: darken it so text stays readable (0 = off)." },
+  ]],
+  ["Collapsible panels", [
+    { name: "collapse_title_tap", label: "Tap the title to fold / unfold", selector: { boolean: {} }, default: true, helper: "For panels with Collapse button on (each panel can override this)." },
+    { name: "show_collapse_hint", label: "Hint under the title while folded", selector: { boolean: {} }, default: true },
+    { name: "collapse_hint", label: "Hint text", when: (d) => d.show_collapse_hint !== false, selector: { text: {} }, helper: "Default \"Tap title to show\"." },
+    ...COLLAPSE_COLORS,
   ]],
   ["Panels", [
     { name: "panel_opacity", selector: { number: { min: 0, max: 1, step: 0.05, mode: "slider" } }, helper: "With a card background: panel opacity (0 = fully transparent, 1 = solid). Default 0.55." },
@@ -699,7 +706,19 @@ class WeatherStationFlexCardEditor extends LitElement {
 
   // A panel's fields under a heading, split into their `section` headings
   // and collapsible `sub` panels (e.g. "Default Overrides", "Sun & moon facts").
-  _sections(p, fields, defs, update, title) {
+  // Flat expandable settings section (design system: borderless when closed,
+  // a thin divider between them; open = accent border and accent title).
+  _flat(p, name, body, defOpen = false) {
+    const id = `${p.type}|${name}`;
+    this._flatOpen ||= new Map();
+    const open = this._flatOpen.has(id) ? this._flatOpen.get(id) : defOpen;
+    return html`<details class="flat" ?open=${open} @toggle=${(e) => { if (e.target !== e.currentTarget) return; this._flatOpen.set(id, e.target.open); }}>
+      <summary>${name}</summary>
+      <div class="flat-body">${body}</div>
+    </details>`;
+  }
+
+  _sections(p, fields, defs, update, title, flat = true, openName = null) {
     const parts = [];
     for (const f of fields) {
       const k = f.sub ? `sub:${f.sub}` : f.section ? `sec:${f.section}` : `sec:${title}`;
@@ -718,7 +737,7 @@ class WeatherStationFlexCardEditor extends LitElement {
           ${open ? html`<div class="psub-body">${form(f)}</div>` : nothing}
         </details>`;
       }
-      return html`<div class="grp">${name}</div>${form(f)}`;
+      return flat ? this._flat(p, name, form(f), name === openName) : html`<div class="grp">${name}</div>${form(f)}`;
     });
   }
 
@@ -727,6 +746,8 @@ class WeatherStationFlexCardEditor extends LitElement {
     const defs = nested ? { show_title: TITLE_WHEN_SET.has(p.type) ? !!p.title : true } : panelDefaults(p);
     let common = nested ? STACK_CHILD_SCHEMA : COMMON_SCHEMA;
     if (p.type === "hero") common = common.filter((f) => !["icon", "display", "in_bar"].includes(f.name));
+    // Panels without a title header can't fold down to it.
+    if (!canCollapseType(p.type)) common = common.filter((f) => f.section !== "Collapse");
     // Panels without a header have no title options.
     if (NO_TITLE.has(p.type)) common = common.filter((f) => !["show_title", "title", "show_icon", "icon"].includes(f.name) || (p.type !== "clock" && f.name === "title"));
     const isGraph = ["graph", "temp_humidity", "uv_solar", "statistics"].includes(p.type);
@@ -746,10 +767,10 @@ class WeatherStationFlexCardEditor extends LitElement {
         : nothing}
       ${this._sections(p, common, defs, update, "Layout")}
       ${m.groups
-        // Grouped panels (e.g. Wind): each group is a collapsible sub-panel.
-        ? html`<div class="grp">${m.label} options</div>${m.groups.map(([title, f, icon], i) => this._sections(p, i === 0 ? f : f.map((x) => ({ ...x, sub: title, subIcon: icon })), {}, update, title))}`
+        // Grouped panels (e.g. Wind): one options section, each group a boxed sub-panel inside.
+        ? this._flat(p, `${m.label} options`, m.groups.map(([title, f, icon], i) => this._sections(p, i === 0 ? f : f.map((x) => ({ ...x, sub: title, subIcon: icon })), {}, update, title, false)), true)
         : m.schema.length
-          ? this._sections(p, m.schema, {}, update, `${m.label} options`)
+          ? this._sections(p, m.schema, {}, update, `${m.label} options`, true, `${m.label} options`)
           : nothing}
       ${m.flex
         ? html`${p.type === "sky_tracker" ? html`<div class="grp">Arc & sky details</div>` : nothing}
@@ -858,6 +879,19 @@ class WeatherStationFlexCardEditor extends LitElement {
     .live ha-icon { --mdc-icon-size: 18px; color: var(--ltek-c-accent); }
     .live .live-hint { margin-left: auto; color: var(--ltek-c-muted); font-size: var(--ltek-fs-small, 12px); }
     .guidebar { margin: 0 0 var(--ltek-sp-3); }
+    /* Flat expandable settings sections (one per settings group of a panel). */
+    details.flat { border: 1px solid transparent; border-top-color: var(--ltek-c-border-soft); border-radius: 0; }
+    details.flat + details.flat { margin-top: 0; }
+    details.flat[open] { border-color: var(--accent-color, var(--ltek-c-accent)); border-radius: var(--ltek-r-ctrl); margin: 6px 0; }
+    details.flat[open] + details.flat { border-top-color: transparent; }
+    details.flat > summary { list-style: none; cursor: pointer; user-select: none; display: flex; align-items: center; gap: 8px; padding: var(--ltek-sp-3) var(--ltek-sp-3);
+      font-size: var(--ltek-fs-label); font-weight: var(--ltek-fw-semibold); text-transform: uppercase; letter-spacing: 0.04em; color: var(--ltek-c-accent); }
+    details.flat > summary::-webkit-details-marker { display: none; }
+    details.flat > summary::after { content: ""; margin-left: auto; width: 8px; height: 8px; border-right: 2px solid var(--ltek-c-accent); border-bottom: 2px solid var(--ltek-c-accent); transform: rotate(45deg); transition: transform 0.2s ease; }
+    details.flat[open] > summary::after { transform: rotate(-135deg); }
+    details.flat > summary:focus-visible { outline: 2px solid var(--ltek-c-accent); outline-offset: -2px; }
+    details.flat > .flat-body { padding: 0 var(--ltek-sp-4) var(--ltek-sp-4); }
+    details.flat > .flat-body > .grp:first-child { margin-top: 0; border-top: 0; padding-top: 0; }
     details.psub { margin: var(--ltek-sp-3) 0 8px; border: 1px solid #3a3a3a; border-radius: 12px; background: rgba(255,255,255,0.015); }
     details.psub > summary { list-style: none; cursor: pointer; user-select: none; padding: 10px 14px; display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 700; color: var(--primary-text-color, #e1e1e1); }
     details.psub > summary::-webkit-details-marker { display: none; }

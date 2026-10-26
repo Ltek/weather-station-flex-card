@@ -38,6 +38,8 @@ import "../panels/lightning.js";
 import "../editor/editor.js";
 
 const NARROW_PX = 720;
+// Panels with a title header, which can fold down to it.
+export const canCollapseType = (t) => !["hero", "metric", "stack", "clock", "chips", "heading"].includes(t);
 const MEDIUM_PX = 1100;
 
 // Weather Flex metrics (sub-header, chips) also look in air-quality sources.
@@ -112,7 +114,27 @@ class WeatherStationFlexCard extends LitElement {
   // Collapse to the title header: panels with a header, in the grid.
   _canCollapse(p) {
     const m = panelMeta(p);
-    return !!p.collapsible && !m?.bare && p.type !== "hero" && !["metric", "stack", "clock", "chips"].includes(p.type) && p.display !== "tile_popup" && p.show_title !== false;
+    return !!p.collapsible && canCollapseType(p.type) && !m?.bare && p.show_title !== false;
+  }
+
+  // Collapse / title-tap settings: the panel's own, else the card's Appearance defaults.
+  _collapseOpt(p, key, def) {
+    // Per-panel drop-downs: "on" / "off", or "default" = the card's setting.
+    const own = p[key] === "on" ? true : p[key] === "off" ? false : p[key] === "default" ? undefined : p[key];
+    return own ?? this._config[key] ?? def;
+  }
+
+  // Tapping a panel's title header folds / unfolds it (not its buttons or controls).
+  _titleTap(e, p, i) {
+    if (!this._canCollapse(p) || this._focus != null || !this._collapseOpt(p, "collapse_title_tap", true)) return false;
+    const path = e.composedPath();
+    const hi = path.findIndex((n) => n.classList?.contains?.("head"));
+    if (hi < 0) return false;
+    const ctl = path.slice(0, hi).some((n) => /^(BUTTON|A|SELECT|INPUT|TEXTAREA|HA-ICON-BUTTON|HA-SWITCH)$/.test(n.tagName || "") || n.getAttribute?.("role") === "button" || n.classList?.contains?.("seg"));
+    if (ctl) return false;
+    e.stopPropagation();
+    this._toggleCollapse(p, i);
+    return true;
   }
 
   _isCollapsed(p, i) {
@@ -526,23 +548,36 @@ class WeatherStationFlexCard extends LitElement {
       const strict = this._strict && rows > 0 && this._focus == null;
       const collapsible = this._canCollapse(p) && this._focus == null;
       const collapsed = collapsible && this._isCollapsed(p, i);
+      const titleTap = collapsible && this._collapseOpt(p, "collapse_title_tap", true);
+      // Title colours: collapsed and expanded each have an icon and a text colour.
+      const C = (k, d) => this._collapseOpt(p, k, d);
+      const heads = collapsible
+        ? collapsed
+          ? `--wsfc-head-icon:${C("collapsed_icon_color", "var(--disabled-color, var(--disabled-text-color, #6f6f6f))")};--wsfc-head-text:${C("collapsed_text_color", "var(--disabled-text-color, #6f6f6f)")};`
+          : `--wsfc-head-icon:${C("expanded_icon_color", "var(--state-icon-color, var(--paper-item-icon-color, #44739e))")};${C("expanded_text_color", "") ? `--wsfc-head-text:${C("expanded_text_color", "")};` : ""}`
+        : "";
       const h = `calc(${rows} * var(--wsfc-row) + ${rows - 1} * var(--wsfc-gap))`;
-      const style = collapsed
+      const style = heads + (collapsed
         ? `grid-column: span ${span};grid-row: span 1;`
-        : `grid-column: span ${span};grid-row: span ${rows ? Math.max(1, Math.round(rows * 2)) : 2};${rows ? `min-height:${h};` : ""}${strict ? `height:${h};` : ""}`;
+        : `grid-column: span ${span};grid-row: span ${rows ? Math.max(1, Math.round(rows * 2)) : 2};${rows ? `min-height:${h};` : ""}${strict ? `height:${h};` : ""}`);
       const bare = meta.bare || p.type === "hero";
       const tapToOpen = p.display === "tile_popup";
       const expandable = !bare && !tapToOpen && !["metric", "stack", "clock", "chips"].includes(p.type) && size !== "narrow";
       const bg = p.tile_background && p.tile_background !== "default" ? `bg-${p.tile_background}` : "";
-      return html`<section class="tile ${p.type} ${meta.bare ? "bare" : ""} ${bg} ${tileFx(p)} ${rows ? "" : "auto"} ${fit || (strict && !collapsed) ? "fit" : ""} ${strict && !fit && !collapsed ? "strict" : ""} ${collapsed ? "collapsed" : ""} ${tapToOpen ? "tap" : ""} ${collapsible ? "can-collapse" : ""}" style=${style} data-i=${i}>
+      return html`<section class="tile ${p.type} ${meta.bare ? "bare" : ""} ${bg} ${tileFx(p)} ${rows ? "" : "auto"} ${(fit || strict) && !collapsed ? "fit" : ""} ${strict && !fit && !collapsed ? "strict" : ""} ${collapsed ? "collapsed" : ""} ${tapToOpen && !collapsed ? "tap" : ""} ${collapsible ? "can-collapse" : ""} ${titleTap ? "title-tap" : ""}" style=${style} data-i=${i}
+          @click=${titleTap ? (e) => this._titleTap(e, p, i) : nothing}>
         ${collapsible
           ? html`<button class="collapse" type="button" @click=${() => this._toggleCollapse(p, i)} aria-expanded=${String(!collapsed)}
               aria-label=${`${collapsed ? "Expand" : "Collapse"} ${p.title || this._autoTitle(p)}`} title=${collapsed ? "Show" : "Collapse to its title"}>
               <ha-icon icon=${collapsed ? "mdi:chevron-down" : "mdi:chevron-up"}></ha-icon></button>`
           : nothing}
-        ${tapToOpen
+        ${tapToOpen && !collapsed
           ? html`<button class="tap-open" type="button" aria-haspopup="dialog" aria-label=${`Open ${p.title || this._autoTitle(p)}`}
-              @click=${() => (this._popup = i)}><span><ha-icon icon="mdi:arrow-expand"></ha-icon></span></button>`
+              @click=${(e) => {
+                // The preview takes no pointer, so the title is found by position.
+                if (titleTap && e.offsetY < 52) { e.stopPropagation(); this._toggleCollapse(p, i); return; }
+                this._popup = i;
+              }}><span><ha-icon icon="mdi:arrow-expand"></ha-icon></span></button>`
           : nothing}
         ${expandable
           ? html`<button class="expand" type="button" @click=${() => (this._focus = this._focus == null ? i : null)}
@@ -586,7 +621,15 @@ class WeatherStationFlexCard extends LitElement {
     el.station = this._station;
     el.cardBg = this._animatedBg;
     // A collapsed panel is paused too (a folded map stops loading and animating).
-    el.lite = this._lite || (!popup && this._canCollapse(p) && this._focus == null && this._isCollapsed(p, i));
+    const folded = !popup && this._canCollapse(p) && this._focus == null && this._isCollapsed(p, i);
+    el.lite = this._lite || folded;
+    el.toggleAttribute("collapsed", folded);
+    el.toggleAttribute("title-tap", !popup && this._canCollapse(p) && this._focus == null && !!this._collapseOpt(p, "collapse_title_tap", true));
+    // Hint under the title while folded ("Tap title to show").
+    const tap = this._collapseOpt(p, "collapse_title_tap", true);
+    const hint = folded && this._collapseOpt(p, "show_collapse_hint", true) ? String(this._collapseOpt(p, "collapse_hint", "") || (tap ? "Tap title to show" : "Collapsed — tap the arrow to show")) : "";
+    if (hint) el.style.setProperty("--wsfc-collapse-hint", JSON.stringify(hint));
+    else el.style.removeProperty("--wsfc-collapse-hint");
     // Content size (zoom) and, for panels that use them, horizontal / vertical spacing.
     const z = Number(p.content_scale) || 100;
     el.style.zoom = z !== 100 ? String(Math.max(0.4, Math.min(2, z / 100))) : "";
@@ -663,19 +706,20 @@ class WeatherStationFlexCard extends LitElement {
     /* Strict fit: content taller than the panel scrolls inside it. */
     .tile.strict > :not(.expand):not(.tap-open):not(.collapse) { overflow: auto; scrollbar-width: thin; }
     /* Collapsed to the title header. */
-    .tile.collapsed { min-height: 0 !important; height: auto !important; max-height: 56px; overflow: hidden; contain: none; }
-    .tile.collapsed > :not(.expand):not(.tap-open):not(.collapse) { max-height: 32px; overflow: hidden; }
+    .tile.collapsed { min-height: 0 !important; height: auto !important; max-height: 80px; overflow: hidden; contain: none; }
+    .tile.collapsed > :not(.expand):not(.tap-open):not(.collapse) { max-height: 48px; overflow: hidden; flex: 0 0 auto; }
+    /* The fold button: a 36 px target, in the title's icon colour. */
     .collapse {
-      position: absolute; top: 8px; right: 34px; z-index: 3;
-      border: 0; background: transparent; color: var(--secondary-text-color);
-      cursor: pointer; padding: 4px; border-radius: 50%; line-height: 0;
+      position: absolute; top: 4px; right: 34px; z-index: 5;
+      border: 0; background: transparent; color: var(--wsfc-head-icon, var(--secondary-text-color));
+      cursor: pointer; padding: 6px; border-radius: 50%; line-height: 0;
     }
-    .tile:not(:has(.expand)) .collapse { right: 8px; }
-    .collapse ha-icon { --mdc-icon-size: 18px; }
-    .collapse:hover { color: var(--primary-text-color); }
+    .tile:not(:has(.expand)) .collapse { right: 4px; }
+    .collapse ha-icon { --mdc-icon-size: 24px; }
+    .collapse:hover { background: rgba(127, 127, 127, 0.18); }
     .collapse:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 2px; }
-    .tile.can-collapse .collapse ~ * { --wsfc-head-pad: 56px; }
-    .tile.can-collapse:not(:has(.expand)) .collapse ~ * { --wsfc-head-pad: 28px; }
+    .tile.can-collapse .collapse ~ * { --wsfc-head-pad: 70px; }
+    .tile.can-collapse:not(:has(.expand)) .collapse ~ * { --wsfc-head-pad: 40px; }
     .tile.tap { cursor: pointer; }
     /* The live preview never takes the pointer (a map would swallow taps), and
        its own stacking (Leaflet panes) stays under the open button. */

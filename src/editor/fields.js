@@ -11,6 +11,8 @@ export const THEME_COLORS = [
   ["var(--primary-text-color)", "Primary text"],
   ["var(--secondary-text-color)", "Secondary text"],
   ["var(--disabled-text-color)", "Disabled text"],
+  ["var(--disabled-color)", "Disabled"],
+  ["var(--state-icon-color)", "State icon"],
   ["var(--state-active-color)", "State active"],
   ["var(--error-color)", "Error"],
   ["var(--warning-color)", "Warning"],

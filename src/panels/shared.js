@@ -21,8 +21,13 @@ export const panelStyles = css`
     margin-bottom: 8px;
     padding-right: var(--wsfc-head-pad, 0);
   }
-  .head ha-icon { --mdc-icon-size: 20px; color: var(--wsfc-muted); }
-  .head .title { font-size: 15px; font-weight: 500; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .head ha-icon { --mdc-icon-size: 20px; color: var(--wsfc-head-icon, var(--wsfc-muted)); }
+  .head .title { font-size: 15px; font-weight: 500; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--wsfc-head-text, inherit); }
+  /* Folding panels: the title header can be tapped; a hint shows while folded. */
+  :host([title-tap]) .head { cursor: pointer; }
+  :host([collapsed]) > :not(.head):not(style) { display: none !important; }
+  :host([collapsed]) .head { margin-bottom: 0; }
+  :host([collapsed]) .head .title::after { content: var(--wsfc-collapse-hint, none); display: block; font-size: 11px; font-weight: 400; opacity: 0.85; margin-top: 1px; }
   /* No title: the header's controls (e.g. facts + step buttons) get the room. */
   .head .title:empty { flex: 0 0 0; }
   .seg {
