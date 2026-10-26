@@ -125,6 +125,15 @@ The embedded section editor saves its changes under `flex:` (the same settings a
       thresholds: [2, 4, 8, 16]      # moderate, elevated, high, very high
 ```
 
+### Weather records with area records (Colorado)
+
+The panel shows your station's own records from Home Assistant's statistics. For decades of area records now, install the CoAgMET package from [`extras/coagmet`](../extras/coagmet): copy `coagmet_records.py` to `/config/` and `coagmet_records.yaml` to `/config/packages/`, then restart. It defaults to Longmont South (`lmt01`, Northern Water network, since 1994); change the station id in the YAML for another CoAgMET or Northern Water station. The panel finds `sensor.coagmet_area_records` on its own.
+
+```yaml
+- type: records
+  show_month: false        # just this station, today's date and all-time
+```
+
 ## Notes
 
 - An OpenWeatherMap API key in the card's config can be read by anyone who can view the dashboard.

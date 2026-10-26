@@ -1,0 +1,64 @@
+# CoAgMET area weather records for Home Assistant (for Weather Station Flex Card)
+#
+# Source: CoAgMET / Northern Water weather stations, Colorado State University
+#   https://coagmet.colostate.edu/data/doc.html  (free, no account or key)
+# Station: Longmont South (lmt01, Northern Water network), 1 mile NW of HWY 287
+#   and Niwot Rd, 5,085 ft, daily data since 1994 — 3.1 mi NNE of Erie.
+#
+# Once a day coagmet_records.py downloads the station's daily history, drops
+# impossible readings (instrument faults), and stores a small summary on
+# sensor.coagmet_area_records:
+#   warmest / coldest / gust / wettest   all-time records (value, date)
+#   today    records for today's calendar date (and how many years)
+#   month    records for this month
+#   frost    this season's first frost (from July 1), frost nights, the typical
+#            first-frost date
+#   gdd      growing degree days since January 1 (86/50 method, base 50 °F)
+# The card's Records and Frost & garden panels find this sensor on their own.
+#
+# Install:
+#   1. Copy coagmet_records.py to /config/coagmet_records.py
+#   2. Copy this file to /config/packages/coagmet_records.yaml
+#      (configuration.yaml needs:  homeassistant:  packages: !include_dir_named packages)
+#   3. Restart Home Assistant. The first run downloads ~600 KB; later runs use
+#      a cached copy (/config/.coagmet_lmt01.csv) and re-download once a day.
+#
+# Another station: change "lmt01 nw" below (station id, then nw = Northern Water
+# or coag = CoAgMET). Find ids at https://coagmet.colostate.edu/data/url-builder
+
+command_line:
+  - sensor:
+      name: CoAgMET area records
+      unique_id: coagmet_area_records
+      icon: mdi:trophy-outline
+      command: "python3 /config/coagmet_records.py lmt01 nw America/Denver /config/.coagmet_lmt01.csv"
+      command_timeout: 120
+      scan_interval: 21600 # every 6 h (the download itself happens once a day)
+      value_template: "{{ value_json.state }}"
+      json_attributes:
+        - coagmet_station
+        - network
+        - station_name
+        - location
+        - latitude
+        - longitude
+        - elevation_ft
+        - since
+        - days
+        - units
+        - source
+        - warmest
+        - coldest
+        - gust
+        - wettest
+        - today
+        - month
+        - frost
+        - gdd
+        - error
+
+# The summary changes once a day; keep its attributes out of the recorder.
+recorder:
+  exclude:
+    entities:
+      - sensor.coagmet_area_records

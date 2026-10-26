@@ -10,7 +10,7 @@ https://github.com/Ltek/weather-station-flex-card
 
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Ltek&repository=weather-station-flex-card&category=plugin)
 
-Current build: **v2026.10.24.61** · full history in [CHANGELOG.md](CHANGELOG.md)
+Current build: **v2026.10.26.62** · full history in [CHANGELOG.md](CHANGELOG.md)
 
 ---
 
@@ -61,6 +61,9 @@ Current build: **v2026.10.24.61** · full history in [CHANGELOG.md](CHANGELOG.md
 - **Air quality** — the US AQI with its EPA category on a colour scale, and PM2.5, PM10, ozone and CO₂ rated by EPA standards; benzene and other readings rated by health guidelines. Scale, rows, vertical bars or tiles. Reads your station's own air sensors or Home Assistant's AirNow integration.
 - **Pollen** — every species with its level, today's value and tomorrow's trend, the main allergen today, and a 12-month season strip, from the Pollen Levels integration (Google). Out-of-season species can hide, and so can the whole panel when there's nothing in the air.
 
+### Records
+- **Weather records** — your station's warmest, coldest, strongest gust and wettest day, building up from Home Assistant's own history, plus decades of area records from a nearby CoAgMET / Northern Water station in Colorado (records for today's date, this month and all-time) and a badge when today beats the record for its date. A small Home Assistant package fetches them once a day — free, no account.
+
 ### Station & more
 - **Station health** — battery (percent and voltage), capacitor, signal strength and quality, RSSI, online state and hardware ID for every station device, and how long ago the last reading came in.
 - **Button Menu** — a heading with the station's online status and the panel buttons.
@@ -104,6 +107,7 @@ Only what you change is saved, so the stored config stays short. Prefer YAML? Ev
 | [Wind Rose Card](https://github.com/aukedejong/lovelace-windrose-card) | Optional | The full-featured wind rose |
 | [AirNow](https://www.home-assistant.io/integrations/airnow/) or an air-quality sensor | Optional | Air quality panel, AQI and ozone readings |
 | [Pollen Levels](https://github.com/eXPerience83/pollenlevels) (Google Pollen API) | Optional | Pollen panel |
+| The CoAgMET records package ([`extras/coagmet`](extras/coagmet)), Colorado | Optional | Area records in the Weather records panel |
 
 Radar (RainViewer) and the Windy map need no account.
 

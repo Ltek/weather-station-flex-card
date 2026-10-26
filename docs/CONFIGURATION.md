@@ -474,6 +474,20 @@ Default size: 6 of 12 wide, 3 rows high.
 | `range` | `6h` · `12h` · `24h` · `48h` · `7d` · `30d` · `90d` · `365d` |  | **Default range** |
 | `show_readings` | `true` / `false` | `true` | **Show current readings** |
 
+### Weather records — `type: records`
+
+Default size: 4 of 12 wide, fits its content.
+
+| Option | Value | Default | What it does |
+|---|---|---|---|
+| `show_station` | `true` / `false` | `true` | **This station's records** — From Home Assistant's long-term statistics (temperature, gust, rain today); grows as history builds up. |
+| `show_today` | `true` / `false` | `true` | **Records for today's date** |
+| `show_month` | `true` / `false` | `true` | **Records for this month** |
+| `show_all_time` | `true` / `false` | `true` | **All-time area records** |
+| `show_badge` | `true` / `false` | `true` | **Record badge** — A badge when today beats the area record for its date. |
+| `show_source` | `true` / `false` | `true` | **Source line** |
+| `records_entity` | entity id (`sensor.*`) |  | **Area records sensor** — Found on its own: the sensor from the coagmet_records package (CoAgMET / Northern Water, Colorado). |
+
 ### Wind — `type: wind`
 
 Default size: 6 of 12 wide, 4 rows high.
@@ -721,6 +735,15 @@ The embedded section editor saves its changes under `flex:` (the same settings a
     - entity: sensor.erie_ethane
       label: Ethane
       thresholds: [2, 4, 8, 16]      # moderate, elevated, high, very high
+```
+
+### Weather records with area records (Colorado)
+
+The panel shows your station's own records from Home Assistant's statistics. For decades of area records now, install the CoAgMET package from [`extras/coagmet`](../extras/coagmet): copy `coagmet_records.py` to `/config/` and `coagmet_records.yaml` to `/config/packages/`, then restart. It defaults to Longmont South (`lmt01`, Northern Water network, since 1994); change the station id in the YAML for another CoAgMET or Northern Water station. The panel finds `sensor.coagmet_area_records` on its own.
+
+```yaml
+- type: records
+  show_month: false        # just this station, today's date and all-time
 ```
 
 ## Notes

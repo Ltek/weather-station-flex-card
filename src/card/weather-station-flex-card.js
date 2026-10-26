@@ -30,6 +30,7 @@ import "../panels/health.js";
 import "../panels/pollen.js";
 import "../panels/air-quality.js";
 import "../panels/clock.js";
+import "../panels/records.js";
 import "../editor/editor.js";
 
 const NARROW_PX = 720;

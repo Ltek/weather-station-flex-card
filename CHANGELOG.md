@@ -1,5 +1,10 @@
 # Changelog
 
+## v2026.10.26.62
+
+- **New panel: Weather records.** Your station's warmest, coldest, strongest gust and wettest day from Home Assistant's long-term statistics (grows as history builds up), plus area records from a nearby CoAgMET / Northern Water station: records for today's date, this month and all-time, with a badge when today beats the record for its date, and the station's distance and direction from home.
+- **CoAgMET records package** in `extras/coagmet` (Colorado State University, free, no key): a command-line sensor that downloads a station's daily history once a day, drops impossible readings and stores the records summary (also this season's first frost, frost nights, the typical first-frost date and growing degree days, for the coming Frost & garden panel). Defaults to Longmont South (lmt01, since 1994).
+
 ## v2026.10.24.61
 
 - **Low-power animation** (Appearance → Background), for tablets and other low-powered screens: no panel blur while the background animates (the panels no longer re-blur the moving clouds every frame), each cloud drawn once on its own layer, and simpler cloud edges (no turbulence filter). Smoother drift; clouds look a little softer.

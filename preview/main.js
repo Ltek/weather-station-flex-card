@@ -181,6 +181,8 @@ function buildHass() {
   erie("sensor.erie_co2", 431, "ppm", "carbon_dioxide");
   erie("sensor.erie_benzene", 1.8, "ppb");
   erie("sensor.erie_ethane", 3.53, "ppb");
+  // CoAgMET area records (coagmet_records package), as Home Assistant shows it.
+  add("sensor.coagmet_area_records", "2026-10-25", { friendly_name: "CoAgMET area records", icon: "mdi:trophy-outline", ...{"coagmet_station": "lmt01", "network": "nw", "station_name": "Longmont South", "location": "1 mile northwest of HWY 287 and Niwot Rd", "latitude": 40.0733, "longitude": -105.054, "elevation_ft": 5085, "since": "1994-01-01", "days": 11986, "units": "us", "source": "CoAgMET, Colorado State University", "warmest": {"value": 104.0, "date": "2026-08-03"}, "coldest": {"value": -23.02, "date": "2022-12-22"}, "gust": {"value": 77.7, "date": "2007-06-24"}, "wettest": {"value": 3.01, "date": "2013-09-11"}, "today": {"date": "10-26", "years": 32, "high": {"value": 81.5, "date": "1999-10-26"}, "low": {"value": -3.92, "date": "2020-10-26"}, "wettest": {"value": 1.05, "date": "2006-10-26"}}, "month": {"month": 10, "warmest": {"value": 92.6, "date": "2023-10-02"}, "coldest": {"value": -6.25, "date": "2020-10-27"}, "gust": {"value": 50.05, "date": "2012-10-16"}, "wettest": {"value": 1.05, "date": "2017-10-02"}}, "frost": {"season_start": "2026-07-01", "first": {"date": "2026-10-17", "value": 30.6}, "nights": 1, "typical_first": "10-08"}, "gdd": {"since": "2026-01-01", "value": 3857, "base": 50}} }, { platform: "command_line" });
   an("sensor.airnow_reporting_area", "Denver", { friendly_name: "AirNow Reporting area" }, "station");
   return {
     ...base,
@@ -200,8 +202,11 @@ function buildHass() {
         return out;
       }
       if (msg.type === "recorder/statistics_during_period") {
-        const s = Date.parse(msg.start_time), e = Date.parse(msg.end_time);
+        let s = Date.parse(msg.start_time);
+        const e = Date.parse(msg.end_time);
         const step = msg.period === "day" ? 86400e3 : 3600e3;
+        // A new station: about nine days of daily statistics.
+        if (msg.period === "day" && e - s > 400 * 86400e3) s = Math.max(s, e - 9 * 86400e3);
         const out = {};
         for (const id of msg.statistic_ids) {
           out[id] = [];
@@ -287,6 +292,7 @@ const config = () => ({
       extra: [{ entity: "sensor.erie_benzene", label: "Benzene" }, { entity: "sensor.erie_ethane", label: "Ethane" }] })),
     { type: "statistics", preset: "air_quality", span: 6, rows: 3 }, { type: "metric", metric: "aqi" }, { type: "metric", metric: "pm2_5" },
   ] } : {}),
+  ...(params.get("panels") === "records" ? { panels: [{ type: "records", span: 4 }, { type: "records", span: 4, show_station: false, show_month: false, title: "Area only" }, { type: "hero", span: 4 }] } : {}),
   ...(params.get("panels") === "legacy" ? { panels: LEGACY_PANELS } : {}),
 });
 

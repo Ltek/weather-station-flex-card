@@ -263,6 +263,18 @@ export const PANEL_TYPES = {
       { name: "devices", label: "More devices", selector: { device: { multiple: true } }, helper: "Any other devices to show (battery, signal, online)." },
     ],
   },
+  records: {
+    tag: "wsfc-panel-records", label: "Weather records", icon: "mdi:trophy-outline", span: 4, rows: 0,
+    schema: [
+      { name: "show_station", label: "This station's records", selector: { boolean: {} }, default: true, helper: "From Home Assistant's long-term statistics (temperature, gust, rain today); grows as history builds up." },
+      { name: "show_today", label: "Records for today's date", selector: { boolean: {} }, default: true },
+      { name: "show_month", label: "Records for this month", selector: { boolean: {} }, default: true },
+      { name: "show_all_time", label: "All-time area records", selector: { boolean: {} }, default: true },
+      { name: "show_badge", label: "Record badge", selector: { boolean: {} }, default: true, helper: "A badge when today beats the area record for its date." },
+      { name: "show_source", label: "Source line", selector: { boolean: {} }, default: true },
+      { name: "records_entity", label: "Area records sensor", selector: { entity: { domain: "sensor" } }, helper: "Found on its own: the sensor from the coagmet_records package (CoAgMET / Northern Water, Colorado)." },
+    ],
+  },
   pollen: {
     tag: "wsfc-panel-pollen", label: "Pollen", icon: "mdi:flower-pollen", span: 4, rows: 0,
     // Out of season: no tile in the grid (its button still opens it).
