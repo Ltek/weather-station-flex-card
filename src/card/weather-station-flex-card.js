@@ -31,6 +31,7 @@ import "../panels/pollen.js";
 import "../panels/air-quality.js";
 import "../panels/clock.js";
 import "../panels/records.js";
+import { foldInfo } from "./fold-info.js";
 import "../panels/watch.js";
 import "../panels/rain.js";
 import "../panels/garden.js";
@@ -543,7 +544,7 @@ class WeatherStationFlexCard extends LitElement {
       // half row is (row − gap) / 2, so two half panels plus their gap fill one row.
       // Panels that fit their content to the panel (Wind) get a fixed height, so
       // a tall rose shrinks instead of stretching the row and its neighbours.
-      const fit = !!meta.fit && rows > 0 && p.fit !== false && this._focus == null;
+      const fit = (!!meta.fit || (p.type === "hero" && !!p.auto_scale)) && rows > 0 && p.fit !== false && this._focus == null;
       // Strict fit: every panel is exactly its rows tall; taller content scrolls inside it.
       const strict = this._strict && rows > 0 && this._focus == null;
       const collapsible = this._canCollapse(p) && this._focus == null;
@@ -627,7 +628,10 @@ class WeatherStationFlexCard extends LitElement {
     el.toggleAttribute("title-tap", !popup && this._canCollapse(p) && this._focus == null && !!this._collapseOpt(p, "collapse_title_tap", true));
     // Hint under the title while folded ("Tap title to show").
     const tap = this._collapseOpt(p, "collapse_title_tap", true);
-    const hint = folded && this._collapseOpt(p, "show_collapse_hint", true) ? String(this._collapseOpt(p, "collapse_hint", "") || (tap ? "Tap title to show" : "Collapsed — tap the arrow to show")) : "";
+    const tip = folded && this._collapseOpt(p, "show_collapse_hint", true) ? String(this._collapseOpt(p, "collapse_hint", "") || (tap ? "Tap title to show" : "Collapsed — tap the arrow to show")) : "";
+    // Info in the folded header (e.g. strikes today), before the hint.
+    const info = folded ? foldInfo(p, p.collapsed_info && p.collapsed_info !== "default" ? p.collapsed_info : this._config.collapsed_info || "summary", this.hass, this._station, el) : "";
+    const hint = [info, tip].filter(Boolean).join(" · ");
     if (hint) el.style.setProperty("--wsfc-collapse-hint", JSON.stringify(hint));
     else el.style.removeProperty("--wsfc-collapse-hint");
     // Content size (zoom) and, for panels that use them, horizontal / vertical spacing.
@@ -636,7 +640,7 @@ class WeatherStationFlexCard extends LitElement {
     const sx = Number(p.content_width) || 100, sy = Number(p.content_height) || 100;
     el.style.setProperty("--wsfc-sx", String(sx / 100));
     el.style.setProperty("--wsfc-sy", String(sy / 100));
-    el.fit = !popup && !!panelMeta(p)?.fit && rowsOf(p) > 0 && p.fit !== false && this._focus == null;
+    el.fit = !popup && (!!panelMeta(p)?.fit || (p.type === "hero" && !!p.auto_scale)) && rowsOf(p) > 0 && p.fit !== false && this._focus == null;
     el.hass = this.hass;
     if (p.type === "heading") el.bar = p.show_bar && this._config.panel_bar !== false ? this._renderBar() : null;
     // A stack skips children that are toggled off or hiding themselves; the others fill the space.

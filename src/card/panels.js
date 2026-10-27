@@ -21,6 +21,7 @@ export const PANEL_TYPES = {
     schema: [
       { name: "main_temperature", label: "Main temperature", selector: { select: { mode: "dropdown", options: [{ value: "temperature", label: "Temperature" }, { value: "feels_like", label: "Feels like" }] } }, default: "temperature", helper: "Feels like shows the feels-like temperature in place of the temperature (falls back to the temperature when there's no feels-like value)." },
       { name: "auto_scale", selector: { boolean: {} }, default: false, helper: "Size the temperature, its sub-header, condition, icon, clock, date and metric chips from the panel's size. Each then has its own scale below, instead of the pixel sizes in the sections editor." },
+      { name: "fit", label: "Fit to the panel", when: (d) => !!d.auto_scale, selector: { boolean: {} }, default: true, helper: "With a set height: everything scales so the hero fills its panel (no empty space below, nothing cut off) — a 0.5-row hero shrinks to fit; one next to a taller panel grows. Off: sizes follow the width only, and the hero sets its own height." },
       { name: "scale", label: "Overall scale", when: (d) => !!d.auto_scale, selector: { number: { min: 50, max: 200, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100, helper: "Everything bigger or smaller; the items below scale on top of this." },
       { name: "temp_scale", label: "Temperature", when: (d) => !!d.auto_scale, selector: { number: { min: 30, max: 300, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100 },
       { name: "condition_scale", label: "Condition text", when: (d) => !!d.auto_scale, selector: { number: { min: 30, max: 300, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100 },
@@ -330,10 +331,15 @@ export const PANEL_TYPES = {
   },
   lightning: {
     tag: "wsfc-panel-lightning", label: "Lightning", icon: "mdi:flash", span: 4, rows: 0,
-    hideWhen: (p, hass, station) => { const i = lightningIds(p, station, hass); return !hass?.states?.[i.distance] && !hass?.states?.[i.count]; },
+    hideWhen: (p, hass, station) => {
+      const i = lightningIds(p, station, hass);
+      if (!hass?.states?.[i.distance] && !hass?.states?.[i.count]) return true;
+      return !!p.hide_when_zero && Number(hass.states[i.count]?.state) === 0;
+    },
     schema: [
       { name: "near_km", label: "Warn within (km)", selector: { number: { min: 1, max: 40, mode: "box" } }, default: 16, helper: "Default 16 km (10 miles)." },
       { name: "near_minutes", label: "…for (minutes after a strike)", selector: { number: { min: 5, max: 120, mode: "box" } }, default: 30 },
+      { name: "hide_when_zero", label: "Hide the panel when there are no strikes", selector: { boolean: {} }, default: false, helper: "Hidden while the strike count is 0 (Ecowitt counts strikes per day)." },
       { name: "show_battery", label: "Sensor battery", selector: { boolean: {} }, default: true },
       { name: "show_note", label: "Note", selector: { boolean: {} }, default: true },
       { name: "distance_entity", label: "Distance sensor", selector: ent("sensor"), helper: "Found on its own (e.g. Ecowitt WH57)." },
@@ -470,6 +476,9 @@ export const COLLAPSE_FIELDS = [
   { name: "collapse_title_tap", label: "Tap the title to fold / unfold", when: (d) => !!d.collapsible, selector: { select: { options: opt([["default", "Card default (Appearance)"], ["on", "On"], ["off", "Off"]]) } }, default: "default" },
   { name: "show_collapse_hint", label: "Hint under the title while folded", when: (d) => !!d.collapsible, selector: { select: { options: opt([["default", "Card default (Appearance)"], ["on", "Show"], ["off", "Hide"]]) } }, default: "default" },
   { name: "collapse_hint", label: "Hint text", when: (d) => !!d.collapsible && d.show_collapse_hint !== "off", selector: { text: {} }, helper: "Default \"Tap title to show\"." },
+  { name: "collapsed_info", label: "Info in the header while folded", when: (d) => !!d.collapsible, selector: { select: { options: opt([["default", "Card default (Appearance)"], ["summary", "The panel's summary (e.g. strikes today)"], ["entity", "An entity's value"], ["off", "None"]]) } }, default: "default" },
+  { name: "collapsed_entity", label: "Entity to show", when: (d) => !!d.collapsible && d.collapsed_info !== "off", selector: { entity: {} }, helper: "Its value in the folded header (used by \"An entity's value\", and instead of the summary when set)." },
+  { name: "collapsed_label", label: "Label before the value", when: (d) => !!d.collapsible && !!d.collapsed_entity && d.collapsed_info !== "off", selector: { text: {} } },
   ...COLLAPSE_COLORS.map((f) => ({ ...f, when: (d) => !!d.collapsible })),
 ];
 

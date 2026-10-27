@@ -210,7 +210,7 @@ class WsfcFlexPanel extends LitElement {
 
 class WsfcHeroPanel extends WsfcFlexPanel {
   type = "hero";
-  static properties = { ...WsfcFlexPanel.properties, cardBg: { attribute: false }, lite: { attribute: false } };
+  static properties = { ...WsfcFlexPanel.properties, cardBg: { attribute: false }, lite: { attribute: false }, fit: { attribute: false }, _k: { state: true } };
   static styles = [
     panelStyles,
     coreStyles,
@@ -222,7 +222,9 @@ class WsfcHeroPanel extends WsfcFlexPanel {
       .hero-facts .facts { margin: 0; }
       .hero-facts.top { bottom: auto; top: 12px; }
       .core { margin: 0; display: flex; }
-      .core > * { flex: 1; height: 100%; --ha-card-border-radius: var(--wsfc-radius, 16px); --card-padding: 16px; }
+      /* Fit to the panel: the hero takes the panel's height, its content scales to it. */
+      :host([fit]) .core { flex: 1 1 0; min-height: 0; overflow: hidden; }
+      .core > * { flex: 1; height: 100%; --ha-card-border-radius: var(--wsfc-radius, 16px); --card-padding: var(--wsfc-hero-pad, 16px); }
     `,
   ];
 
@@ -244,10 +246,17 @@ class WsfcHeroPanel extends WsfcFlexPanel {
     this._ro?.disconnect();
   }
 
+  // Fit to the panel (Auto scale with a set height): everything is scaled by
+  // _k, measured so the content fills the panel's height without overflowing.
+  get _fitting() {
+    return !!(this.fit && this.config?.auto_scale);
+  }
+
   get _auto() {
     const { w = 0, h = 0 } = this._dims || {};
     const c = this.config || {};
-    const a = heroAutoSizes(w || 700, h, Math.max(0.3, Math.min(3, Number(c.scale ?? 100) / 100)));
+    const fitK = this._fitting ? this._k || 1 : 1;
+    const a = heroAutoSizes(w || 700, this._fitting ? 0 : h, Math.max(0.3, Math.min(3, Number(c.scale ?? 100) / 100)) * fitK);
     // Per-item scale on top of the auto size (100 % = as computed).
     const k = (key) => Math.max(0.3, Math.min(3, Number(c[key] ?? 100) / 100));
     const r = (x) => Math.round(x);
@@ -286,8 +295,40 @@ class WsfcHeroPanel extends WsfcFlexPanel {
     return cfg;
   }
 
-  updated() {
+  updated(changed) {
     fillTile(this._slot.el);
+    this.toggleAttribute("fit", this._fitting);
+    if (!this._fitting) { this._k = undefined; return; }
+    // A new size or config: measure again (a few passes until it settles).
+    const key = `${this._dimKey}|${JSON.stringify(this.config)}`;
+    if (key !== this._fitKey) { this._fitKey = key; this._fitPass = 0; }
+    if (this._fitPass >= 8) return;
+    cancelAnimationFrame(this._fitRaf);
+    this._fitRaf = requestAnimationFrame(() => setTimeout(() => this._refit(), 60));
+  }
+
+  // Natural height of the hero's content (the Weather Flex card's sections).
+  _contentHeight() {
+    const card = this._slot.el?.shadowRoot?.querySelector("ha-card");
+    if (!card) return 0;
+    const top = card.getBoundingClientRect().top;
+    const kids = [...card.children].filter((k) => { const cs = getComputedStyle(k); return cs.position !== "absolute" && cs.position !== "fixed" && cs.display !== "none"; });
+    if (!kids.length) return 0;
+    const bottom = Math.max(...kids.map((k) => k.getBoundingClientRect().bottom));
+    return bottom - top + (parseFloat(getComputedStyle(card).paddingBottom) || 0);
+  }
+
+  _refit() {
+    if (!this._fitting || !this.isConnected) return;
+    this._fitPass = (this._fitPass || 0) + 1;
+    const avail = this.clientHeight, need = this._contentHeight();
+    if (!avail || !need) return;
+    const card = this._slot.el?.shadowRoot?.querySelector("ha-card");
+    const wide = card && card.scrollWidth > card.clientWidth + 2 ? card.clientWidth / card.scrollWidth : 1;
+    const ratio = Math.min(avail / need, wide < 1 ? wide : Infinity);
+    if (Math.abs(ratio - 1) < 0.03) return;
+    const k = Math.max(0.15, Math.min(2.5, (this._k || 1) * Math.pow(ratio, 0.9)));
+    if (Math.abs(k - (this._k || 1)) > 0.01) this._k = k;
   }
 
   render() {
@@ -296,7 +337,9 @@ class WsfcHeroPanel extends WsfcFlexPanel {
     const a = this._auto;
     const facts = renderFacts(this.hass, this.config || {});
     const top = (this.config?.fact_position || "bottom") === "top";
-    return html`<div class="core" style="--wfc-clock-auto:${a.clock}px;--wfc-clock-date-auto:${a.date}px">${this._slot.update(this._coreConfig(), this.hass)}</div>
+    // A tight fit also tightens the card's padding (16 px down to 6 px).
+    const pad = this._fitting && (this._k || 1) < 1 ? `;--wsfc-hero-pad:${Math.round(Math.max(6, 16 * (this._k || 1)))}px` : "";
+    return html`<div class="core" style="--wfc-clock-auto:${a.clock}px;--wfc-clock-date-auto:${a.date}px${pad}">${this._slot.update(this._coreConfig(), this.hass)}</div>
       ${facts === nothing ? nothing : html`<div class="hero-facts ${top ? "top" : ""}">${facts}</div>`}
       ${this._slot.error ? html`<div class="err">${this._slot.error}</div>` : nothing}`;
   }

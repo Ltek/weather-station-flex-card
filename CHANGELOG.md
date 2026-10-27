@@ -1,5 +1,11 @@
 # Changelog
 
+## v2026.10.27.66
+
+- **Info in a folded panel's header** — e.g. "7 strikes today · latest 6 mi", "today 0.02 in", "AQI 56 · Moderate", "Freeze likely tonight", "record today 82° (1999)", "tonight 33°"; every panel has a summary. Per panel: the panel's summary, an entity's value (with an optional label) or none; card default in Appearance → Collapsible panels.
+- **Lightning: Hide the panel when there are no strikes** (strike count 0).
+- **Hero: Fit to the panel** (with Set scale to Auto and a set height; on by default): everything scales so the hero fills its panel — no empty space under it when a taller panel sits beside it, and a 0.5-row hero shrinks (padding too) instead of making the row taller.
+
 ## v2026.10.26.65
 
 - **Fix: every panel with a title can fold.** "Tap to open larger" panels (e.g. a Radar tile) had no collapse button and couldn't fold; Wind folded to an empty strip. While folded, a tap-to-open panel unfolds instead of opening its pop-up.

@@ -58,6 +58,7 @@ const APPEARANCE_GROUPS = [
     { name: "collapse_title_tap", label: "Tap the title to fold / unfold", selector: { boolean: {} }, default: true, helper: "For panels with Collapse button on (each panel can override this)." },
     { name: "show_collapse_hint", label: "Hint under the title while folded", selector: { boolean: {} }, default: true },
     { name: "collapse_hint", label: "Hint text", when: (d) => d.show_collapse_hint !== false, selector: { text: {} }, helper: "Default \"Tap title to show\"." },
+    { name: "collapsed_info", label: "Info in the header while folded", selector: { select: { options: [{ value: "summary", label: "The panel's summary (e.g. strikes today, rain today)" }, { value: "off", label: "None" }] } }, default: "summary" },
     ...COLLAPSE_COLORS,
   ]],
   ["Panels", [
