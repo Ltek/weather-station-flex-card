@@ -743,8 +743,17 @@ class WeatherStationFlexCardEditor extends LitElement {
     });
   }
 
-  _panelBody(p, key, update, nested) {
-    const m = panelMeta(p);
+  _panelBody(p, key, updatePanel, nested) {
+    const m0 = panelMeta(p);
+    // Scroll needs room: picking it raises a panel below one row to 1.
+    const update = (np, extra) => {
+      if (np?.overflow === "scroll" && !nested && !(Number(np.rows ?? m0?.rows ?? 0) >= 1)) np = { ...np, rows: 1 };
+      return updatePanel(np, extra);
+    };
+    // Spacing sliders (some panels) live with the other sizes.
+    const SPACING = ["content_width", "content_height"];
+    const spacing = (m0.schema || []).filter((f) => SPACING.includes(f.name)).map((f) => ({ ...f, section: "Size and Scaling" }));
+    const m = spacing.length ? { ...m0, schema: m0.schema.filter((f) => !SPACING.includes(f.name)) } : m0;
     const defs = nested ? { show_title: TITLE_WHEN_SET.has(p.type) ? !!p.title : true } : panelDefaults(p);
     let common = nested ? STACK_CHILD_SCHEMA : COMMON_SCHEMA;
     if (p.type === "hero") common = common.filter((f) => !["icon", "display", "in_bar"].includes(f.name));
@@ -767,7 +776,7 @@ class WeatherStationFlexCardEditor extends LitElement {
         ? html`<div class="grp first">Series</div>
             <wsfc-series-editor .hass=${this.hass} .panel=${p} .station=${this._station} @panel-changed=${(e) => update(e.detail.panel)}></wsfc-series-editor>`
         : nothing}
-      ${this._sections(p, common, defs, update, "Layout")}
+      ${this._sections(p, spacing.length ? (() => { const at = common.findIndex((f) => f.name === "content_scale"); const c = common.slice(); c.splice(at < 0 ? c.length : at + 1, 0, ...spacing); return c; })() : common, defs, update, "Size and Scaling")}
       ${m.groups
         // Grouped panels (e.g. Wind): one options section, each group a boxed sub-panel inside.
         ? this._flat(p, `${m.label} options`, m.groups.map(([title, f, icon], i) => this._sections(p, i === 0 ? f : f.map((x) => ({ ...x, sub: title, subIcon: icon })), {}, update, title, false)), true)

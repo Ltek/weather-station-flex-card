@@ -548,7 +548,8 @@ class WeatherStationFlexCard extends LitElement {
       // Strict fit: every panel is exactly its rows tall; taller content scrolls inside it.
       // Locked size: Strict fit, else the panel's own choice, else the card's.
       const over = p.overflow && p.overflow !== "default" ? p.overflow : this._strict ? "scroll" : this._config.panel_overflow || "grow";
-      const strict = over === "scroll" && rows > 0 && this._focus == null;
+      // Strict fit locks every panel with a height; Scroll (card or panel) needs at least a row.
+      const strict = over === "scroll" && (this._strict ? rows > 0 : rows >= 1) && this._focus == null;
       const collapsible = this._canCollapse(p) && this._focus == null;
       const collapsed = collapsible && this._isCollapsed(p, i);
       const titleTap = collapsible && this._collapseOpt(p, "collapse_title_tap", true);

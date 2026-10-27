@@ -1,5 +1,10 @@
 # Changelog
 
+## v2026.10.27.68
+
+- **Panel settings regrouped.** *Layout* is now **Size and Scaling**: Location (was Display), Width, Height, When the content doesn't fit, **Scale all Panel Contents** (was Content size) and, for Air quality and Pollen, Horizontal / Vertical spacing. The title, title icon and **Panel button** (was "Add a button…") moved to **Default Overrides**, with the background, shadow, border and glow. Stacked panels follow the same split.
+- **Scroll needs a row:** picking Scroll for a panel raises its height to 1 when it was lower. The card-wide Scroll setting locks only panels at least one row tall (Strict fit still locks every panel with a height).
+
 ## v2026.10.27.67
 
 - **Scroll when the content doesn't fit**, in any layout: Layout → **When a panel's content doesn't fit** — Grow (the panel gets taller, as before) or Scroll (every panel keeps its set height, with a scroll bar inside). Each panel can override it (Layout → When the content doesn't fit). Needs a set height (Height above 0). Strict fit still does this for every panel in full screen.
