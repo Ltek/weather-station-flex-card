@@ -92,6 +92,7 @@ With no `panels:` the card shows its default dashboard (hero, bulletin, Sky Trac
 | `layout` | `auto` · `fullscreen` | `auto` | **Layout** |
 | `fit_height` | `true` / `false` | `true` | **Fit panels to the screen height** — Full screen: panels with a height share the screen height (row height is calculated). |
 | `fit_strict` | `true` / `false` | `false` | **Strict fit to screen dimensions** — Every panel is exactly the height you set, so the page fits the screen as the layout map shows; content taller than its panel scrolls inside the panel. Off: panels grow to fit their content (the page may scroll). |
+| `panel_overflow` | `grow` · `scroll` | `grow` | **When a panel's content doesn't fit** — For panels with a set height (Height above 0); each panel can override this. Scroll locks every panel to its size in any layout; Strict fit does the same in full screen. |
 | `layout_size` | `auto` · `wide` · `medium` · `narrow` | `auto` | **Layout size** — In a Sections view the card is only as wide as its section; widen the section or use a Panel view for the desktop layout. |
 | `row_height` | number 40–300 px |  | **Row height** — Height of one row unit (default 110). |
 | `gap` | number 0–32 px |  | **Gap** — Space between panels (default 12). |
@@ -114,6 +115,7 @@ Where the buttons go: `panel_bar: false` hides the bar; a Button Menu panel (`he
 | `icon` | icon, e.g. `mdi:weather-windy` |  | **Icon** |
 | `span` | number 1–12 |  | **Width** — Width in twelfths of the card. |
 | `rows` | number 0–10 |  | **Height** — Height in row units, in half steps (0 = fit content, 0.5 = half height). |
+| `overflow` | `default` · `grow` · `scroll` | `default` | **When the content doesn't fit** — Needs a set height (Height above 0). |
 | `display` | `grid` · `tile_popup` · `popup` |  | **Display** |
 | `in_bar` | `true` / `false` |  | **Panel button** — Adds a button for this panel to the button menu, to show or hide it (or open its pop-up). Off: no button, and the panel is always shown (unless hidden with the eye icon in the panel list). |
 | `content_scale` | number 40–200 % | `100` | **Content size** — Everything inside the panel bigger or smaller (text, icons, tiles), so it fits the space. |
