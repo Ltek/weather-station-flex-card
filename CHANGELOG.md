@@ -1,5 +1,9 @@
 # Changelog
 
+## v2026.10.27.67
+
+- **Scroll when the content doesn't fit**, in any layout: Layout → **When a panel's content doesn't fit** — Grow (the panel gets taller, as before) or Scroll (every panel keeps its set height, with a scroll bar inside). Each panel can override it (Layout → When the content doesn't fit). Needs a set height (Height above 0). Strict fit still does this for every panel in full screen.
+
 ## v2026.10.27.66
 
 - **Info in a folded panel's header** — e.g. "7 strikes today · latest 6 mi", "today 0.02 in", "AQI 56 · Moderate", "Freeze likely tonight", "record today 82° (1999)", "tonight 33°"; every panel has a summary. Per panel: the panel's summary, an entity's value (with an optional label) or none; card default in Appearance → Collapsible panels.

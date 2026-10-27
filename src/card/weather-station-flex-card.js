@@ -546,7 +546,9 @@ class WeatherStationFlexCard extends LitElement {
       // a tall rose shrinks instead of stretching the row and its neighbours.
       const fit = (!!meta.fit || (p.type === "hero" && !!p.auto_scale)) && rows > 0 && p.fit !== false && this._focus == null;
       // Strict fit: every panel is exactly its rows tall; taller content scrolls inside it.
-      const strict = this._strict && rows > 0 && this._focus == null;
+      // Locked size: Strict fit, else the panel's own choice, else the card's.
+      const over = p.overflow && p.overflow !== "default" ? p.overflow : this._strict ? "scroll" : this._config.panel_overflow || "grow";
+      const strict = over === "scroll" && rows > 0 && this._focus == null;
       const collapsible = this._canCollapse(p) && this._focus == null;
       const collapsed = collapsible && this._isCollapsed(p, i);
       const titleTap = collapsible && this._collapseOpt(p, "collapse_title_tap", true);

@@ -486,6 +486,7 @@ export const COMMON_SCHEMA = [
   ...TITLE_FIELDS,
   { name: "span", selector: { number: { min: 1, max: 12, mode: "slider" } }, helper: "Width in twelfths of the card." },
   { name: "rows", selector: { number: { min: 0, max: 10, step: 0.5, mode: "slider" } }, helper: "Height in row units, in half steps (0 = fit content, 0.5 = half height)." },
+  { name: "overflow", label: "When the content doesn't fit", selector: { select: { options: opt([["default", "Card default (Layout)"], ["grow", "Grow — the panel gets taller"], ["scroll", "Scroll — keep the set height, with a scroll bar"]]) } }, default: "default", helper: "Needs a set height (Height above 0)." },
   { name: "display", selector: { select: { options: opt([["grid", "In the grid"], ["tile_popup", "In the grid — tap it to open larger"], ["popup", "Pop-up only (from its panel button)"]]) } } },
   { name: "in_bar", selector: { boolean: {} }, helper: "Adds a button for this panel to the button menu, to show or hide it (or open its pop-up). Off: no button, and the panel is always shown (unless hidden with the eye icon in the panel list)." },
   { name: "content_scale", label: "Content size", selector: { number: { min: 40, max: 200, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100, helper: "Everything inside the panel bigger or smaller (text, icons, tiles), so it fits the space." },
