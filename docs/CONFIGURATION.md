@@ -109,16 +109,11 @@ Where the buttons go: `panel_bar: false` hides the bar; a Button Menu panel (`he
 
 | Option | Value | Default | What it does |
 |---|---|---|---|
-| `show_title` | `true` / `false` | `true` | **Show the title** |
-| `title` | text |  | **Title** |
-| `show_icon` | `true` / `false` | `true` | **Show the title icon** |
-| `icon` | icon, e.g. `mdi:weather-windy` |  | **Icon** |
+| `display` | `grid` · `tile_popup` · `popup` |  | **Location** |
 | `span` | number 1–12 |  | **Width** — Width in twelfths of the card. |
 | `rows` | number 0–10 |  | **Height** — Height in row units, in half steps (0 = fit content, 0.5 = half height). |
-| `overflow` | `default` · `grow` · `scroll` | `default` | **When the content doesn't fit** — Needs a set height (Height above 0). |
-| `display` | `grid` · `tile_popup` · `popup` |  | **Display** |
-| `in_bar` | `true` / `false` |  | **Panel button** — Adds a button for this panel to the button menu, to show or hide it (or open its pop-up). Off: no button, and the panel is always shown (unless hidden with the eye icon in the panel list). |
-| `content_scale` | number 40–200 % | `100` | **Content size** — Everything inside the panel bigger or smaller (text, icons, tiles), so it fits the space. |
+| `overflow` | `default` · `grow` · `scroll` | `default` | **When the content doesn't fit** — Scroll needs a height of at least 1 row (it is raised to 1 when you pick Scroll). |
+| `content_scale` | number 40–200 % | `100` | **Scale all Panel Contents** — Everything inside the panel bigger or smaller (text, icons, tiles), so it fits the space. |
 | `collapsible` | `true` / `false` | `false` | **Collapse button** — Fold the panel down to its title header to save space (e.g. maps). A folded map is paused. With Remember Panel Button States, this browser remembers what you folded. |
 | `collapsed` | `true` / `false` | `false` | **Start collapsed** |
 | `collapse_title_tap` | `default` · `on` · `off` | `default` | **Tap the title to fold / unfold** |
@@ -131,6 +126,11 @@ Where the buttons go: `panel_bar: false` hides the bar; a Button Menu panel (`he
 | `collapsed_text_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Collapsed title color** — Not set: the theme's disabled text colour. |
 | `expanded_icon_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Expanded icon color** — Not set: the theme's state icon colour. |
 | `expanded_text_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Expanded title color** — Not set: the theme's text colour. |
+| `show_title` | `true` / `false` | `true` | **Show the title** |
+| `title` | text |  | **Title** |
+| `show_icon` | `true` / `false` | `true` | **Show the title icon** |
+| `icon` | icon, e.g. `mdi:weather-windy` |  | **Icon** |
+| `in_bar` | `true` / `false` |  | **Panel button** — Adds a button for this panel to the button menu, to show or hide it (or open its pop-up). Off: no button, and the panel is always shown (unless hidden with the eye icon in the panel list). |
 | `tile_background` | `default` · `translucent` · `solid` · `none` | `default` | **Panel background** |
 | `tile_shadow` | `true` / `false` | `true` | **Disable shadow** (the editor shows it as a *Disable …* checkbox; `false` = disabled) |
 | `tile_border` | `true` / `false` | `true` | **Disable border** (the editor shows it as a *Disable …* checkbox; `false` = disabled) |
@@ -144,13 +144,13 @@ Panels inside a `stack` have no grid place of their own; they take:
 
 | Option | Value | Default | What it does |
 |---|---|---|---|
+| `grow` | number 0–12 |  | **Grow** — Horizontal: relative width (default 1). Vertical: 1 = share leftover height. |
+| `min_width` | number 80–800 px |  | **Minimum width** — Horizontal: narrowest this panel gets before wrapping. |
+| `rows` | number 0–10 |  | **Height** — Vertical: minimum height in row units (half steps allowed). |
 | `show_title` | `true` / `false` | `true` | **Show the title** |
 | `title` | text |  | **Title** |
 | `show_icon` | `true` / `false` | `true` | **Show the title icon** |
 | `icon` | icon, e.g. `mdi:weather-windy` |  | **Icon** |
-| `grow` | number 0–12 |  | **Grow** — Horizontal: relative width (default 1). Vertical: 1 = share leftover height. |
-| `min_width` | number 80–800 px |  | **Minimum width** — Horizontal: narrowest this panel gets before wrapping. |
-| `rows` | number 0–10 |  | **Height** — Vertical: minimum height in row units (half steps allowed). |
 | `tile_shadow` | `true` / `false` | `true` | **Disable shadow** (the editor shows it as a *Disable …* checkbox; `false` = disabled) |
 | `tile_border` | `true` / `false` | `true` | **Disable border** (the editor shows it as a *Disable …* checkbox; `false` = disabled) |
 | `tile_glow` | `true` / `false` | `true` | **Disable glow** (the editor shows it as a *Disable …* checkbox; `false` = disabled) |
