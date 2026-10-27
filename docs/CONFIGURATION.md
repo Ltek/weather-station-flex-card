@@ -65,6 +65,7 @@ With no `panels:` the card shows its default dashboard (hero, bulletin, Sky Trac
 | `collapse_title_tap` | `true` / `false` | `true` | **Tap the title to fold / unfold** — For panels with Collapse button on (each panel can override this). |
 | `show_collapse_hint` | `true` / `false` | `true` | **Hint under the title while folded** |
 | `collapse_hint` | text |  | **Hint text** — Default "Tap title to show". |
+| `collapsed_info` | `summary` · `off` | `summary` | **Info in the header while folded** |
 | `collapsed_icon_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Collapsed icon color** — Not set: the theme's disabled colour. |
 | `collapsed_text_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Collapsed title color** — Not set: the theme's disabled text colour. |
 | `expanded_icon_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Expanded icon color** — Not set: the theme's state icon colour. |
@@ -121,6 +122,9 @@ Where the buttons go: `panel_bar: false` hides the bar; a Button Menu panel (`he
 | `collapse_title_tap` | `default` · `on` · `off` | `default` | **Tap the title to fold / unfold** |
 | `show_collapse_hint` | `default` · `on` · `off` | `default` | **Hint under the title while folded** |
 | `collapse_hint` | text |  | **Hint text** — Default "Tap title to show". |
+| `collapsed_info` | `default` · `summary` · `entity` · `off` | `default` | **Info in the header while folded** |
+| `collapsed_entity` | entity id |  | **Entity to show** — Its value in the folded header (used by "An entity's value", and instead of the summary when set). |
+| `collapsed_label` | text |  | **Label before the value** |
 | `collapsed_icon_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Collapsed icon color** — Not set: the theme's disabled colour. |
 | `collapsed_text_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Collapsed title color** — Not set: the theme's disabled text colour. |
 | `expanded_icon_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Expanded icon color** — Not set: the theme's state icon colour. |
@@ -159,6 +163,7 @@ Default size: 12 of 12 wide, 3 rows high. Also takes `flex:`: Weather Flex secti
 |---|---|---|---|
 | `main_temperature` | `temperature` · `feels_like` | `temperature` | **Main temperature** — Feels like shows the feels-like temperature in place of the temperature (falls back to the temperature when there's no feels-like value). |
 | `auto_scale` | `true` / `false` | `false` | **Set scale to Auto** — Size the temperature, its sub-header, condition, icon, clock, date and metric chips from the panel's size. Each then has its own scale below, instead of the pixel sizes in the sections editor. |
+| `fit` | `true` / `false` | `true` | **Fit to the panel** — With a set height: everything scales so the hero fills its panel (no empty space below, nothing cut off) — a 0.5-row hero shrinks to fit; one next to a taller panel grows. Off: sizes follow the width only, and the hero sets its own height. |
 | `scale` | number 50–200 % | `100` | **Overall scale** — Everything bigger or smaller; the items below scale on top of this. |
 | `temp_scale` | number 30–300 % | `100` | **Temperature** |
 | `condition_scale` | number 30–300 % | `100` | **Condition text** |
@@ -397,6 +402,7 @@ Default size: 4 of 12 wide, fits its content.
 |---|---|---|---|
 | `near_km` | number 1–40 | `16` | **Warn within (km)** — Default 16 km (10 miles). |
 | `near_minutes` | number 5–120 | `30` | **…for (minutes after a strike)** |
+| `hide_when_zero` | `true` / `false` | `false` | **Hide the panel when there are no strikes** — Hidden while the strike count is 0 (Ecowitt counts strikes per day). |
 | `show_battery` | `true` / `false` | `true` | **Sensor battery** |
 | `show_note` | `true` / `false` | `true` | **Note** |
 | `distance_entity` | entity id (`sensor.*`) |  | **Distance sensor** — Found on its own (e.g. Ecowitt WH57). |
