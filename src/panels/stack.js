@@ -96,7 +96,7 @@ class WsfcStack extends LitElement {
       if (folded && card._viewOf(p) === "compact") {
         const tiles = compactTiles(p, card.hass, card._station, NEEDS_PANEL.has(p.type) ? el : null);
         const ownBtn = p.compact_expand === false;
-        return html`<section class="tile ${p.type} folded ctile-row ${ownBtn ? "can-fold" : ""} ${fx}" style=${`${style};${colors}`}>
+        return html`<section data-j=${i} class="tile ${p.type} folded ctile-row ${ownBtn ? "can-fold" : ""} ${fx}" style=${`${style};${colors}`}>
           ${ownBtn ? btn : nothing}${compactRow(tiles, {
             icon: p.show_icon === false ? null : p.icon || meta.icon,
             title: p.compact_title ? p.title || meta.label : "",
@@ -107,7 +107,7 @@ class WsfcStack extends LitElement {
         </section>`;
       }
       const titleTap = can && card._collapseOpt(p, "collapse_title_tap", true);
-      return html`<section class="tile ${p.type} ${bare ? "bare" : ""} ${fx} ${folded ? "folded" : ""} ${can ? "can-fold" : ""}" style=${`${style};${colors}`}
+      return html`<section data-j=${i} class="tile ${p.type} ${bare ? "bare" : ""} ${fx} ${folded ? "folded" : ""} ${can ? "can-fold" : ""}" style=${`${style};${colors}`}
         @click=${titleTap ? (e) => card._titleTap(e, p, path) : nothing}>${btn}${el}</section>`;
     });
   }

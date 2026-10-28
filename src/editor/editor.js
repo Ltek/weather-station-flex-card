@@ -83,6 +83,7 @@ const LAYOUT_GROUPS = [
   ]],
   ["Collapsed panels", [
     { name: "collapsed_view", label: "Default view when collapsed", selector: { select: { options: [{ value: "minimal", label: "Minimal — the title and a line of info (e.g. 7 strikes today)" }, { value: "compact", label: "Compact — one row of tiles with all the data" }] } }, default: "minimal", helper: "For panels with Collapse button on; panels without a tiles view use Minimal. Each panel can override it — Convert all now clears those overrides." },
+    { name: "collapsed_open", label: "A folded panel opens", selector: { select: { options: [{ value: "auto", label: "Automatic — over the other panels in full screen or Auto-fit, else in place" }, { value: "inplace", label: "In place — the panel grows, the others move" }, { value: "overlay", label: "Over the other panels — nothing moves; tap outside or Esc to close" }, { value: "popup", label: "As a pop-up" }] } }, default: "auto", helper: "Each panel can override this (Collapse → Opens)." },
     { name: "collapse_title_tap", label: "Tap the title to fold / unfold", selector: { boolean: {} }, default: true, helper: "For panels with Collapse button on (each panel can override this)." },
     { name: "show_collapse_hint", label: "Hint under the title while folded", selector: { boolean: {} }, default: true },
     { name: "collapse_hint", label: "Hint text", when: (d) => d.show_collapse_hint !== false, selector: { text: {} }, helper: "Default \"Tap title to show\"." },
@@ -737,11 +738,17 @@ class WeatherStationFlexCardEditor extends LitElement {
   // and collapsible `sub` panels (e.g. "Default Overrides", "Sun & moon facts").
   // Flat expandable settings section (design system: borderless when closed,
   // a thin divider between them; open = accent border and accent title).
-  _flat(p, name, body, defOpen = false) {
+  // Closed at first; opening one closes the panel's other sections.
+  _flat(p, name, body) {
     const id = `${p.type}|${name}`;
     this._flatOpen ||= new Map();
-    const open = this._flatOpen.has(id) ? this._flatOpen.get(id) : defOpen;
-    return html`<details class="flat" ?open=${open} @toggle=${(e) => { if (e.target !== e.currentTarget) return; this._flatOpen.set(id, e.target.open); }}>
+    const open = !!this._flatOpen.get(id);
+    return html`<details class="flat" ?open=${open} @toggle=${(e) => {
+      if (e.target !== e.currentTarget || e.target.open === !!this._flatOpen.get(id)) return;
+      if (e.target.open) for (const k of this._flatOpen.keys()) if (k.startsWith(`${p.type}|`)) this._flatOpen.set(k, false);
+      this._flatOpen.set(id, e.target.open);
+      this.requestUpdate();
+    }}>
       <summary>${name}</summary>
       <div class="flat-body">${body}</div>
     </details>`;
@@ -763,12 +770,17 @@ class WeatherStationFlexCardEditor extends LitElement {
       if (k.startsWith("sub:")) {
         const id = `${p.type}:${name}`;
         const open = (this._subOpen ||= new Set()).has(id);
-        return html`<details class="sub psub" ?open=${open} @toggle=${(e) => { e.target.open ? this._subOpen.add(id) : this._subOpen.delete(id); this.requestUpdate(); }}>
+        return html`<details class="sub psub" ?open=${open} @toggle=${(e) => {
+          if (e.target !== e.currentTarget || e.target.open === this._subOpen.has(id)) return;
+          if (e.target.open) { for (const k of [...this._subOpen]) if (k.startsWith(`${p.type}:`)) this._subOpen.delete(k); this._subOpen.add(id); }
+          else this._subOpen.delete(id);
+          this.requestUpdate();
+        }}>
           <summary><ha-icon icon=${f[0]?.subIcon || "mdi:weather-sunset"}></ha-icon><span>${name}</span></summary>
           ${open ? html`<div class="psub-body">${form(f)}</div>` : nothing}
         </details>`;
       }
-      return flat ? this._flat(p, name, form(f), name === openName) : html`<div class="grp">${name}</div>${form(f)}`;
+      return flat ? this._flat(p, name, form(f)) : html`<div class="grp">${name}</div>${form(f)}`;
     });
   }
 
@@ -789,7 +801,7 @@ class WeatherStationFlexCardEditor extends LitElement {
     // Panels without a title header can't fold down to it.
     if (!canCollapseType(p.type)) common = common.filter((f) => f.section !== "Collapse");
     // Tiles view only where the panel has one.
-    if (!COMPACT_TYPES.has(p.type)) common = common.filter((f) => !["collapsed_view", "compact_expand", "compact_title"].includes(f.name));
+    if (!COMPACT_TYPES.has(p.type)) common = common.filter((f) => !["collapsed_view", "compact_expand", "compact_title", "compact"].includes(f.name));
     // Panels without a header have no title options.
     if (NO_TITLE.has(p.type)) common = common.filter((f) => !["show_title", "title", "show_icon", "icon"].includes(f.name) || (p.type !== "clock" && f.name === "title"));
     const isGraph = ["graph", "temp_humidity", "uv_solar", "statistics"].includes(p.type);
@@ -810,7 +822,7 @@ class WeatherStationFlexCardEditor extends LitElement {
       ${this._sections(p, spacing.length ? (() => { const at = common.findIndex((f) => f.name === "content_scale"); const c = common.slice(); c.splice(at < 0 ? c.length : at + 1, 0, ...spacing); return c; })() : common, defs, update, "Size and Scaling")}
       ${m.groups
         // Grouped panels (e.g. Wind): one options section, each group a boxed sub-panel inside.
-        ? this._flat(p, `${m.label} options`, m.groups.map(([title, f, icon], i) => this._sections(p, i === 0 ? f : f.map((x) => ({ ...x, sub: title, subIcon: icon })), {}, update, title, false)), true)
+        ? this._flat(p, `${m.label} options`, m.groups.map(([title, f, icon], i) => this._sections(p, i === 0 ? f : f.map((x) => ({ ...x, sub: title, subIcon: icon })), {}, update, title, false)))
         : m.schema.length
           ? this._sections(p, m.schema, {}, update, `${m.label} options`, true, `${m.label} options`)
           : nothing}

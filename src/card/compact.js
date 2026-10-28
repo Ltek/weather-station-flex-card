@@ -12,6 +12,35 @@ import { pollenModel, LEVEL_LABEL } from "./pollen.js";
 import { airQualityModel } from "../panels/air-quality.js";
 import { lightningIds, strikeTime } from "../panels/lightning.js";
 import { convert, convertDelta, TMAX, TMIN } from "./climate.js";
+import { watchForecast } from "./forecast.js";
+import { sunInfo, moonInfo, timeFmt } from "./astro.js";
+import { healthRows } from "../panels/health.js";
+
+// Forecasts for the tiles (shared subscriptions; the card redraws on state updates).
+const fc = new Map();
+function forecast(hass, entity, type) {
+  const k = `${entity}|${type}`;
+  if (!fc.has(k) && hass?.connection && entity) {
+    fc.set(k, null);
+    watchForecast(hass, entity, type, (f) => fc.set(k, f));
+  }
+  return fc.get(k) || null;
+}
+const condName = (h, c) => (c ? h.localize?.(`component.weather.entity_component._.state.${c}`) || String(c).replace(/-/g, " ") : "");
+const tempOf = (h, w, v) => {
+  const u = w?.attributes?.temperature_unit || (h.config?.unit_system?.temperature === "°C" ? "°C" : "°F");
+  return v == null ? null : convert(v, u, h)?.value;
+};
+const astroTiles = (h, withMoon = true) => {
+  const out = [], tf = timeFmt(h), s = sunInfo(h), m = withMoon ? moonInfo(h) : null;
+  if (s) {
+    out.push(tile("Sunrise", tf.format(s.sunrise), "", "#ffb300"), tile("Sunset", tf.format(s.sunset), "", "#ff7043"));
+    const mins = Math.round(s.daylightMs / 60000);
+    out.push(tile("Daylight", `${Math.floor(mins / 60)}h ${mins % 60}m`));
+  }
+  if (m) out.push(tile("Moon", m.name, `${Math.round(m.fraction * 100)}%`, "#cfd8dc"));
+  return out;
+};
 
 const POLLEN_COLOR = { none: "var(--secondary-text-color)", low: "var(--success-color, #43a047)", medium: "var(--warning-color, #ffa600)", high: "var(--error-color, #db4437)", off: "rgba(127,127,127,0.55)" };
 const VPD_COLORS = ["#7fd6ff", "#b8f04a", "#43a047", "#ffc93c", "#ff5a1f"], VPD_NAMES = ["Very humid", "Gentle", "Comfortable", "Brisk", "Thirsty air"];
@@ -118,6 +147,54 @@ const BUILD = {
     return out;
   },
 };
+
+// Forecasts, sky and station panels.
+Object.assign(BUILD, {
+  daily(p, h, s) {
+    const w = h.states[s?.entity];
+    return (forecast(h, s?.entity, "daily") || []).slice(0, Number(p.compact_days) || 5).map((f, i) => tile(
+      i === 0 ? "Today" : new Intl.DateTimeFormat(h.locale?.language, { weekday: "short" }).format(new Date(f.datetime)),
+      `${num(tempOf(h, w, f.temperature))}°`, f.templow != null ? `${num(tempOf(h, w, f.templow))}°` : "", "", null));
+  },
+  hourly(p, h, s) {
+    const w = h.states[s?.entity], now = Date.now();
+    return (forecast(h, s?.entity, "hourly") || []).filter((f) => Date.parse(f.datetime) > now - 3600e3).slice(0, Number(p.compact_hours) || 8)
+      .map((f) => tile(new Intl.DateTimeFormat(h.locale?.language, { hour: "numeric" }).format(new Date(f.datetime)), `${num(tempOf(h, w, f.temperature))}°`,
+        f.precipitation_probability ? `${f.precipitation_probability}%` : "", f.precipitation_probability >= 50 ? "#1e88e5" : ""));
+  },
+  forecast(p, h, s) {
+    return BUILD.daily(p, h, s);
+  },
+  day(p, h, s) {
+    const w = h.states[s?.entity];
+    const off = Number(p.day_offset ?? 1);
+    const f = (forecast(h, s?.entity, "daily") || [])[off];
+    if (!f) return [];
+    return [tile(off === 0 ? "Today" : off === 1 ? "Tomorrow" : new Intl.DateTimeFormat(h.locale?.language, { weekday: "long" }).format(new Date(f.datetime)), condName(h, f.condition)),
+      tile("High", `${num(tempOf(h, w, f.temperature))}°`, "", "var(--wsfc-temp-color, #ff9800)"),
+      tile("Low", `${num(tempOf(h, w, f.templow))}°`, "", "var(--wsfc-hum-color, #42a5f5)"),
+      f.precipitation_probability != null ? tile("Rain", `${f.precipitation_probability}%`, "", "#1e88e5") : null].filter(Boolean);
+  },
+  bulletin(p, h, s) {
+    const w = h.states[s?.entity];
+    return [w ? tile("Now", condName(h, w.state)) : null, live(h, s, "temperature", "Temp", 0), live(h, s, "humidity", "Humidity", 0), live(h, s, "wind_speed", "Wind", 0)].filter(Boolean);
+  },
+  sky_tracker(p, h) {
+    return astroTiles(h, true);
+  },
+  astronomy(p, h) {
+    return astroTiles(h, true);
+  },
+  moon(p, h) {
+    const m = moonInfo(h), tf = timeFmt(h);
+    return [tile("Moon", m.name, `${Math.round(m.fraction * 100)}%`, "#cfd8dc"), m.rise ? tile("Rise", tf.format(m.rise)) : null, m.set ? tile("Set", tf.format(m.set)) : null].filter(Boolean);
+  },
+  health(p, h, s) {
+    const COL = { ok: "var(--success-color, #43a047)", warn: "var(--warning-color, #ffa600)", bad: "var(--error-color, #db4437)" };
+    return healthRows(s, h, p).flatMap((g) => g.rows.filter((r) => r.kind !== "id").map((r) =>
+      tile(r.name, r.st?.state ?? "—", r.st?.attributes?.unit_of_measurement || "", COL[r.level] || "", r.eid))).slice(0, 8);
+  },
+});
 
 export const COMPACT_TYPES = new Set(Object.keys(BUILD));
 // Their data comes from the panel element (kept mounted, hidden).

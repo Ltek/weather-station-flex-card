@@ -380,7 +380,7 @@ export const PANEL_TYPES = {
   air_quality: {
     tag: "wsfc-panel-air-quality", label: "Air quality", icon: "mdi:air-filter", span: 4, rows: 0,
     schema: [
-      { name: "layout", selector: { select: { options: opt([["scale", "Scale — colour scale and rating per pollutant (like Pollen)"], ["rows", "Rows — bar, level and value per pollutant"], ["bars", "Vertical bars on the AQI scale"], ["tiles", "Tiles"]]) } }, default: "scale" },
+      { name: "layout", selector: { select: { options: opt([["compact", "Compact — one row of tiles (tap to open the full panel)"], ["scale", "Scale — colour scale and rating per pollutant (like Pollen)"], ["rows", "Rows — bar, level and value per pollutant"], ["bars", "Vertical bars on the AQI scale"], ["tiles", "Tiles"]]) } }, default: "scale" },
       { name: "pollutants", selector: { select: { multiple: true, options: opt([["pm2_5", "PM2.5"], ["pm10", "PM10"], ["ozone", "Ozone"], ["co2", "CO₂"]]) } }, helper: "Default: all that are found." },
       { name: "extra", selector: { object: {} }, helper: "More readings, e.g. - entity: sensor.erie_benzene with optional label, icon and thresholds: [moderate, elevated, high, very high] in the sensor's unit. Benzene and CO₂ have built-in thresholds." },
       { name: "tile_fill", label: "Stretch tiles to fill the width", when: (d) => d.layout === "tiles", selector: { boolean: {} }, default: false, helper: "Off: each tile is as wide as what's in it." },
@@ -472,17 +472,18 @@ export const COLLAPSE_COLORS = [
 ];
 export const COLLAPSE_FIELDS = [
   { name: "collapsible", label: "Collapse button", selector: { boolean: {} }, default: false, helper: "Fold the panel down to its title header to save space (e.g. maps). A folded map is paused. With Remember Panel Button States, this browser remembers what you folded." },
-  { name: "collapsed", label: "Start collapsed", when: (d) => !!d.collapsible, selector: { boolean: {} }, default: false },
-  { name: "collapsed_view", label: "View when collapsed", when: (d) => !!d.collapsible, selector: { select: { options: opt([["default", "Card default (Layout & Behavior)"], ["minimal", "Minimal — the title and a line of info"], ["compact", "Compact — one row of tiles with all the data"]]) } }, default: "default" },
-  { name: "compact_expand", label: "Tap the tiles to open the full panel", when: (d) => !!d.collapsible && d.collapsed_view !== "minimal", selector: { boolean: {} }, default: true, helper: "Compact view. Off: a tap on a tile opens that sensor (the fold button still opens the panel)." },
-  { name: "compact_title", label: "Show the title in the tiles row", when: (d) => !!d.collapsible && d.collapsed_view !== "minimal", selector: { boolean: {} }, default: false },
-  { name: "collapse_title_tap", label: "Tap the title to fold / unfold", when: (d) => !!d.collapsible, selector: { select: { options: opt([["default", "Card default (Appearance)"], ["on", "On"], ["off", "Off"]]) } }, default: "default" },
+  { name: "collapsed", label: "Start collapsed", when: (d) => !!(d.collapsible || d.compact), selector: { boolean: {} }, default: false },
+  { name: "collapsed_open", label: "Opens", when: (d) => !!(d.collapsible || d.compact), selector: { select: { options: opt([["default", "Card default (Layout & Behavior)"], ["inplace", "In place — the panel grows, the others move"], ["overlay", "Over the other panels — nothing moves"], ["popup", "As a pop-up"]]) } }, default: "default" },
+  { name: "collapsed_view", label: "View when collapsed", when: (d) => !!(d.collapsible || d.compact), selector: { select: { options: opt([["default", "Card default (Layout & Behavior)"], ["minimal", "Minimal — the title and a line of info"], ["compact", "Compact — one row of tiles with all the data"]]) } }, default: "default" },
+  { name: "compact_expand", label: "Tap the tiles to open the full panel", when: (d) => !!(d.collapsible || d.compact) && d.collapsed_view !== "minimal", selector: { boolean: {} }, default: true, helper: "Compact view. Off: a tap on a tile opens that sensor (the fold button still opens the panel)." },
+  { name: "compact_title", label: "Show the title in the tiles row", when: (d) => !!(d.collapsible || d.compact) && d.collapsed_view !== "minimal", selector: { boolean: {} }, default: false },
+  { name: "collapse_title_tap", label: "Tap the title to fold / unfold", when: (d) => !!(d.collapsible || d.compact), selector: { select: { options: opt([["default", "Card default (Appearance)"], ["on", "On"], ["off", "Off"]]) } }, default: "default" },
   { name: "show_collapse_hint", label: "Hint under the title while folded", when: (d) => d.collapsed_view !== "compact" && !!d.collapsible, selector: { select: { options: opt([["default", "Card default (Appearance)"], ["on", "Show"], ["off", "Hide"]]) } }, default: "default" },
   { name: "collapse_hint", label: "Hint text", when: (d) => d.collapsed_view !== "compact" && !!d.collapsible && d.show_collapse_hint !== "off", selector: { text: {} }, helper: "Default \"Tap title to show\"." },
   { name: "collapsed_info", label: "Info in the header while folded", when: (d) => d.collapsed_view !== "compact" && !!d.collapsible, selector: { select: { options: opt([["default", "Card default (Appearance)"], ["summary", "The panel's summary (e.g. strikes today)"], ["entity", "An entity's value"], ["off", "None"]]) } }, default: "default" },
   { name: "collapsed_entity", label: "Entity to show", when: (d) => d.collapsed_view !== "compact" && !!d.collapsible && d.collapsed_info !== "off", selector: { entity: {} }, helper: "Its value in the folded header (used by \"An entity's value\", and instead of the summary when set)." },
   { name: "collapsed_label", label: "Label before the value", when: (d) => d.collapsed_view !== "compact" && !!d.collapsible && !!d.collapsed_entity && d.collapsed_info !== "off", selector: { text: {} } },
-  ...COLLAPSE_COLORS.map((f) => ({ ...f, when: (d) => !!d.collapsible })),
+  ...COLLAPSE_COLORS.map((f) => ({ ...f, when: (d) => !!(d.collapsible || d.compact) })),
 ];
 
 export const COMMON_SCHEMA = [
@@ -490,6 +491,7 @@ export const COMMON_SCHEMA = [
   { section: "Size and Scaling", name: "span", selector: { number: { min: 1, max: 12, mode: "slider" } }, helper: "Width in twelfths of the card." },
   { section: "Size and Scaling", name: "rows", selector: { number: { min: 0, max: 10, step: 0.5, mode: "slider" } }, helper: "Height in row units, in half steps (0 = fit content, 0.5 = half height)." },
   { section: "Size and Scaling", name: "overflow", label: "When the content doesn't fit", selector: { select: { options: opt([["default", "Card default (Layout)"], ["grow", "Grow — the panel gets taller"], ["scroll", "Scroll — keep the set height, with a scroll bar"]]) } }, default: "default", helper: "Scroll needs a height of at least 1 row (it is raised to 1 when you pick Scroll)." },
+  { section: "Size and Scaling", name: "compact", label: "Compact view", selector: { boolean: {} }, default: false, helper: "Show this panel as one row of small tiles with all its data; tapping it opens the full panel (see Collapse → Opens)." },
   { section: "Size and Scaling", name: "content_scale", label: "Scale all Panel Contents", selector: { number: { min: 40, max: 200, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100, helper: "Everything inside the panel bigger or smaller (text, icons, tiles), so it fits the space." },
   ...COLLAPSE_FIELDS.map((f) => ({ ...f, section: "Collapse" })),
   // Title, panel button and this panel's Appearance defaults.
@@ -506,6 +508,7 @@ export const STACK_CHILD_SCHEMA = [
   { section: "Size and Scaling", name: "grow", label: "Share of the stack", selector: { number: { min: 0, max: 6, step: 0.5, mode: "slider" } }, helper: "How much of the stack's space this panel takes, compared with the others. Side-by-side stack: its share of the width (default 1; 2 = twice as wide as a 1). Stack one above the other: its share of the leftover height (0 = only as tall as its content; default 1 when it has a height or the stack fills its panel, else 0). Panels hidden by their buttons give their share to the others." },
   { section: "Size and Scaling", name: "min_width", label: "Narrowest width", selector: { number: { min: 80, max: 800, step: 10, mode: "slider", unit_of_measurement: "px" } }, helper: "Side-by-side stack: the narrowest this panel gets before the stack wraps it onto a new line (default 180 px)." },
   { section: "Size and Scaling", name: "rows", selector: { number: { min: 0, max: 10, step: 0.5, mode: "slider" } }, helper: "Vertical: minimum height in row units (half steps allowed)." },
+  { section: "Size and Scaling", name: "compact", label: "Compact view", selector: { boolean: {} }, default: false, helper: "Show this panel as one row of small tiles with all its data; tapping it opens the full panel." },
   ...COLLAPSE_FIELDS.map((f) => ({ ...f, section: "Collapse" })),
   ...TITLE_FIELDS.map((f) => ({ ...f, section: "Default Overrides" })),
   { name: "tile_shadow", section: "Default Overrides", label: "Disable shadow", invert: true, selector: { boolean: {} }, default: true },
@@ -645,12 +648,6 @@ export function normalizePanels(config) {
     panels = [{ type: "hero", span: 12 }, ...panels];
   }
   panels = panels.map((p) => (p.type === "hero" && config.hero && typeof config.hero === "object" && !p.flex ? { ...p, flex: config.hero } : p));
-  // compact: true (v2026.10.28.70) is now a collapsed panel shown as tiles.
-  const unCompact = (p) => {
-    if (!p?.compact) return p;
-    const { compact: _c, ...rest } = p;
-    return { ...rest, collapsible: true, collapsed: rest.collapsed ?? true, collapsed_view: rest.collapsed_view || "compact" };
-  };
-  return panels.map((p) => (p.type === "stack" ? { ...unCompact(p), panels: (p.panels || []).map(unCompact) } : unCompact(p)));
+  return panels;
 }
 

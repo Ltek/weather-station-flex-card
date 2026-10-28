@@ -184,7 +184,8 @@ class WsfcAirQuality extends LitElement {
       return html`${head(c, "mdi:air-filter", "Air quality")}
         <div class="note">No air-quality sensors found. Add Home Assistant's AirNow integration (free key from airnowapi.org), an outdoor PM2.5 sensor, or set the entities under this panel's options.</div>`;
     }
-    const layout = c.layout || "scale";
+    // Compact layout: the card shows the row of tiles; opened in full, the tiles layout.
+    const layout = c.layout === "compact" ? "tiles" : c.layout || "scale";
     if (layout === "scale") return html`${head(c, "mdi:air-filter", "Air quality")}${this._scaleLayout(m, c)}`;
     return html`
       ${head(c, "mdi:air-filter", "Air quality")}

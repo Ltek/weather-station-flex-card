@@ -1,5 +1,13 @@
 # Changelog
 
+## v2026.10.28.74
+
+- **A folded panel can open over the others.** Layout & Behavior → Collapsed panels → **A folded panel opens**: Automatic (over the other panels in full screen or Auto-fit, else in place), In place, **Over the other panels** (anchored to the panel's own place and width, growing down — or up near the bottom of the screen; tap outside, the ✕ or Esc to close; nothing else moves) or As a pop-up. Each panel can override it (Collapse → Opens), stacked panels too.
+- **Compact view as a panel setting again** (Size and Scaling → Compact view), for panels in the grid and in stacks; Air quality also has a **Compact** layout. The panel shows its row of tiles and opens (as set above) when tapped.
+- **Tiles view for more panels:** Daily / Hourly / Forecast (the next days or hours), Tomorrow, Current-conditions summary, Sky Tracker, Astronomy and Moon (sunrise, sunset, daylight, moon), Station health (battery, signal, online) — besides Air quality, Pollen, Rain, Lightning, VPD, Frost watch, Wind, Temp & Humidity, UV & Solar, Records and the garden.
+- **Settings sections start closed, and only one opens at a time** in each panel (also the sub-panels inside, e.g. Wind's groups).
+- `compact: true` is kept as the Compact view setting (v2026.10.28.71 turned it into Collapse settings).
+
 ## v2026.10.28.73
 
 - **Panels inside a stack can fold**, including the Compact (tiles) view: each stacked panel has its own Collapse section (Collapse button, Start collapsed, View when collapsed, title tap, hint, info, colours), so a stack can hold several compact rows. Folded stacked panels take only their own height; the others fill the rest. Remembered per browser like the others; Convert all now covers them.

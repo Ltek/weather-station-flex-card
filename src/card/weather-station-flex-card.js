@@ -79,6 +79,7 @@ class WeatherStationFlexCard extends LitElement {
     _focus: { state: true }, // index of an expanded grid panel, or null
     _size: { state: true }, // "wide" | "medium" | "narrow"
     _collapsed: { state: true }, // Set of panel keys collapsed to their header
+    _overlay: { state: true }, // path of a folded panel open over the others, or null
     // Editor layout probe: the card's height on the target screen (px).
     screenHeight: { attribute: false },
     screenWidth: { attribute: false },
@@ -189,7 +190,7 @@ class WeatherStationFlexCard extends LitElement {
   // Collapse to the title header: panels with a header, in the grid.
   _canCollapse(p) {
     const m = panelMeta(p);
-    return !!p.collapsible && canCollapseType(p.type) && !m?.bare && (p.show_title !== false || this._viewOf(p) === "compact");
+    return !!(p.collapsible || this._compactAlways(p)) && canCollapseType(p.type) && !m?.bare && (p.show_title !== false || this._viewOf(p) === "compact");
   }
 
   // Collapse / title-tap settings: the panel's own, else the card's Appearance defaults.
@@ -215,8 +216,22 @@ class WeatherStationFlexCard extends LitElement {
   // What a folded panel shows: "minimal" (its title and a line of info) or
   // "compact" (one row of tiles, for panels that have one). Panel setting,
   // else the card's Default view when collapsed. (`compact: true` from v70 = compact.)
+  // Compact view as the panel's own look (Size and Scaling → Compact view, or
+  // Air quality's Compact layout): a row of tiles that opens when tapped.
+  _compactAlways(p) {
+    return COMPACT_TYPES.has(p.type) && (!!p.compact || (p.type === "air_quality" && p.layout === "compact"));
+  }
+
+  // How a folded panel opens: in place, over the other panels, or as a pop-up.
+  _openMode(p) {
+    const v = p.collapsed_open && p.collapsed_open !== "default" ? p.collapsed_open : this._config.collapsed_open && this._config.collapsed_open !== "auto" ? this._config.collapsed_open : null;
+    if (v === "inplace" || v === "overlay" || v === "popup") return v;
+    return this._full || this._autoFit ? "overlay" : "inplace";
+  }
+
   _viewOf(p) {
     if (!COMPACT_TYPES.has(p.type)) return "minimal";
+    if (this._compactAlways(p) && (!p.collapsed_view || p.collapsed_view === "default")) return "compact";
     const v = p.collapsed_view && p.collapsed_view !== "default" ? p.collapsed_view : this._config.collapsed_view || "minimal";
     return v === "compact" ? "compact" : "minimal";
   }
@@ -272,6 +287,13 @@ class WeatherStationFlexCard extends LitElement {
   }
 
   _toggleCollapse(p, i) {
+    // A folded panel opening over the others or as a pop-up stays folded in the grid.
+    if (this._overlay != null && String(this._overlay) === String(i)) { this._overlay = null; return; }
+    if (this._isCollapsed(p, i) && this._focus == null) {
+      const mode = this._openMode(p);
+      if (mode === "popup") { this._overlay = null; this._popup = i; return; }
+      if (mode === "overlay") { this._overlay = i; return; }
+    }
     const s = new Set(this._collapsed);
     const k = this._key(p, i);
     s.has(k) ? s.delete(k) : s.add(k);
@@ -287,7 +309,8 @@ class WeatherStationFlexCard extends LitElement {
 
   // Start collapsed (per panel), or as left last time when remembering is on.
   _loadCollapsed(panels) {
-    const def = new Set(this._entries(panels).map(([p, i]) => (p.collapsible && p.collapsed ? this._key(p, i) : null)).filter(Boolean));
+    const always = (p) => COMPACT_TYPES.has(p.type) && (!!p.compact || (p.type === "air_quality" && p.layout === "compact"));
+    const def = new Set(this._entries(panels).map(([p, i]) => ((p.collapsible && p.collapsed) || (always(p) && p.collapsed !== false) ? this._key(p, i) : null)).filter(Boolean));
     if (this._config.remember === false || this.preview) return def;
     try {
       const saved = JSON.parse(localStorage.getItem(`${this._storageKey()}:collapsed`) || "null");
@@ -376,7 +399,8 @@ class WeatherStationFlexCard extends LitElement {
     this._ro.observe(this);
     this._onKey = (e) => {
       if (e.key !== "Escape") return;
-      if (this._popup != null) this._popup = null;
+      if (this._overlay != null) this._overlay = null;
+      else if (this._popup != null) this._popup = null;
       else if (this._focus != null) this._focus = null;
     };
     window.addEventListener("keydown", this._onKey);
@@ -516,7 +540,7 @@ class WeatherStationFlexCard extends LitElement {
         ${c.background === "image" ? this._renderImage() : bg && !lite ? this._renderBackground() : nothing}
         ${c.title ? this._renderTitle() : nothing}
         ${c.panel_bar === false || barInHeading ? nothing : html`<div class="topbar">${this._renderBar()}</div>`}
-        <div class="scroller"><div class="grid">${this._renderPanels()}</div></div>
+        <div class="scroller"><div class="grid">${this._renderPanels()}${this._overlay != null ? this._renderOverlay() : nothing}</div></div>
         ${this._popup != null ? this._renderPopup() : nothing}
       </ha-card>
     `;
@@ -744,6 +768,36 @@ class WeatherStationFlexCard extends LitElement {
     });
   }
 
+  // The section a panel sits in (top level, or inside a stack).
+  _tileFor(path) {
+    const [a, b] = String(path).split(".");
+    const t = this.renderRoot?.querySelector(`.grid > section.tile[data-i="${a}"]`);
+    if (b == null || !t) return t;
+    return t.querySelector("wsfc-panel-stack")?.shadowRoot?.querySelector(`section.tile[data-j="${b}"]`) || t;
+  }
+
+  // A folded panel open over the others, anchored to its own place.
+  _renderOverlay() {
+    const i = this._overlay, p = this._at(i), t = this._tileFor(i);
+    const grid = this.renderRoot?.querySelector(".grid"), sc = this.renderRoot?.querySelector(".scroller");
+    if (!p || !t || !grid) { queueMicrotask(() => (this._overlay = null)); return nothing; }
+    const close = () => (this._overlay = null);
+    const gr = grid.getBoundingClientRect(), tr = t.getBoundingClientRect(), sr = sc.getBoundingClientRect();
+    const w = Math.min(gr.width, Math.max(tr.width, 360));
+    const left = Math.max(0, Math.min(gr.width - w, tr.left - gr.left));
+    const visTop = Math.max(sr.top, 0), visBot = Math.min(sr.bottom, window.innerHeight);
+    const below = visBot - tr.top, above = tr.bottom - visTop;
+    const down = below >= above || below >= (visBot - visTop) * 0.55;
+    const pos = down
+      ? `top:${tr.top - gr.top}px;max-height:${Math.max(160, below - 6)}px`
+      : `bottom:${gr.bottom - tr.bottom}px;max-height:${Math.max(160, above - 6)}px`;
+    return html`<div class="ov-scrim" @click=${close}></div>
+      <div class="ov tile ${p.type}" role="dialog" aria-label=${p.title || this._autoTitle(p)} style=${`left:${left}px;width:${w}px;${pos}`}>
+        <button class="expand close" type="button" @click=${close} aria-label="Close"><ha-icon icon="mdi:close"></ha-icon></button>
+        ${this._panelEl(p, i, true)}
+      </div>`;
+  }
+
   _renderPopup() {
     const i = this._popup;
     const p = this._at(i);
@@ -802,6 +856,13 @@ class WeatherStationFlexCard extends LitElement {
 
   static styles = [chipStyles, tileStyles, compactStyles, css`
     /* Compact view: one row of tiles; the panel's own element stays hidden for its data. */
+    /* A folded panel open over the others. */
+    .grid { position: relative; }
+    .ov-scrim { position: absolute; inset: 0; z-index: 7; background: transparent; }
+    .ov { position: absolute; z-index: 8; overflow: auto; box-sizing: border-box; display: flex; flex-direction: column;
+      background: var(--ha-card-background, var(--card-background-color, #1c1c1c)) !important; backdrop-filter: none !important;
+      box-shadow: 0 10px 32px rgba(0, 0, 0, 0.55); border: 1px solid var(--divider-color, rgba(127, 127, 127, 0.35)); padding: 12px 14px; }
+    .ov > .close { position: sticky; top: 0; margin-left: auto; margin-bottom: -32px; }
     .tile.compact-tile { min-height: 0; height: auto; padding-top: 8px; padding-bottom: 8px; justify-content: center; }
     .tile.compact-tile .cwrap { min-width: 0; }
     .tile.compact-tile .chide { display: none; }
