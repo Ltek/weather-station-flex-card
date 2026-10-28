@@ -154,6 +154,21 @@ Panels inside a `stack` have no grid place of their own; they take:
 | `grow` | number 0–6 |  | **Share of the stack** — How much of the stack's space this panel takes, compared with the others. Side-by-side stack: its share of the width (default 1; 2 = twice as wide as a 1). Stack one above the other: its share of the leftover height (0 = only as tall as its content; default 1 when it has a height or the stack fills its panel, else 0). Panels hidden by their buttons give their share to the others. |
 | `min_width` | number 80–800 px |  | **Narrowest width** — Side-by-side stack: the narrowest this panel gets before the stack wraps it onto a new line (default 180 px). |
 | `rows` | number 0–10 |  | **Height** — Vertical: minimum height in row units (half steps allowed). |
+| `collapsible` | `true` / `false` | `false` | **Collapse button** — Fold the panel down to its title header to save space (e.g. maps). A folded map is paused. With Remember Panel Button States, this browser remembers what you folded. |
+| `collapsed` | `true` / `false` | `false` | **Start collapsed** |
+| `collapsed_view` | `default` · `minimal` · `compact` | `default` | **View when collapsed** |
+| `compact_expand` | `true` / `false` | `true` | **Tap the tiles to open the full panel** — Compact view. Off: a tap on a tile opens that sensor (the fold button still opens the panel). |
+| `compact_title` | `true` / `false` | `false` | **Show the title in the tiles row** |
+| `collapse_title_tap` | `default` · `on` · `off` | `default` | **Tap the title to fold / unfold** |
+| `show_collapse_hint` | `default` · `on` · `off` | `default` | **Hint under the title while folded** |
+| `collapse_hint` | text |  | **Hint text** — Default "Tap title to show". |
+| `collapsed_info` | `default` · `summary` · `entity` · `off` | `default` | **Info in the header while folded** |
+| `collapsed_entity` | entity id |  | **Entity to show** — Its value in the folded header (used by "An entity's value", and instead of the summary when set). |
+| `collapsed_label` | text |  | **Label before the value** |
+| `collapsed_icon_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Collapsed icon color** — Not set: the theme's disabled colour. |
+| `collapsed_text_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Collapsed title color** — Not set: the theme's disabled text colour. |
+| `expanded_icon_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Expanded icon color** — Not set: the theme's state icon colour. |
+| `expanded_text_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Expanded title color** — Not set: the theme's text colour. |
 | `show_title` | `true` / `false` | `true` | **Show the title** |
 | `title` | text |  | **Title** |
 | `show_icon` | `true` / `false` | `true` | **Show the title icon** |
