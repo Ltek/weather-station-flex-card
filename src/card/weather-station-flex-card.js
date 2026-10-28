@@ -32,6 +32,7 @@ import "../panels/air-quality.js";
 import "../panels/clock.js";
 import "../panels/records.js";
 import { foldInfo } from "./fold-info.js";
+import { COMPACT_TYPES, NEEDS_PANEL, compactTiles, compactRow, compactStyles } from "./compact.js";
 import "../panels/watch.js";
 import "../panels/rain.js";
 import "../panels/garden.js";
@@ -78,6 +79,7 @@ class WeatherStationFlexCard extends LitElement {
     _focus: { state: true }, // index of an expanded grid panel, or null
     _size: { state: true }, // "wide" | "medium" | "narrow"
     _collapsed: { state: true }, // Set of panel keys collapsed to their header
+    _expanded: { state: true }, // Set of compact panels opened in full
     // Editor layout probe: the card's height on the target screen (px).
     screenHeight: { attribute: false },
     screenWidth: { attribute: false },
@@ -153,7 +155,7 @@ class WeatherStationFlexCard extends LitElement {
     for (const tile of grid.querySelectorAll(":scope > section.tile[data-i]")) {
       const p = this._at(Number(tile.dataset.i));
       const el = [...tile.children].find((x) => x.tagName?.startsWith("WSFC-") || x.__wsfcPanel);
-      if (!p || !el || this._ownFit(p)) continue;
+      if (!p || !el || this._ownFit(p) || tile.classList.contains("compact-tile")) continue;
       const manual = Math.max(0.4, Math.min(2, (Number(p.content_scale) || 100) / 100));
       if (tile.classList.contains("collapsed")) { el.__wsfcAuto = base; el.style.zoom = String(manual * base); continue; }
       let k = base;
@@ -188,7 +190,7 @@ class WeatherStationFlexCard extends LitElement {
   // Collapse to the title header: panels with a header, in the grid.
   _canCollapse(p) {
     const m = panelMeta(p);
-    return !!p.collapsible && canCollapseType(p.type) && !m?.bare && p.show_title !== false;
+    return !!p.collapsible && !this._isCompactType(p) && canCollapseType(p.type) && !m?.bare && p.show_title !== false;
   }
 
   // Collapse / title-tap settings: the panel's own, else the card's Appearance defaults.
@@ -209,6 +211,44 @@ class WeatherStationFlexCard extends LitElement {
     e.stopPropagation();
     this._toggleCollapse(p, i);
     return true;
+  }
+
+  // Compact view: one row of tiles; tapping it can open the full panel.
+  _isCompactType(p) {
+    return !!p.compact && COMPACT_TYPES.has(p.type);
+  }
+
+  _isCompact(p, i) {
+    return this._isCompactType(p) && this._focus == null && !(this._expanded ||= new Set()).has(this._key(p, i));
+  }
+
+  _toggleCompact(p, i) {
+    const s = new Set(this._expanded || []);
+    const k = this._key(p, i);
+    s.has(k) ? s.delete(k) : s.add(k);
+    this._expanded = s;
+    this.requestUpdate();
+    this._scheduleFit?.();
+  }
+
+  _renderCompact(p, i, span, cls) {
+    const el = NEEDS_PANEL.has(p.type) ? this._panelEl(p, i) : null;
+    const tiles = compactTiles(p, this.hass, this._station, el);
+    // Data loaded by the hidden panel shows up a moment later.
+    if (el && !tiles.length && !this._compactRetry) { this._compactRetry = setTimeout(() => { this._compactRetry = null; this.requestUpdate(); }, 1200); }
+    const z = Math.max(0.4, Math.min(2, (Number(p.content_scale) || 100) / 100));
+    const meta = panelMeta(p);
+    const title = p.title || this._autoTitle(p);
+    const showTitle = !!p.compact_title;
+    return html`<section class="tile ${p.type} compact-tile ${cls}" style=${`grid-column: span ${span};grid-row: span 1;`} data-i=${i}>
+      <div class="cwrap" style=${z !== 1 ? `zoom:${z}` : ""}>${compactRow(tiles, {
+        icon: p.show_icon === false ? null : p.icon || meta.icon,
+        title: showTitle ? title : "",
+        onTap: p.compact_expand !== false ? () => this._toggleCompact(p, i) : null,
+        onTile: (eid) => this.dispatchEvent(new CustomEvent("hass-more-info", { detail: { entityId: eid }, bubbles: true, composed: true })),
+      })}</div>
+      ${el ? html`<div class="chide" aria-hidden="true">${el}</div>` : nothing}
+    </section>`;
   }
 
   _isCollapsed(p, i) {
@@ -661,12 +701,18 @@ class WeatherStationFlexCard extends LitElement {
       const tapToOpen = p.display === "tile_popup";
       const expandable = !bare && !tapToOpen && !["metric", "stack", "clock", "chips"].includes(p.type) && size !== "narrow";
       const bg = p.tile_background && p.tile_background !== "default" ? `bg-${p.tile_background}` : "";
-      return html`<section class="tile ${p.type} ${meta.bare ? "bare" : ""} ${bg} ${tileFx(p)} ${rows ? "" : "auto"} ${(fit || strict) && !collapsed ? "fit" : ""} ${strict && !fit && !collapsed ? "strict" : ""} ${collapsed ? "collapsed" : ""} ${tapToOpen && !collapsed ? "tap" : ""} ${collapsible ? "can-collapse" : ""} ${titleTap ? "title-tap" : ""}" style=${style} data-i=${i}
+      if (this._isCompact(p, i)) return this._renderCompact(p, i, span, `${bg} ${tileFx(p)}`);
+      const unCompact = this._isCompactType(p) && this._focus == null && p.compact_expand !== false;
+      return html`<section class="tile ${p.type} ${meta.bare ? "bare" : ""} ${bg} ${tileFx(p)} ${rows ? "" : "auto"} ${(fit || strict) && !collapsed ? "fit" : ""} ${strict && !fit && !collapsed ? "strict" : ""} ${collapsed ? "collapsed" : ""} ${tapToOpen && !collapsed ? "tap" : ""} ${collapsible || unCompact ? "can-collapse" : ""} ${titleTap ? "title-tap" : ""}" style=${style} data-i=${i}
           @click=${titleTap ? (e) => this._titleTap(e, p, i) : nothing}>
         ${collapsible
           ? html`<button class="collapse" type="button" @click=${() => this._toggleCollapse(p, i)} aria-expanded=${String(!collapsed)}
               aria-label=${`${collapsed ? "Expand" : "Collapse"} ${p.title || this._autoTitle(p)}`} title=${collapsed ? "Show" : "Collapse to its title"}>
               <ha-icon icon=${collapsed ? "mdi:chevron-down" : "mdi:chevron-up"}></ha-icon></button>`
+          : nothing}
+        ${unCompact
+          ? html`<button class="collapse" type="button" @click=${() => this._toggleCompact(p, i)} aria-label=${`Back to the compact ${p.title || this._autoTitle(p)}`} title="Compact view">
+              <ha-icon icon="mdi:arrow-collapse-vertical"></ha-icon></button>`
           : nothing}
         ${tapToOpen && !collapsed
           ? html`<button class="tap-open" type="button" aria-haspopup="dialog" aria-label=${`Open ${p.title || this._autoTitle(p)}`}
@@ -747,7 +793,11 @@ class WeatherStationFlexCard extends LitElement {
     return el;
   }
 
-  static styles = [chipStyles, tileStyles, css`
+  static styles = [chipStyles, tileStyles, compactStyles, css`
+    /* Compact view: one row of tiles; the panel's own element stays hidden for its data. */
+    .tile.compact-tile { min-height: 0; height: auto; padding-top: 8px; padding-bottom: 8px; justify-content: center; }
+    .tile.compact-tile .cwrap { min-width: 0; }
+    .tile.compact-tile .chide { display: none; }
     :host {
       display: block;
       --wsfc-gap: 12px;

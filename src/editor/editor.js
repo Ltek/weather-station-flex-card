@@ -28,6 +28,7 @@ import { setUnsaved, isLive, setLive } from "../card/unsaved.js";
 import { detected } from "../card/detected.js";
 import { ANIM_SPEEDS } from "../card/animation-speed.js";
 import { canCollapseType } from "../card/weather-station-flex-card.js";
+import { COMPACT_TYPES } from "../card/compact.js";
 import { metricSensor, entityValue, integrationOf } from "../card/resolve.js";
 import "./sources.js";
 import "./series-editor.js";
@@ -762,6 +763,9 @@ class WeatherStationFlexCardEditor extends LitElement {
     if (p.type === "hero") common = common.filter((f) => !["icon", "display", "in_bar"].includes(f.name));
     // Panels without a title header can't fold down to it.
     if (!canCollapseType(p.type)) common = common.filter((f) => f.section !== "Collapse");
+    // Compact view only where the panel has one; a compact panel doesn't fold.
+    if (!COMPACT_TYPES.has(p.type)) common = common.filter((f) => f.section !== "Compact view");
+    else if (p.compact) common = common.filter((f) => f.section !== "Collapse");
     // Panels without a header have no title options.
     if (NO_TITLE.has(p.type)) common = common.filter((f) => !["show_title", "title", "show_icon", "icon"].includes(f.name) || (p.type !== "clock" && f.name === "title"));
     const isGraph = ["graph", "temp_humidity", "uv_solar", "statistics"].includes(p.type);

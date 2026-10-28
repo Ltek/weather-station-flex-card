@@ -1,5 +1,9 @@
 # Changelog
 
+## v2026.10.28.70
+
+- **Compact view** (new section in each panel's settings): the panel as a single row of small tiles with all its data — e.g. Air quality "AQI 56 Moderate · PM2.5 12.1 · PM10 21 · Ozone 0.041 · CO₂ 431". For Air quality, Pollen, Rain totals, Lightning, Air dryness, Frost & heat watch, Wind, Temperature & Humidity, UV & Solar, Weather records and Frost & the garden. **Tap to open the full panel** (on by default; its ⇕ button goes back; off: a tile opens its sensor) and **Show the title in the row**. Scale all Panel Contents applies; a compact panel doesn't also fold.
+
 ## v2026.10.28.69
 
 - **Auto-fit to the screen** (Appearance → Layout, one switch for the card): the layout and sizes you set are the design for the Screen guide's size (e.g. 2000×1200). Every screen shows that design scaled to fit — rows share the screen height and every panel keeps its height, the layout stays as designed until the screen is phone-narrow, and each panel's contents scale with the screen (actual / design size), smaller where they'd still overflow. **Smallest content scale** (default 60 %; below it a panel scrolls) and **Largest content scale** (default 150 %). The hero, wind and maps keep sizing themselves; Scale all Panel Contents still applies on top.

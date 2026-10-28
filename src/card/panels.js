@@ -482,12 +482,20 @@ export const COLLAPSE_FIELDS = [
   ...COLLAPSE_COLORS.map((f) => ({ ...f, when: (d) => !!d.collapsible })),
 ];
 
+// Compact view (panels in card/compact.js): one row of tiles with all the data.
+export const COMPACT_FIELDS = [
+  { name: "compact", label: "Compact view", selector: { boolean: {} }, default: false, helper: "Show this panel as a single row of small tiles with all its data." },
+  { name: "compact_expand", label: "Tap to open the full panel", when: (d) => !!d.compact, selector: { boolean: {} }, default: true, helper: "Tapping the row shows the full panel; its ⇕ button goes back. Off: a tap on a tile opens that sensor." },
+  { name: "compact_title", label: "Show the title in the row", when: (d) => !!d.compact, selector: { boolean: {} }, default: false },
+];
+
 export const COMMON_SCHEMA = [
   { section: "Size and Scaling", name: "display", label: "Location", selector: { select: { options: opt([["grid", "In the grid"], ["tile_popup", "In the grid — tap it to open larger"], ["popup", "Pop-up only (from its panel button)"]]) } } },
   { section: "Size and Scaling", name: "span", selector: { number: { min: 1, max: 12, mode: "slider" } }, helper: "Width in twelfths of the card." },
   { section: "Size and Scaling", name: "rows", selector: { number: { min: 0, max: 10, step: 0.5, mode: "slider" } }, helper: "Height in row units, in half steps (0 = fit content, 0.5 = half height)." },
   { section: "Size and Scaling", name: "overflow", label: "When the content doesn't fit", selector: { select: { options: opt([["default", "Card default (Layout)"], ["grow", "Grow — the panel gets taller"], ["scroll", "Scroll — keep the set height, with a scroll bar"]]) } }, default: "default", helper: "Scroll needs a height of at least 1 row (it is raised to 1 when you pick Scroll)." },
   { section: "Size and Scaling", name: "content_scale", label: "Scale all Panel Contents", selector: { number: { min: 40, max: 200, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100, helper: "Everything inside the panel bigger or smaller (text, icons, tiles), so it fits the space." },
+  ...COMPACT_FIELDS.map((f) => ({ ...f, section: "Compact view" })),
   ...COLLAPSE_FIELDS.map((f) => ({ ...f, section: "Collapse" })),
   // Title, panel button and this panel's Appearance defaults.
   ...TITLE_FIELDS.map((f) => ({ ...f, section: "Default Overrides" })),
