@@ -55,13 +55,6 @@ const APPEARANCE_GROUPS = [
     { name: "background_image_fit", when: (d) => d.background === "image", selector: { select: { options: [{ value: "cover", label: "Fill (crop to fit)" }, { value: "contain", label: "Fit (whole image)" }, { value: "tile", label: "Tile" }] } }, default: "cover" },
     { name: "background_dim", when: (d) => d.background === "image", selector: { number: { min: 0, max: 0.9, step: 0.05, mode: "slider" } }, default: 0.25, helper: "Image background: darken it so text stays readable (0 = off)." },
   ]],
-  ["Collapsible panels", [
-    { name: "collapse_title_tap", label: "Tap the title to fold / unfold", selector: { boolean: {} }, default: true, helper: "For panels with Collapse button on (each panel can override this)." },
-    { name: "show_collapse_hint", label: "Hint under the title while folded", selector: { boolean: {} }, default: true },
-    { name: "collapse_hint", label: "Hint text", when: (d) => d.show_collapse_hint !== false, selector: { text: {} }, helper: "Default \"Tap title to show\"." },
-    { name: "collapsed_info", label: "Info in the header while folded", selector: { select: { options: [{ value: "summary", label: "The panel's summary (e.g. strikes today, rain today)" }, { value: "off", label: "None" }] } }, default: "summary" },
-    ...COLLAPSE_COLORS,
-  ]],
   ["Panels", [
     { name: "panel_opacity", selector: { number: { min: 0, max: 1, step: 0.05, mode: "slider" } }, helper: "With a card background: panel opacity (0 = fully transparent, 1 = solid). Default 0.55." },
     { name: "panel_blur", selector: { number: { min: 0, max: 30, step: 1, mode: "slider", unit_of_measurement: "px" } }, when: (d) => !d.anim_low_power, helper: "With a card background: blur behind panels. Default 6 (off with Low-power animation)." },
@@ -72,11 +65,14 @@ const APPEARANCE_GROUPS = [
     { name: "panel_glow", selector: { boolean: {} }, default: false, helper: "A soft glow around each panel." },
     { name: "panel_glow_color", when: (d) => !!d.panel_glow, selector: { text: {} }, helper: "Not set: the border color, else the theme's primary color." },
     { name: "panel_glow_size", when: (d) => !!d.panel_glow, selector: { number: { min: 2, max: 40, step: 1, mode: "slider", unit_of_measurement: "px" } }, default: 10 },
-  ]],
-  ["Layout & behaviour", [
+  ]]
+];
+// Layout & Behavior section (with the layout map below these).
+const LAYOUT_GROUPS = [
+  ["Screen fit & sizing", [
     { name: "layout", selector: { select: { options: [{ value: "auto", label: "Size to content" }, { value: "fullscreen", label: "Full screen (fills the view below the header)" }] } } },
     { name: "fit_height", when: (d) => d.layout === "fullscreen", selector: { boolean: {} }, default: true, helper: "Full screen: panels with a height share the screen height (row height is calculated)." },
-    { name: "auto_fit", label: "Auto-fit to the screen", selector: { boolean: {} }, default: false, helper: "The layout and sizes you set are the design, for the Screen guide's size (Layout → Screen guide). Every screen shows that design scaled to fit: rows share the screen height, the layout stays as designed until the screen is phone-narrow, and each panel's contents scale with the screen — smaller where they'd still overflow. Full screen recommended." },
+    { name: "auto_fit", label: "Auto-fit to the screen", selector: { boolean: {} }, default: false, helper: "The layout and sizes you set are the design, for the Screen guide's size (Layout map → Screen guide, below). Every screen shows that design scaled to fit: rows share the screen height, the layout stays as designed until the screen is phone-narrow, and each panel's contents scale with the screen — smaller where they'd still overflow. Full screen recommended." },
     { name: "auto_fit_min", label: "Smallest content scale", when: (d) => !!d.auto_fit, selector: { number: { min: 30, max: 100, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 60, helper: "Below this a panel scrolls instead, so text stays readable." },
     { name: "auto_fit_max", label: "Largest content scale", when: (d) => !!d.auto_fit, selector: { number: { min: 100, max: 250, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 150, helper: "On screens bigger than the design." },
     { name: "fit_strict", label: "Strict fit to screen dimensions", when: (d) => d.layout === "fullscreen" && d.fit_height !== false && !d.auto_fit, selector: { boolean: {} }, default: false, helper: "Every panel is exactly the height you set, so the page fits the screen as the layout map shows; content taller than its panel scrolls inside the panel. Off: panels grow to fit their content (the page may scroll)." },
@@ -85,10 +81,18 @@ const APPEARANCE_GROUPS = [
     { name: "row_height", selector: { number: { min: 40, max: 300, mode: "box", unit_of_measurement: "px" } }, helper: "Height of one row unit (default 110)." },
     { name: "gap", selector: { number: { min: 0, max: 32, mode: "box", unit_of_measurement: "px" } }, helper: "Space between panels (default 12)." },
   ]],
+  ["Collapsed panels", [
+    { name: "collapsed_view", label: "Default view when collapsed", selector: { select: { options: [{ value: "minimal", label: "Minimal — the title and a line of info (e.g. 7 strikes today)" }, { value: "compact", label: "Compact — one row of tiles with all the data" }] } }, default: "minimal", helper: "For panels with Collapse button on; panels without a tiles view use Minimal. Each panel can override it — Convert all now clears those overrides." },
+    { name: "collapse_title_tap", label: "Tap the title to fold / unfold", selector: { boolean: {} }, default: true, helper: "For panels with Collapse button on (each panel can override this)." },
+    { name: "show_collapse_hint", label: "Hint under the title while folded", selector: { boolean: {} }, default: true },
+    { name: "collapse_hint", label: "Hint text", when: (d) => d.show_collapse_hint !== false, selector: { text: {} }, helper: "Default \"Tap title to show\"." },
+    { name: "collapsed_info", label: "Info in the header while folded", selector: { select: { options: [{ value: "summary", label: "The panel's summary (e.g. strikes today, rain today)" }, { value: "off", label: "None" }] } }, default: "summary" },
+    ...COLLAPSE_COLORS,
+  ]],
 ];
 // In the Panel buttons section.
 const REMEMBER = [{ name: "remember", selector: { boolean: {} }, default: true, helper: "Keep which panels were shown or hidden with the panel buttons after a refresh, in each browser. Off: every load starts from the panels' Shown setting (the eye icon)." }];
-const GENERAL_SCHEMA = APPEARANCE_GROUPS.flatMap(([, f]) => f);
+const GENERAL_SCHEMA = [...APPEARANCE_GROUPS, ...LAYOUT_GROUPS].flatMap(([, f]) => f);
 const GENERAL_DEFAULTS = { layout: "auto", panel_bar: true, remember: true, fit_height: true, layout_size: "auto", background: "none", panel_opacity: 0.55, panel_blur: 6 };
 
 const LABELS = {
@@ -319,9 +323,9 @@ class WeatherStationFlexCardEditor extends LitElement {
           <span class="live-hint">${isLive() ? "animations and maps running" : "animations and maps paused while editing"}</span>
         </label>
         ${this._section("station", "mdi:weather-cloudy-clock", "Weather station", () => this._stationEditor())}
-        ${this._section("general", "mdi:palette-outline", "Appearance", () => this._general())}
+        ${this._section("general", "mdi:palette-outline", "Appearance", () => this._general(APPEARANCE_GROUPS))}
         ${this._section("buttons", "mdi:gesture-tap-button", "Panel buttons", () => this._buttonsEditor())}
-        ${this._section("layout", "mdi:view-dashboard-edit-outline", "Layout", () => this._layoutEditor())}
+        ${this._section("layout", "mdi:view-dashboard-edit-outline", "Layout & Behavior", () => html`${this._general(LAYOUT_GROUPS)}${this._convertBar()}<div class="agrp"><div class="agrp-t">Layout map</div>${this._layoutEditor()}</div>`)}
         ${this._section("panels", "mdi:view-list-outline", `Panels (${this._panels.length})`, () => this._panelList())}
       </div>
     `;
@@ -378,9 +382,27 @@ class WeatherStationFlexCardEditor extends LitElement {
   }
 
 
-  _general() {
+  // "Convert all now": every panel (and stacked panel) follows the card's
+  // Default view when collapsed — their own View when collapsed is cleared.
+  _convertBar() {
+    const view = this._config.collapsed_view || "minimal";
+    const all = this._panels.flatMap((p) => [p, ...(p.type === "stack" ? p.panels || [] : [])]);
+    const over = all.filter((p) => p.collapsed_view && p.collapsed_view !== "default").length;
+    const convert = () => {
+      const clear = (p) => { if (!p) return p; const { collapsed_view: _v, ...r } = p; return r; };
+      this._flexEds.clear();
+      this._setPanels(this._panels.map((p) => (p.type === "stack" ? { ...clear(p), panels: (p.panels || []).map(clear) } : clear(p))));
+    };
+    return html`<div class="convert">
+      <button class="btn sm" ?disabled=${!over} @click=${convert} title="Clears every panel's own View when collapsed">
+        <ha-icon icon="mdi:swap-horizontal"></ha-icon>Convert all now</button>
+      <span class="fhelp">${over ? `${over === 1 ? "1 panel sets its own view" : `${over} panels set their own view`}; Convert all now makes every collapsible panel ${view === "compact" ? "Compact" : "Minimal"}.` : `Every collapsible panel follows the default (${view === "compact" ? "Compact" : "Minimal"}).`}</span>
+    </div>`;
+  }
+
+  _general(groups = APPEARANCE_GROUPS) {
     const bg = this._config.background || "none";
-    return APPEARANCE_GROUPS.map(([title, fields]) => {
+    return groups.map(([title, fields]) => {
       const f = fields;
       return html`<div class="agrp"><div class="agrp-t">${title}</div>${this._form(formData(this._config, f, GENERAL_DEFAULTS), f, (v) => {
         const { panels: _p, ...rest } = this._config;
@@ -763,9 +785,8 @@ class WeatherStationFlexCardEditor extends LitElement {
     if (p.type === "hero") common = common.filter((f) => !["icon", "display", "in_bar"].includes(f.name));
     // Panels without a title header can't fold down to it.
     if (!canCollapseType(p.type)) common = common.filter((f) => f.section !== "Collapse");
-    // Compact view only where the panel has one; a compact panel doesn't fold.
-    if (!COMPACT_TYPES.has(p.type)) common = common.filter((f) => f.section !== "Compact view");
-    else if (p.compact) common = common.filter((f) => f.section !== "Collapse");
+    // Tiles view only where the panel has one.
+    if (!COMPACT_TYPES.has(p.type)) common = common.filter((f) => !["collapsed_view", "compact_expand", "compact_title"].includes(f.name));
     // Panels without a header have no title options.
     if (NO_TITLE.has(p.type)) common = common.filter((f) => !["show_title", "title", "show_icon", "icon"].includes(f.name) || (p.type !== "clock" && f.name === "title"));
     const isGraph = ["graph", "temp_humidity", "uv_solar", "statistics"].includes(p.type);
@@ -898,6 +919,7 @@ class WeatherStationFlexCardEditor extends LitElement {
     .live .live-hint { margin-left: auto; color: var(--ltek-c-muted); font-size: var(--ltek-fs-small, 12px); }
     .guidebar { margin: 0 0 var(--ltek-sp-3); }
     /* Flat expandable settings sections (one per settings group of a panel). */
+    .convert { display: flex; gap: var(--ltek-sp-3); align-items: center; flex-wrap: wrap; margin: var(--ltek-sp-2) 0 var(--ltek-sp-4); }
     details.flat { border: 1px solid transparent; border-top-color: var(--ltek-c-border-soft); border-radius: 0; }
     details.flat + details.flat { margin-top: 0; }
     details.flat[open] { border-color: var(--accent-color, var(--ltek-c-accent)); border-radius: var(--ltek-r-ctrl); margin: 6px 0; }
@@ -946,4 +968,4 @@ customElements.get("weather-station-flex-card-editor") || customElements.define(
 // For tests.
 globalThis.__wsfcEditorHelpers = { stackWithNext, unstack, moveIntoStack };
 // For scripts/gen-config-doc.mjs (docs/CONFIGURATION.md is generated from these).
-globalThis.__wsfcSchemas = { APPEARANCE_GROUPS, GENERAL_DEFAULTS, REMEMBER, LABELS, PANEL_TYPES, COMMON_SCHEMA, STACK_CHILD_SCHEMA };
+globalThis.__wsfcSchemas = { APPEARANCE_GROUPS, LAYOUT_GROUPS, GENERAL_DEFAULTS, REMEMBER, LABELS, PANEL_TYPES, COMMON_SCHEMA, STACK_CHILD_SCHEMA };

@@ -1,5 +1,12 @@
 # Changelog
 
+## v2026.10.28.71
+
+- **New top-level settings area: Layout & Behavior** — Screen fit & sizing (layout, fit, Auto-fit, strict fit, overflow, layout size, row height, gap; moved from Appearance), **Collapsed panels** (moved from Appearance) and the layout map (was the Layout area).
+- **Default view when collapsed: Minimal or Compact.** Minimal is the folded title with its line of info; Compact is the row of tiles with all the data. Compact is now a way of collapsing: a collapsed panel shows its tiles, tapping them opens the full panel and the fold button goes back — so Start collapsed, remembering and title tap work for it too. Each panel's Collapse section has **View when collapsed** (card default / Minimal / Compact); panels without a tiles view always use Minimal.
+- **Convert all now** (Layout & Behavior → Collapsed panels): clears every panel's own View when collapsed, so they all follow the default.
+- Panels saved with v2026.10.28.70's `compact: true` become collapsible, start collapsed and use the Compact view.
+
 ## v2026.10.28.70
 
 - **Compact view** (new section in each panel's settings): the panel as a single row of small tiles with all its data — e.g. Air quality "AQI 56 Moderate · PM2.5 12.1 · PM10 21 · Ozone 0.041 · CO₂ 431". For Air quality, Pollen, Rain totals, Lightning, Air dryness, Frost & heat watch, Wind, Temperature & Humidity, UV & Solar, Weather records and Frost & the garden. **Tap to open the full panel** (on by default; its ⇕ button goes back; off: a tile opens its sensor) and **Show the title in the row**. Scale all Panel Contents applies; a compact panel doesn't also fold.

@@ -473,20 +473,16 @@ export const COLLAPSE_COLORS = [
 export const COLLAPSE_FIELDS = [
   { name: "collapsible", label: "Collapse button", selector: { boolean: {} }, default: false, helper: "Fold the panel down to its title header to save space (e.g. maps). A folded map is paused. With Remember Panel Button States, this browser remembers what you folded." },
   { name: "collapsed", label: "Start collapsed", when: (d) => !!d.collapsible, selector: { boolean: {} }, default: false },
+  { name: "collapsed_view", label: "View when collapsed", when: (d) => !!d.collapsible, selector: { select: { options: opt([["default", "Card default (Layout & Behavior)"], ["minimal", "Minimal — the title and a line of info"], ["compact", "Compact — one row of tiles with all the data"]]) } }, default: "default" },
+  { name: "compact_expand", label: "Tap the tiles to open the full panel", when: (d) => !!d.collapsible && d.collapsed_view !== "minimal", selector: { boolean: {} }, default: true, helper: "Compact view. Off: a tap on a tile opens that sensor (the fold button still opens the panel)." },
+  { name: "compact_title", label: "Show the title in the tiles row", when: (d) => !!d.collapsible && d.collapsed_view !== "minimal", selector: { boolean: {} }, default: false },
   { name: "collapse_title_tap", label: "Tap the title to fold / unfold", when: (d) => !!d.collapsible, selector: { select: { options: opt([["default", "Card default (Appearance)"], ["on", "On"], ["off", "Off"]]) } }, default: "default" },
-  { name: "show_collapse_hint", label: "Hint under the title while folded", when: (d) => !!d.collapsible, selector: { select: { options: opt([["default", "Card default (Appearance)"], ["on", "Show"], ["off", "Hide"]]) } }, default: "default" },
-  { name: "collapse_hint", label: "Hint text", when: (d) => !!d.collapsible && d.show_collapse_hint !== "off", selector: { text: {} }, helper: "Default \"Tap title to show\"." },
-  { name: "collapsed_info", label: "Info in the header while folded", when: (d) => !!d.collapsible, selector: { select: { options: opt([["default", "Card default (Appearance)"], ["summary", "The panel's summary (e.g. strikes today)"], ["entity", "An entity's value"], ["off", "None"]]) } }, default: "default" },
-  { name: "collapsed_entity", label: "Entity to show", when: (d) => !!d.collapsible && d.collapsed_info !== "off", selector: { entity: {} }, helper: "Its value in the folded header (used by \"An entity's value\", and instead of the summary when set)." },
-  { name: "collapsed_label", label: "Label before the value", when: (d) => !!d.collapsible && !!d.collapsed_entity && d.collapsed_info !== "off", selector: { text: {} } },
+  { name: "show_collapse_hint", label: "Hint under the title while folded", when: (d) => d.collapsed_view !== "compact" && !!d.collapsible, selector: { select: { options: opt([["default", "Card default (Appearance)"], ["on", "Show"], ["off", "Hide"]]) } }, default: "default" },
+  { name: "collapse_hint", label: "Hint text", when: (d) => d.collapsed_view !== "compact" && !!d.collapsible && d.show_collapse_hint !== "off", selector: { text: {} }, helper: "Default \"Tap title to show\"." },
+  { name: "collapsed_info", label: "Info in the header while folded", when: (d) => d.collapsed_view !== "compact" && !!d.collapsible, selector: { select: { options: opt([["default", "Card default (Appearance)"], ["summary", "The panel's summary (e.g. strikes today)"], ["entity", "An entity's value"], ["off", "None"]]) } }, default: "default" },
+  { name: "collapsed_entity", label: "Entity to show", when: (d) => d.collapsed_view !== "compact" && !!d.collapsible && d.collapsed_info !== "off", selector: { entity: {} }, helper: "Its value in the folded header (used by \"An entity's value\", and instead of the summary when set)." },
+  { name: "collapsed_label", label: "Label before the value", when: (d) => d.collapsed_view !== "compact" && !!d.collapsible && !!d.collapsed_entity && d.collapsed_info !== "off", selector: { text: {} } },
   ...COLLAPSE_COLORS.map((f) => ({ ...f, when: (d) => !!d.collapsible })),
-];
-
-// Compact view (panels in card/compact.js): one row of tiles with all the data.
-export const COMPACT_FIELDS = [
-  { name: "compact", label: "Compact view", selector: { boolean: {} }, default: false, helper: "Show this panel as a single row of small tiles with all its data." },
-  { name: "compact_expand", label: "Tap to open the full panel", when: (d) => !!d.compact, selector: { boolean: {} }, default: true, helper: "Tapping the row shows the full panel; its ⇕ button goes back. Off: a tap on a tile opens that sensor." },
-  { name: "compact_title", label: "Show the title in the row", when: (d) => !!d.compact, selector: { boolean: {} }, default: false },
 ];
 
 export const COMMON_SCHEMA = [
@@ -495,7 +491,6 @@ export const COMMON_SCHEMA = [
   { section: "Size and Scaling", name: "rows", selector: { number: { min: 0, max: 10, step: 0.5, mode: "slider" } }, helper: "Height in row units, in half steps (0 = fit content, 0.5 = half height)." },
   { section: "Size and Scaling", name: "overflow", label: "When the content doesn't fit", selector: { select: { options: opt([["default", "Card default (Layout)"], ["grow", "Grow — the panel gets taller"], ["scroll", "Scroll — keep the set height, with a scroll bar"]]) } }, default: "default", helper: "Scroll needs a height of at least 1 row (it is raised to 1 when you pick Scroll)." },
   { section: "Size and Scaling", name: "content_scale", label: "Scale all Panel Contents", selector: { number: { min: 40, max: 200, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100, helper: "Everything inside the panel bigger or smaller (text, icons, tiles), so it fits the space." },
-  ...COMPACT_FIELDS.map((f) => ({ ...f, section: "Compact view" })),
   ...COLLAPSE_FIELDS.map((f) => ({ ...f, section: "Collapse" })),
   // Title, panel button and this panel's Appearance defaults.
   ...TITLE_FIELDS.map((f) => ({ ...f, section: "Default Overrides" })),
@@ -648,6 +643,13 @@ export function normalizePanels(config) {
   if (Array.isArray(config.panels) && config.panels.length && !panels.some((p) => p.type === "hero") && config.hero !== false) {
     panels = [{ type: "hero", span: 12 }, ...panels];
   }
-  return panels.map((p) => (p.type === "hero" && config.hero && typeof config.hero === "object" && !p.flex ? { ...p, flex: config.hero } : p));
+  panels = panels.map((p) => (p.type === "hero" && config.hero && typeof config.hero === "object" && !p.flex ? { ...p, flex: config.hero } : p));
+  // compact: true (v2026.10.28.70) is now a collapsed panel shown as tiles.
+  const unCompact = (p) => {
+    if (!p?.compact) return p;
+    const { compact: _c, ...rest } = p;
+    return { ...rest, collapsible: true, collapsed: rest.collapsed ?? true, collapsed_view: rest.collapsed_view || "compact" };
+  };
+  return panels.map((p) => (p.type === "stack" ? { ...unCompact(p), panels: (p.panels || []).map(unCompact) } : unCompact(p)));
 }
 

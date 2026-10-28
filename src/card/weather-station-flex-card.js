@@ -79,7 +79,6 @@ class WeatherStationFlexCard extends LitElement {
     _focus: { state: true }, // index of an expanded grid panel, or null
     _size: { state: true }, // "wide" | "medium" | "narrow"
     _collapsed: { state: true }, // Set of panel keys collapsed to their header
-    _expanded: { state: true }, // Set of compact panels opened in full
     // Editor layout probe: the card's height on the target screen (px).
     screenHeight: { attribute: false },
     screenWidth: { attribute: false },
@@ -190,7 +189,7 @@ class WeatherStationFlexCard extends LitElement {
   // Collapse to the title header: panels with a header, in the grid.
   _canCollapse(p) {
     const m = panelMeta(p);
-    return !!p.collapsible && !this._isCompactType(p) && canCollapseType(p.type) && !m?.bare && p.show_title !== false;
+    return !!p.collapsible && canCollapseType(p.type) && !m?.bare && (p.show_title !== false || this._viewOf(p) === "compact");
   }
 
   // Collapse / title-tap settings: the panel's own, else the card's Appearance defaults.
@@ -213,22 +212,13 @@ class WeatherStationFlexCard extends LitElement {
     return true;
   }
 
-  // Compact view: one row of tiles; tapping it can open the full panel.
-  _isCompactType(p) {
-    return !!p.compact && COMPACT_TYPES.has(p.type);
-  }
-
-  _isCompact(p, i) {
-    return this._isCompactType(p) && this._focus == null && !(this._expanded ||= new Set()).has(this._key(p, i));
-  }
-
-  _toggleCompact(p, i) {
-    const s = new Set(this._expanded || []);
-    const k = this._key(p, i);
-    s.has(k) ? s.delete(k) : s.add(k);
-    this._expanded = s;
-    this.requestUpdate();
-    this._scheduleFit?.();
+  // What a folded panel shows: "minimal" (its title and a line of info) or
+  // "compact" (one row of tiles, for panels that have one). Panel setting,
+  // else the card's Default view when collapsed. (`compact: true` from v70 = compact.)
+  _viewOf(p) {
+    if (!COMPACT_TYPES.has(p.type)) return "minimal";
+    const v = p.collapsed_view && p.collapsed_view !== "default" ? p.collapsed_view : this._config.collapsed_view || "minimal";
+    return v === "compact" ? "compact" : "minimal";
   }
 
   _renderCompact(p, i, span, cls) {
@@ -244,7 +234,7 @@ class WeatherStationFlexCard extends LitElement {
       <div class="cwrap" style=${z !== 1 ? `zoom:${z}` : ""}>${compactRow(tiles, {
         icon: p.show_icon === false ? null : p.icon || meta.icon,
         title: showTitle ? title : "",
-        onTap: p.compact_expand !== false ? () => this._toggleCompact(p, i) : null,
+        onTap: p.compact_expand !== false ? () => this._toggleCollapse(p, i) : null,
         onTile: (eid) => this.dispatchEvent(new CustomEvent("hass-more-info", { detail: { entityId: eid }, bubbles: true, composed: true })),
       })}</div>
       ${el ? html`<div class="chide" aria-hidden="true">${el}</div>` : nothing}
@@ -701,18 +691,13 @@ class WeatherStationFlexCard extends LitElement {
       const tapToOpen = p.display === "tile_popup";
       const expandable = !bare && !tapToOpen && !["metric", "stack", "clock", "chips"].includes(p.type) && size !== "narrow";
       const bg = p.tile_background && p.tile_background !== "default" ? `bg-${p.tile_background}` : "";
-      if (this._isCompact(p, i)) return this._renderCompact(p, i, span, `${bg} ${tileFx(p)}`);
-      const unCompact = this._isCompactType(p) && this._focus == null && p.compact_expand !== false;
-      return html`<section class="tile ${p.type} ${meta.bare ? "bare" : ""} ${bg} ${tileFx(p)} ${rows ? "" : "auto"} ${(fit || strict) && !collapsed ? "fit" : ""} ${strict && !fit && !collapsed ? "strict" : ""} ${collapsed ? "collapsed" : ""} ${tapToOpen && !collapsed ? "tap" : ""} ${collapsible || unCompact ? "can-collapse" : ""} ${titleTap ? "title-tap" : ""}" style=${style} data-i=${i}
+      if (collapsed && this._viewOf(p) === "compact") return this._renderCompact(p, i, span, `${bg} ${tileFx(p)}`);
+      return html`<section class="tile ${p.type} ${meta.bare ? "bare" : ""} ${bg} ${tileFx(p)} ${rows ? "" : "auto"} ${(fit || strict) && !collapsed ? "fit" : ""} ${strict && !fit && !collapsed ? "strict" : ""} ${collapsed ? "collapsed" : ""} ${tapToOpen && !collapsed ? "tap" : ""} ${collapsible ? "can-collapse" : ""} ${titleTap ? "title-tap" : ""}" style=${style} data-i=${i}
           @click=${titleTap ? (e) => this._titleTap(e, p, i) : nothing}>
         ${collapsible
           ? html`<button class="collapse" type="button" @click=${() => this._toggleCollapse(p, i)} aria-expanded=${String(!collapsed)}
               aria-label=${`${collapsed ? "Expand" : "Collapse"} ${p.title || this._autoTitle(p)}`} title=${collapsed ? "Show" : "Collapse to its title"}>
               <ha-icon icon=${collapsed ? "mdi:chevron-down" : "mdi:chevron-up"}></ha-icon></button>`
-          : nothing}
-        ${unCompact
-          ? html`<button class="collapse" type="button" @click=${() => this._toggleCompact(p, i)} aria-label=${`Back to the compact ${p.title || this._autoTitle(p)}`} title="Compact view">
-              <ha-icon icon="mdi:arrow-collapse-vertical"></ha-icon></button>`
           : nothing}
         ${tapToOpen && !collapsed
           ? html`<button class="tap-open" type="button" aria-haspopup="dialog" aria-label=${`Open ${p.title || this._autoTitle(p)}`}
