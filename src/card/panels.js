@@ -506,6 +506,7 @@ export const STACK_CHILD_SCHEMA = [
   { section: "Size and Scaling", name: "grow", label: "Share of the stack", selector: { number: { min: 0, max: 6, step: 0.5, mode: "slider" } }, helper: "How much of the stack's space this panel takes, compared with the others. Side-by-side stack: its share of the width (default 1; 2 = twice as wide as a 1). Stack one above the other: its share of the leftover height (0 = only as tall as its content; default 1 when it has a height or the stack fills its panel, else 0). Panels hidden by their buttons give their share to the others." },
   { section: "Size and Scaling", name: "min_width", label: "Narrowest width", selector: { number: { min: 80, max: 800, step: 10, mode: "slider", unit_of_measurement: "px" } }, helper: "Side-by-side stack: the narrowest this panel gets before the stack wraps it onto a new line (default 180 px)." },
   { section: "Size and Scaling", name: "rows", selector: { number: { min: 0, max: 10, step: 0.5, mode: "slider" } }, helper: "Vertical: minimum height in row units (half steps allowed)." },
+  ...COLLAPSE_FIELDS.map((f) => ({ ...f, section: "Collapse" })),
   ...TITLE_FIELDS.map((f) => ({ ...f, section: "Default Overrides" })),
   { name: "tile_shadow", section: "Default Overrides", label: "Disable shadow", invert: true, selector: { boolean: {} }, default: true },
   { name: "tile_border", section: "Default Overrides", label: "Disable border", invert: true, selector: { boolean: {} }, default: true },

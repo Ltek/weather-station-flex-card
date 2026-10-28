@@ -230,7 +230,10 @@ class WeatherStationFlexCard extends LitElement {
     const meta = panelMeta(p);
     const title = p.title || this._autoTitle(p);
     const showTitle = !!p.compact_title;
-    return html`<section class="tile ${p.type} compact-tile ${cls}" style=${`grid-column: span ${span};grid-row: span 1;`} data-i=${i}>
+    // Tiles that open their sensors: the fold button opens the full panel.
+    const ownBtn = p.compact_expand === false;
+    return html`<section class="tile ${p.type} compact-tile ${ownBtn ? "own-btn" : ""} ${cls}" style=${`grid-column: span ${span};grid-row: span 1;${this._foldColors(p, true)}`} data-i=${i}>
+      ${ownBtn ? html`<button class="collapse" type="button" @click=${() => this._toggleCollapse(p, i)} aria-label=${`Expand ${title}`} title="Show"><ha-icon icon="mdi:chevron-down"></ha-icon></button>` : nothing}
       <div class="cwrap" style=${z !== 1 ? `zoom:${z}` : ""}>${compactRow(tiles, {
         icon: p.show_icon === false ? null : p.icon || meta.icon,
         title: showTitle ? title : "",
@@ -239,6 +242,29 @@ class WeatherStationFlexCard extends LitElement {
       })}</div>
       ${el ? html`<div class="chide" aria-hidden="true">${el}</div>` : nothing}
     </section>`;
+  }
+
+  /** Fold attributes on a panel element (grid or stacked): paused, title tap, hint, colours. */
+  _foldDecorate(el, p, i, folded, inGrid = true) {
+    el.lite = this._lite || folded;
+    el.toggleAttribute("collapsed", folded);
+    el.toggleAttribute("title-tap", inGrid && this._canCollapse(p) && this._focus == null && !!this._collapseOpt(p, "collapse_title_tap", true));
+    // Hint under the title while folded ("Tap title to show").
+    const tap = this._collapseOpt(p, "collapse_title_tap", true);
+    const tip = folded && this._collapseOpt(p, "show_collapse_hint", true) ? String(this._collapseOpt(p, "collapse_hint", "") || (tap ? "Tap title to show" : "Collapsed — tap the arrow to show")) : "";
+    // Info in the folded header (e.g. strikes today), before the hint.
+    const info = folded ? foldInfo(p, p.collapsed_info && p.collapsed_info !== "default" ? p.collapsed_info : this._config.collapsed_info || "summary", this.hass, this._station, el) : "";
+    const hint = [info, tip].filter(Boolean).join(" · ");
+    if (hint) el.style.setProperty("--wsfc-collapse-hint", JSON.stringify(hint));
+    else el.style.removeProperty("--wsfc-collapse-hint");
+  }
+
+  /** Title colours for a foldable panel (style string). */
+  _foldColors(p, collapsed) {
+    const C = (k, d) => this._collapseOpt(p, k, d);
+    return collapsed
+      ? `--wsfc-head-icon:${C("collapsed_icon_color", "var(--disabled-color, var(--disabled-text-color, #6f6f6f))")};--wsfc-head-text:${C("collapsed_text_color", "var(--disabled-text-color, #6f6f6f)")};`
+      : `--wsfc-head-icon:${C("expanded_icon_color", "var(--state-icon-color, var(--paper-item-icon-color, #44739e))")};${C("expanded_text_color", "") ? `--wsfc-head-text:${C("expanded_text_color", "")};` : ""}`;
   }
 
   _isCollapsed(p, i) {
@@ -261,7 +287,7 @@ class WeatherStationFlexCard extends LitElement {
 
   // Start collapsed (per panel), or as left last time when remembering is on.
   _loadCollapsed(panels) {
-    const def = new Set(panels.map((p, i) => (p.collapsible && p.collapsed ? this._key(p, i) : null)).filter(Boolean));
+    const def = new Set(this._entries(panels).map(([p, i]) => (p.collapsible && p.collapsed ? this._key(p, i) : null)).filter(Boolean));
     if (this._config.remember === false || this.preview) return def;
     try {
       const saved = JSON.parse(localStorage.getItem(`${this._storageKey()}:collapsed`) || "null");
@@ -750,17 +776,7 @@ class WeatherStationFlexCard extends LitElement {
     el.cardBg = this._animatedBg;
     // A collapsed panel is paused too (a folded map stops loading and animating).
     const folded = !popup && this._canCollapse(p) && this._focus == null && this._isCollapsed(p, i);
-    el.lite = this._lite || folded;
-    el.toggleAttribute("collapsed", folded);
-    el.toggleAttribute("title-tap", !popup && this._canCollapse(p) && this._focus == null && !!this._collapseOpt(p, "collapse_title_tap", true));
-    // Hint under the title while folded ("Tap title to show").
-    const tap = this._collapseOpt(p, "collapse_title_tap", true);
-    const tip = folded && this._collapseOpt(p, "show_collapse_hint", true) ? String(this._collapseOpt(p, "collapse_hint", "") || (tap ? "Tap title to show" : "Collapsed — tap the arrow to show")) : "";
-    // Info in the folded header (e.g. strikes today), before the hint.
-    const info = folded ? foldInfo(p, p.collapsed_info && p.collapsed_info !== "default" ? p.collapsed_info : this._config.collapsed_info || "summary", this.hass, this._station, el) : "";
-    const hint = [info, tip].filter(Boolean).join(" · ");
-    if (hint) el.style.setProperty("--wsfc-collapse-hint", JSON.stringify(hint));
-    else el.style.removeProperty("--wsfc-collapse-hint");
+    this._foldDecorate(el, p, i, folded, !popup);
     // Content size (zoom) and, for panels that use them, horizontal / vertical spacing.
     const z = Number(p.content_scale) || 100;
     const zm = Math.max(0.4, Math.min(2, z / 100)) * (this._autoFit && !popup && !this._ownFit(p) ? el.__wsfcAuto || this._autoBase() : 1);
@@ -772,6 +788,12 @@ class WeatherStationFlexCard extends LitElement {
     el.hass = this.hass;
     if (p.type === "heading") el.bar = p.show_bar && this._config.panel_bar !== false ? this._renderBar() : null;
     // A stack skips children that are toggled off or hiding themselves; the others fill the space.
+    if (p.type === "stack") {
+      // Stacked panels fold too: the stack asks the card (state, views, tiles).
+      el.card = popup ? null : this;
+      el.path = i;
+      el.foldKids = popup ? "" : (p.panels || []).map((c, j) => (c && this._canCollapse(c) && this._isCollapsed(c, `${i}.${j}`) ? 1 : 0)).join(",");
+    }
     if (p.type === "stack" && !popup) {
       el.hiddenKids = (p.panels || []).map((c, j) => !!c && (this._isHidden(c, `${i}.${j}`) || this._isEmpty(c))).join(",");
     }
@@ -783,6 +805,7 @@ class WeatherStationFlexCard extends LitElement {
     .tile.compact-tile { min-height: 0; height: auto; padding-top: 8px; padding-bottom: 8px; justify-content: center; }
     .tile.compact-tile .cwrap { min-width: 0; }
     .tile.compact-tile .chide { display: none; }
+    .tile.compact-tile.own-btn .cwrap { padding-right: 36px; }
     :host {
       display: block;
       --wsfc-gap: 12px;

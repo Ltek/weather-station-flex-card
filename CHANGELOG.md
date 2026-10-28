@@ -1,5 +1,10 @@
 # Changelog
 
+## v2026.10.28.73
+
+- **Panels inside a stack can fold**, including the Compact (tiles) view: each stacked panel has its own Collapse section (Collapse button, Start collapsed, View when collapsed, title tap, hint, info, colours), so a stack can hold several compact rows. Folded stacked panels take only their own height; the others fill the rest. Remembered per browser like the others; Convert all now covers them.
+- Compact view with "Tap the tiles to open the full panel" off now has a fold button to open the panel (in the grid and in stacks); with it on, tapping the tiles opens it and no button covers the tiles.
+
 ## v2026.10.28.72
 
 - **Fix: one Size and Scaling section per panel.** Panels inside a stack (e.g. Air quality, Pollen) showed it twice; settings of the same section are now always together.
