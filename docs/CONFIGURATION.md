@@ -78,7 +78,7 @@ With no `panels:` the card shows its default dashboard (hero, bulletin, Sky Trac
 |---|---|---|---|
 | `layout` | `auto` · `fullscreen` | `auto` | **Layout** |
 | `fit_height` | `true` / `false` | `true` | **Fit panels to the screen height** — Full screen: panels with a height share the screen height (row height is calculated). |
-| `auto_fit` | `true` / `false` | `false` | **Auto-fit to the screen** — The layout and sizes you set are the design, for the Screen guide's size (Layout map → Screen guide, below). Every screen shows that design scaled to fit: rows share the screen height, the layout stays as designed until the screen is phone-narrow, and each panel's contents scale with the screen — smaller where they'd still overflow. Full screen recommended. |
+| `auto_fit` | `true` / `false` | `false` | **Auto-fit to the screen** — The layout and sizes you set are the design, for the Screen guide's size (Layout Map → Screen guide). Every screen shows that design scaled to fit: rows share the screen height, the layout stays as designed until the screen is phone-narrow, and each panel's contents scale with the screen — smaller where they'd still overflow. Full screen recommended. |
 | `auto_fit_min` | number 30–100 % | `60` | **Smallest content scale** — Below this a panel scrolls instead, so text stays readable. |
 | `auto_fit_max` | number 100–250 % | `150` | **Largest content scale** — On screens bigger than the design. |
 | `fit_strict` | `true` / `false` | `false` | **Strict fit to screen dimensions** — Every panel is exactly the height you set, so the page fits the screen as the layout map shows; content taller than its panel scrolls inside the panel. Off: panels grow to fit their content (the page may scroll). |
@@ -151,8 +151,8 @@ Panels inside a `stack` have no grid place of their own; they take:
 
 | Option | Value | Default | What it does |
 |---|---|---|---|
-| `grow` | number 0–12 |  | **Grow** — Horizontal: relative width (default 1). Vertical: 1 = share leftover height. |
-| `min_width` | number 80–800 px |  | **Minimum width** — Horizontal: narrowest this panel gets before wrapping. |
+| `grow` | number 0–6 |  | **Share of the stack** — How much of the stack's space this panel takes, compared with the others. Side-by-side stack: its share of the width (default 1; 2 = twice as wide as a 1). Stack one above the other: its share of the leftover height (0 = only as tall as its content; default 1 when it has a height or the stack fills its panel, else 0). Panels hidden by their buttons give their share to the others. |
+| `min_width` | number 80–800 px |  | **Narrowest width** — Side-by-side stack: the narrowest this panel gets before the stack wraps it onto a new line (default 180 px). |
 | `rows` | number 0–10 |  | **Height** — Vertical: minimum height in row units (half steps allowed). |
 | `show_title` | `true` / `false` | `true` | **Show the title** |
 | `title` | text |  | **Title** |
