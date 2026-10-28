@@ -58,19 +58,6 @@ With no `panels:` the card shows its default dashboard (hero, bulletin, Sky Trac
 | `background_image_fit` | `cover` · `contain` · `tile` | `cover` | **Image fit** |
 | `background_dim` | number 0–0.9 | `0.25` | **Darken image** — Image background: darken it so text stays readable (0 = off). |
 
-### Collapsible panels
-
-| Option | Value | Default | What it does |
-|---|---|---|---|
-| `collapse_title_tap` | `true` / `false` | `true` | **Tap the title to fold / unfold** — For panels with Collapse button on (each panel can override this). |
-| `show_collapse_hint` | `true` / `false` | `true` | **Hint under the title while folded** |
-| `collapse_hint` | text |  | **Hint text** — Default "Tap title to show". |
-| `collapsed_info` | `summary` · `off` | `summary` | **Info in the header while folded** |
-| `collapsed_icon_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Collapsed icon color** — Not set: the theme's disabled colour. |
-| `collapsed_text_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Collapsed title color** — Not set: the theme's disabled text colour. |
-| `expanded_icon_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Expanded icon color** — Not set: the theme's state icon colour. |
-| `expanded_text_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Expanded title color** — Not set: the theme's text colour. |
-
 ### Panels
 
 | Option | Value | Default | What it does |
@@ -85,13 +72,13 @@ With no `panels:` the card shows its default dashboard (hero, bulletin, Sky Trac
 | `panel_glow_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Glow color** — Not set: the border color, else the theme's primary color. |
 | `panel_glow_size` | number 2–40 px | `10` | **Glow size** |
 
-### Layout & behaviour
+### Screen fit & sizing
 
 | Option | Value | Default | What it does |
 |---|---|---|---|
 | `layout` | `auto` · `fullscreen` | `auto` | **Layout** |
 | `fit_height` | `true` / `false` | `true` | **Fit panels to the screen height** — Full screen: panels with a height share the screen height (row height is calculated). |
-| `auto_fit` | `true` / `false` | `false` | **Auto-fit to the screen** — The layout and sizes you set are the design, for the Screen guide's size (Layout → Screen guide). Every screen shows that design scaled to fit: rows share the screen height, the layout stays as designed until the screen is phone-narrow, and each panel's contents scale with the screen — smaller where they'd still overflow. Full screen recommended. |
+| `auto_fit` | `true` / `false` | `false` | **Auto-fit to the screen** — The layout and sizes you set are the design, for the Screen guide's size (Layout map → Screen guide, below). Every screen shows that design scaled to fit: rows share the screen height, the layout stays as designed until the screen is phone-narrow, and each panel's contents scale with the screen — smaller where they'd still overflow. Full screen recommended. |
 | `auto_fit_min` | number 30–100 % | `60` | **Smallest content scale** — Below this a panel scrolls instead, so text stays readable. |
 | `auto_fit_max` | number 100–250 % | `150` | **Largest content scale** — On screens bigger than the design. |
 | `fit_strict` | `true` / `false` | `false` | **Strict fit to screen dimensions** — Every panel is exactly the height you set, so the page fits the screen as the layout map shows; content taller than its panel scrolls inside the panel. Off: panels grow to fit their content (the page may scroll). |
@@ -99,6 +86,20 @@ With no `panels:` the card shows its default dashboard (hero, bulletin, Sky Trac
 | `layout_size` | `auto` · `wide` · `medium` · `narrow` | `auto` | **Layout size** — In a Sections view the card is only as wide as its section; widen the section or use a Panel view for the desktop layout. |
 | `row_height` | number 40–300 px |  | **Row height** — Height of one row unit (default 110). |
 | `gap` | number 0–32 px |  | **Gap** — Space between panels (default 12). |
+
+### Collapsed panels
+
+| Option | Value | Default | What it does |
+|---|---|---|---|
+| `collapsed_view` | `minimal` · `compact` | `minimal` | **Default view when collapsed** — For panels with Collapse button on; panels without a tiles view use Minimal. Each panel can override it — Convert all now clears those overrides. |
+| `collapse_title_tap` | `true` / `false` | `true` | **Tap the title to fold / unfold** — For panels with Collapse button on (each panel can override this). |
+| `show_collapse_hint` | `true` / `false` | `true` | **Hint under the title while folded** |
+| `collapse_hint` | text |  | **Hint text** — Default "Tap title to show". |
+| `collapsed_info` | `summary` · `off` | `summary` | **Info in the header while folded** |
+| `collapsed_icon_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Collapsed icon color** — Not set: the theme's disabled colour. |
+| `collapsed_text_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Collapsed title color** — Not set: the theme's disabled text colour. |
+| `expanded_icon_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Expanded icon color** — Not set: the theme's state icon colour. |
+| `expanded_text_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Expanded title color** — Not set: the theme's text colour. |
 
 ### Panel buttons
 
@@ -117,11 +118,11 @@ Where the buttons go: `panel_bar: false` hides the bar; a Button Menu panel (`he
 | `rows` | number 0–10 |  | **Height** — Height in row units, in half steps (0 = fit content, 0.5 = half height). |
 | `overflow` | `default` · `grow` · `scroll` | `default` | **When the content doesn't fit** — Scroll needs a height of at least 1 row (it is raised to 1 when you pick Scroll). |
 | `content_scale` | number 40–200 % | `100` | **Scale all Panel Contents** — Everything inside the panel bigger or smaller (text, icons, tiles), so it fits the space. |
-| `compact` | `true` / `false` | `false` | **Compact view** — Show this panel as a single row of small tiles with all its data. |
-| `compact_expand` | `true` / `false` | `true` | **Tap to open the full panel** — Tapping the row shows the full panel; its ⇕ button goes back. Off: a tap on a tile opens that sensor. |
-| `compact_title` | `true` / `false` | `false` | **Show the title in the row** |
 | `collapsible` | `true` / `false` | `false` | **Collapse button** — Fold the panel down to its title header to save space (e.g. maps). A folded map is paused. With Remember Panel Button States, this browser remembers what you folded. |
 | `collapsed` | `true` / `false` | `false` | **Start collapsed** |
+| `collapsed_view` | `default` · `minimal` · `compact` | `default` | **View when collapsed** |
+| `compact_expand` | `true` / `false` | `true` | **Tap the tiles to open the full panel** — Compact view. Off: a tap on a tile opens that sensor (the fold button still opens the panel). |
+| `compact_title` | `true` / `false` | `false` | **Show the title in the tiles row** |
 | `collapse_title_tap` | `default` · `on` · `off` | `default` | **Tap the title to fold / unfold** |
 | `show_collapse_hint` | `default` · `on` · `off` | `default` | **Hint under the title while folded** |
 | `collapse_hint` | text |  | **Hint text** — Default "Tap title to show". |
