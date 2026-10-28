@@ -503,8 +503,8 @@ export const COMMON_SCHEMA = [
 
 /** Layout fields for a panel inside a stack (it has no grid position). */
 export const STACK_CHILD_SCHEMA = [
-  { section: "Size and Scaling", name: "grow", selector: { number: { min: 0, max: 12, step: 0.5, mode: "box" } }, helper: "Horizontal: relative width (default 1). Vertical: 1 = share leftover height." },
-  { section: "Size and Scaling", name: "min_width", selector: { number: { min: 80, max: 800, mode: "box", unit_of_measurement: "px" } }, helper: "Horizontal: narrowest this panel gets before wrapping." },
+  { section: "Size and Scaling", name: "grow", label: "Share of the stack", selector: { number: { min: 0, max: 6, step: 0.5, mode: "slider" } }, helper: "How much of the stack's space this panel takes, compared with the others. Side-by-side stack: its share of the width (default 1; 2 = twice as wide as a 1). Stack one above the other: its share of the leftover height (0 = only as tall as its content; default 1 when it has a height or the stack fills its panel, else 0). Panels hidden by their buttons give their share to the others." },
+  { section: "Size and Scaling", name: "min_width", label: "Narrowest width", selector: { number: { min: 80, max: 800, step: 10, mode: "slider", unit_of_measurement: "px" } }, helper: "Side-by-side stack: the narrowest this panel gets before the stack wraps it onto a new line (default 180 px)." },
   { section: "Size and Scaling", name: "rows", selector: { number: { min: 0, max: 10, step: 0.5, mode: "slider" } }, helper: "Vertical: minimum height in row units (half steps allowed)." },
   ...TITLE_FIELDS.map((f) => ({ ...f, section: "Default Overrides" })),
   { name: "tile_shadow", section: "Default Overrides", label: "Disable shadow", invert: true, selector: { boolean: {} }, default: true },

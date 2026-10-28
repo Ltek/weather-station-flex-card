@@ -1,5 +1,11 @@
 # Changelog
 
+## v2026.10.28.72
+
+- **Fix: one Size and Scaling section per panel.** Panels inside a stack (e.g. Air quality, Pollen) showed it twice; settings of the same section are now always together.
+- **Stacked panels:** Grow is now **Share of the stack**, a slider (0–6) with what it does: in a side-by-side stack, its share of the width (2 = twice as wide as a 1); in a stack one above the other, its share of the leftover height (0 = only as tall as its content). Min width is now **Narrowest width**, a slider.
+- **Layout & Behavior** and **Layout Map** are separate top-level settings areas.
+
 ## v2026.10.28.71
 
 - **New top-level settings area: Layout & Behavior** — Screen fit & sizing (layout, fit, Auto-fit, strict fit, overflow, layout size, row height, gap; moved from Appearance), **Collapsed panels** (moved from Appearance) and the layout map (was the Layout area).

@@ -72,7 +72,7 @@ const LAYOUT_GROUPS = [
   ["Screen fit & sizing", [
     { name: "layout", selector: { select: { options: [{ value: "auto", label: "Size to content" }, { value: "fullscreen", label: "Full screen (fills the view below the header)" }] } } },
     { name: "fit_height", when: (d) => d.layout === "fullscreen", selector: { boolean: {} }, default: true, helper: "Full screen: panels with a height share the screen height (row height is calculated)." },
-    { name: "auto_fit", label: "Auto-fit to the screen", selector: { boolean: {} }, default: false, helper: "The layout and sizes you set are the design, for the Screen guide's size (Layout map → Screen guide, below). Every screen shows that design scaled to fit: rows share the screen height, the layout stays as designed until the screen is phone-narrow, and each panel's contents scale with the screen — smaller where they'd still overflow. Full screen recommended." },
+    { name: "auto_fit", label: "Auto-fit to the screen", selector: { boolean: {} }, default: false, helper: "The layout and sizes you set are the design, for the Screen guide's size (Layout Map → Screen guide). Every screen shows that design scaled to fit: rows share the screen height, the layout stays as designed until the screen is phone-narrow, and each panel's contents scale with the screen — smaller where they'd still overflow. Full screen recommended." },
     { name: "auto_fit_min", label: "Smallest content scale", when: (d) => !!d.auto_fit, selector: { number: { min: 30, max: 100, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 60, helper: "Below this a panel scrolls instead, so text stays readable." },
     { name: "auto_fit_max", label: "Largest content scale", when: (d) => !!d.auto_fit, selector: { number: { min: 100, max: 250, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 150, helper: "On screens bigger than the design." },
     { name: "fit_strict", label: "Strict fit to screen dimensions", when: (d) => d.layout === "fullscreen" && d.fit_height !== false && !d.auto_fit, selector: { boolean: {} }, default: false, helper: "Every panel is exactly the height you set, so the page fits the screen as the layout map shows; content taller than its panel scrolls inside the panel. Off: panels grow to fit their content (the page may scroll)." },
@@ -261,7 +261,7 @@ class WeatherStationFlexCardEditor extends LitElement {
   connectedCallback() {
     super.connectedCallback();
     // Redraw when the cards report what Auto resolved to.
-    this._onDetected ||= () => this._open === "general" && this.requestUpdate();
+    this._onDetected ||= () => (this._open === "general" || this._open === "behavior") && this.requestUpdate();
     window.addEventListener("wsfc-detected", this._onDetected);
   }
 
@@ -325,7 +325,8 @@ class WeatherStationFlexCardEditor extends LitElement {
         ${this._section("station", "mdi:weather-cloudy-clock", "Weather station", () => this._stationEditor())}
         ${this._section("general", "mdi:palette-outline", "Appearance", () => this._general(APPEARANCE_GROUPS))}
         ${this._section("buttons", "mdi:gesture-tap-button", "Panel buttons", () => this._buttonsEditor())}
-        ${this._section("layout", "mdi:view-dashboard-edit-outline", "Layout & Behavior", () => html`${this._general(LAYOUT_GROUPS)}${this._convertBar()}<div class="agrp"><div class="agrp-t">Layout map</div>${this._layoutEditor()}</div>`)}
+        ${this._section("behavior", "mdi:tune-variant", "Layout & Behavior", () => html`${this._general(LAYOUT_GROUPS)}${this._convertBar()}`)}
+        ${this._section("layout", "mdi:view-dashboard-edit-outline", "Layout Map", () => this._layoutEditor())}
         ${this._section("panels", "mdi:view-list-outline", `Panels (${this._panels.length})`, () => this._panelList())}
       </div>
     `;
@@ -748,11 +749,13 @@ class WeatherStationFlexCardEditor extends LitElement {
 
   _sections(p, fields, defs, update, title, flat = true, openName = null) {
     const parts = [];
+    // Fields with the same section (or sub-panel) go together, in the order
+    // the section first appears, so a section never shows twice.
     for (const f of fields) {
       const k = f.sub ? `sub:${f.sub}` : f.section ? `sec:${f.section}` : `sec:${title}`;
-      let last = parts[parts.length - 1];
-      if (!last || last.k !== k) parts.push((last = { k, f: [] }));
-      last.f.push(f);
+      let part = parts.find((x) => x.k === k);
+      if (!part) parts.push((part = { k, f: [] }));
+      part.f.push(f);
     }
     const form = (f) => this._form(formData(p, f, defs), f, (v) => update({ ...applyForm(p, f, v, defs), type: p.type }));
     return parts.map(({ k, f }) => {
