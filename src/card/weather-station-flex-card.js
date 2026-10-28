@@ -80,6 +80,7 @@ class WeatherStationFlexCard extends LitElement {
     _collapsed: { state: true }, // Set of panel keys collapsed to their header
     // Editor layout probe: the card's height on the target screen (px).
     screenHeight: { attribute: false },
+    screenWidth: { attribute: false },
   };
 
   static getConfigElement() {
@@ -109,7 +110,79 @@ class WeatherStationFlexCard extends LitElement {
 
   // Strict fit: full screen with fit on and "Strict fit to screen dimensions".
   get _strict() {
-    return this._full && this._config.fit_height !== false && !!this._config.fit_strict;
+    return this._full && this._config.fit_height !== false && (!!this._config.fit_strict || !!this._config.auto_fit);
+  }
+
+  // Auto-fit: the layout and sizes are the design (for the Screen guide's
+  // size); every screen shows that design scaled to fit it.
+  get _autoFit() {
+    return !!this._config?.auto_fit;
+  }
+
+  /** The design screen [w, h] (Screen guide), or null. */
+  _designScreen() {
+    const m = /^(\d{3,5})\s*[x×]\s*(\d{3,5})$/.exec(String(this._config?.layout_screen || ""));
+    return m ? [Number(m[1]), Number(m[2])] : null;
+  }
+
+  // Overall content scale for this screen: actual / design size, within limits.
+  _autoBase() {
+    const c = this._config, d = this._designScreen();
+    const min = (Number(c.auto_fit_min) || 60) / 100, max = (Number(c.auto_fit_max) || 150) / 100;
+    if (!d || !this._full) return 1;
+    const w = this.screenWidth || window.innerWidth, h = this.screenHeight ? this.screenHeight + 72 : window.innerHeight;
+    return Math.max(min, Math.min(max, Math.min(w / d[0], h / d[1])));
+  }
+
+  // Panels that size their own content (or can't be scaled: live maps).
+  _ownFit(p) {
+    return p.type === "hero" || p.type === "radar" || p.type === "wind_map" || (p.type === "wind" && p.fit !== false);
+  }
+
+  /**
+   * Scale each panel's content: the overall scale, then smaller where it
+   * still doesn't fit its box (down to the minimum; below that it scrolls).
+   */
+  _autoFitPanels() {
+    if (!this._autoFit) return;
+    const grid = this.renderRoot?.querySelector(".grid");
+    if (!grid) return;
+    const c = this._config;
+    const base = this._autoBase();
+    const min = (Number(c.auto_fit_min) || 60) / 100;
+    for (const tile of grid.querySelectorAll(":scope > section.tile[data-i]")) {
+      const p = this._at(Number(tile.dataset.i));
+      const el = [...tile.children].find((x) => x.tagName?.startsWith("WSFC-") || x.__wsfcPanel);
+      if (!p || !el || this._ownFit(p)) continue;
+      const manual = Math.max(0.4, Math.min(2, (Number(p.content_scale) || 100) / 100));
+      if (tile.classList.contains("collapsed")) { el.__wsfcAuto = base; el.style.zoom = String(manual * base); continue; }
+      let k = base;
+      el.style.zoom = String(manual * k);
+      // Fixed-height panels shrink until their content fits (reading the size forces layout).
+      if (tile.classList.contains("strict") || tile.classList.contains("fit")) {
+        for (let n = 0; n < 6; n++) {
+          const r = Math.min(el.clientHeight / Math.max(1, el.scrollHeight), el.clientWidth / Math.max(1, el.scrollWidth));
+          if (!(r < 0.995) || k <= min) break;
+          k = Math.max(min, k * r * 0.99);
+          el.style.zoom = String(manual * k);
+        }
+      }
+      el.__wsfcAuto = k;
+    }
+    // Scaling changes the height of folded and content-sized panels: solve the
+    // rows once more if the page no longer matches the screen.
+    const sc = this.renderRoot.querySelector(".scroller");
+    if (this._strict && sc && !this._afRefit && Math.abs(grid.getBoundingClientRect().height - sc.clientHeight) > 2) {
+      this._afRefit = true;
+      try { this._fit(); } finally { this._afRefit = false; }
+    }
+  }
+
+  _scheduleAutoFit(soon = false) {
+    if (!this._autoFit) return;
+    clearTimeout(this._afT);
+    // Content can change size after it loads (history, forecasts): look again.
+    this._afT = setTimeout(() => requestAnimationFrame(() => this._autoFitPanels()), soon ? 30 : 1500);
   }
 
   // Collapse to the title header: panels with a header, in the grid.
@@ -267,7 +340,10 @@ class WeatherStationFlexCard extends LitElement {
   /** Layout size: forced by `layout_size`, else from the card's width. */
   get _layoutSize() {
     const f = this._config?.layout_size;
-    return ["wide", "medium", "narrow"].includes(f) ? f : this._size || "wide";
+    if (["wide", "medium", "narrow"].includes(f)) return f;
+    // Auto-fit keeps the designed layout until the screen is phone-narrow.
+    if (this._autoFit && this._size === "medium") return "wide";
+    return this._size || "wide";
   }
 
   // Full screen = the card fills the view below the header. Explicit-height
@@ -280,8 +356,9 @@ class WeatherStationFlexCard extends LitElement {
   updated() {
     // Re-fit when the layout inputs change, and once more after panels have
     // loaded their content (charts, forecasts).
-    const key = JSON.stringify([this._config?.panels, [...(this._hidden || [])], this._focus, this._layoutSize, this._config?.layout]);
-    if (key === this._fitKey) return;
+    const key = JSON.stringify([this._config?.panels, [...(this._hidden || [])], [...(this._collapsed || [])], this._focus, this._layoutSize, this._config?.layout, this._config?.auto_fit, this._config?.layout_screen, this._config?.auto_fit_min, this._config?.auto_fit_max]);
+    // Auto-fit: re-check after state updates too (content can grow), throttled.
+    if (key === this._fitKey) { this._scheduleAutoFit(); return; }
     this._fitKey = key;
     this._scheduleFit();
     clearTimeout(this._fitLate);
@@ -319,6 +396,7 @@ class WeatherStationFlexCard extends LitElement {
     const c = this._config;
     if (!this._full || c.fit_height === false || this._focus != null) {
       if (grid.style.getPropertyValue("--wsfc-row")) grid.style.removeProperty("--wsfc-row");
+      this._autoFitPanels();
       return;
     }
     const min = c.min_row_height || 60;
@@ -335,8 +413,23 @@ class WeatherStationFlexCard extends LitElement {
     const h0 = at(x0), h1 = at(x1);
     const slope = (h1 - h0) / (x1 - x0);
     let x = c.row_height || 110;
-    if (slope > 0.5) x = Math.max(min, Math.min(max, x0 + (avail - h0) / slope));
+    if (slope > 0.5) {
+      x = Math.max(min, Math.min(max, x0 + (avail - h0) / slope));
+      // The height isn't quite linear (fixed-height folded panels, small rows):
+      // refine with a few secant steps.
+      let xa = x1, ha = h1;
+      for (let n = 0; n < 4; n++) {
+        const hx = at(x);
+        if (Math.abs(hx - avail) < 1.5 || Math.abs(x - xa) < 0.5) break;
+        const sl = (hx - ha) / (x - xa);
+        xa = x; ha = hx;
+        if (!(sl > 0.5)) break;
+        x = Math.max(min, Math.min(max, x + (avail - hx) / sl));
+      }
+      if (at(Math.floor(x)) > avail + 1) x -= 1;
+    }
     grid.style.setProperty("--wsfc-row", `${Math.floor(x)}px`);
+    this._autoFitPanels();
   }
 
   // Shared "station" config handed to every panel: entity + Weather Sources.
@@ -639,7 +732,8 @@ class WeatherStationFlexCard extends LitElement {
     else el.style.removeProperty("--wsfc-collapse-hint");
     // Content size (zoom) and, for panels that use them, horizontal / vertical spacing.
     const z = Number(p.content_scale) || 100;
-    el.style.zoom = z !== 100 ? String(Math.max(0.4, Math.min(2, z / 100))) : "";
+    const zm = Math.max(0.4, Math.min(2, z / 100)) * (this._autoFit && !popup && !this._ownFit(p) ? el.__wsfcAuto || this._autoBase() : 1);
+    el.style.zoom = zm !== 1 ? String(zm) : "";
     const sx = Number(p.content_width) || 100, sy = Number(p.content_height) || 100;
     el.style.setProperty("--wsfc-sx", String(sx / 100));
     el.style.setProperty("--wsfc-sy", String(sy / 100));

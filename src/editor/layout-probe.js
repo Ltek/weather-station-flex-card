@@ -57,13 +57,14 @@ class WsfcLayoutProbe extends LitElement {
       return;
     }
     this._card.screenHeight = Math.max(200, g.h - HEADER - MARGIN);
+    this._card.screenWidth = g.w;
     this._card.hass = this.hass;
     clearTimeout(this._m);
     // Let the panels render and the card fit its rows, then measure.
     this._m = setTimeout(() => {
       // Fit the rows to this screen now (the card's own fit can run before
       // everything has rendered), then measure on the next frame.
-      try { this._card._fit?.(); } catch (_e) { /* ignore */ }
+      try { this._card._fit?.(); this._card._autoFitPanels?.(); } catch (_e) { /* ignore */ }
       requestAnimationFrame(() => this._measure());
     }, 900);
   }

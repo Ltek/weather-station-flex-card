@@ -1,5 +1,10 @@
 # Changelog
 
+## v2026.10.28.69
+
+- **Auto-fit to the screen** (Appearance → Layout, one switch for the card): the layout and sizes you set are the design for the Screen guide's size (e.g. 2000×1200). Every screen shows that design scaled to fit — rows share the screen height and every panel keeps its height, the layout stays as designed until the screen is phone-narrow, and each panel's contents scale with the screen (actual / design size), smaller where they'd still overflow. **Smallest content scale** (default 60 %; below it a panel scrolls) and **Largest content scale** (default 150 %). The hero, wind and maps keep sizing themselves; Scale all Panel Contents still applies on top.
+- Full screen fit: the row height is now solved exactly (it was a little off with folded panels), so the page ends at the screen edge.
+
 ## v2026.10.27.68
 
 - **Panel settings regrouped.** *Layout* is now **Size and Scaling**: Location (was Display), Width, Height, When the content doesn't fit, **Scale all Panel Contents** (was Content size) and, for Air quality and Pollen, Horizontal / Vertical spacing. The title, title icon and **Panel button** (was "Add a button…") moved to **Default Overrides**, with the background, shadow, border and glow. Stacked panels follow the same split.
