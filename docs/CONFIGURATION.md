@@ -117,6 +117,9 @@ Where the buttons go: `panel_bar: false` hides the bar; a Button Menu panel (`he
 | `rows` | number 0–10 |  | **Height** — Height in row units, in half steps (0 = fit content, 0.5 = half height). |
 | `overflow` | `default` · `grow` · `scroll` | `default` | **When the content doesn't fit** — Scroll needs a height of at least 1 row (it is raised to 1 when you pick Scroll). |
 | `content_scale` | number 40–200 % | `100` | **Scale all Panel Contents** — Everything inside the panel bigger or smaller (text, icons, tiles), so it fits the space. |
+| `compact` | `true` / `false` | `false` | **Compact view** — Show this panel as a single row of small tiles with all its data. |
+| `compact_expand` | `true` / `false` | `true` | **Tap to open the full panel** — Tapping the row shows the full panel; its ⇕ button goes back. Off: a tap on a tile opens that sensor. |
+| `compact_title` | `true` / `false` | `false` | **Show the title in the row** |
 | `collapsible` | `true` / `false` | `false` | **Collapse button** — Fold the panel down to its title header to save space (e.g. maps). A folded map is paused. With Remember Panel Button States, this browser remembers what you folded. |
 | `collapsed` | `true` / `false` | `false` | **Start collapsed** |
 | `collapse_title_tap` | `default` · `on` · `off` | `default` | **Tap the title to fold / unfold** |
