@@ -92,6 +92,7 @@ With no `panels:` the card shows its default dashboard (hero, bulletin, Sky Trac
 | Option | Value | Default | What it does |
 |---|---|---|---|
 | `collapsed_view` | `minimal` · `compact` | `minimal` | **Default view when collapsed** — For panels with Collapse button on; panels without a tiles view use Minimal. Each panel can override it — Convert all now clears those overrides. |
+| `collapsed_open` | `auto` · `inplace` · `overlay` · `popup` | `auto` | **A folded panel opens** — Each panel can override this (Collapse → Opens). |
 | `collapse_title_tap` | `true` / `false` | `true` | **Tap the title to fold / unfold** — For panels with Collapse button on (each panel can override this). |
 | `show_collapse_hint` | `true` / `false` | `true` | **Hint under the title while folded** |
 | `collapse_hint` | text |  | **Hint text** — Default "Tap title to show". |
@@ -117,9 +118,11 @@ Where the buttons go: `panel_bar: false` hides the bar; a Button Menu panel (`he
 | `span` | number 1–12 |  | **Width** — Width in twelfths of the card. |
 | `rows` | number 0–10 |  | **Height** — Height in row units, in half steps (0 = fit content, 0.5 = half height). |
 | `overflow` | `default` · `grow` · `scroll` | `default` | **When the content doesn't fit** — Scroll needs a height of at least 1 row (it is raised to 1 when you pick Scroll). |
+| `compact` | `true` / `false` | `false` | **Compact view** — Show this panel as one row of small tiles with all its data; tapping it opens the full panel (see Collapse → Opens). |
 | `content_scale` | number 40–200 % | `100` | **Scale all Panel Contents** — Everything inside the panel bigger or smaller (text, icons, tiles), so it fits the space. |
 | `collapsible` | `true` / `false` | `false` | **Collapse button** — Fold the panel down to its title header to save space (e.g. maps). A folded map is paused. With Remember Panel Button States, this browser remembers what you folded. |
 | `collapsed` | `true` / `false` | `false` | **Start collapsed** |
+| `collapsed_open` | `default` · `inplace` · `overlay` · `popup` | `default` | **Opens** |
 | `collapsed_view` | `default` · `minimal` · `compact` | `default` | **View when collapsed** |
 | `compact_expand` | `true` / `false` | `true` | **Tap the tiles to open the full panel** — Compact view. Off: a tap on a tile opens that sensor (the fold button still opens the panel). |
 | `compact_title` | `true` / `false` | `false` | **Show the title in the tiles row** |
@@ -154,8 +157,10 @@ Panels inside a `stack` have no grid place of their own; they take:
 | `grow` | number 0–6 |  | **Share of the stack** — How much of the stack's space this panel takes, compared with the others. Side-by-side stack: its share of the width (default 1; 2 = twice as wide as a 1). Stack one above the other: its share of the leftover height (0 = only as tall as its content; default 1 when it has a height or the stack fills its panel, else 0). Panels hidden by their buttons give their share to the others. |
 | `min_width` | number 80–800 px |  | **Narrowest width** — Side-by-side stack: the narrowest this panel gets before the stack wraps it onto a new line (default 180 px). |
 | `rows` | number 0–10 |  | **Height** — Vertical: minimum height in row units (half steps allowed). |
+| `compact` | `true` / `false` | `false` | **Compact view** — Show this panel as one row of small tiles with all its data; tapping it opens the full panel. |
 | `collapsible` | `true` / `false` | `false` | **Collapse button** — Fold the panel down to its title header to save space (e.g. maps). A folded map is paused. With Remember Panel Button States, this browser remembers what you folded. |
 | `collapsed` | `true` / `false` | `false` | **Start collapsed** |
+| `collapsed_open` | `default` · `inplace` · `overlay` · `popup` | `default` | **Opens** |
 | `collapsed_view` | `default` · `minimal` · `compact` | `default` | **View when collapsed** |
 | `compact_expand` | `true` / `false` | `true` | **Tap the tiles to open the full panel** — Compact view. Off: a tap on a tile opens that sensor (the fold button still opens the panel). |
 | `compact_title` | `true` / `false` | `false` | **Show the title in the tiles row** |
@@ -237,7 +242,7 @@ Default size: 4 of 12 wide, fits its content.
 
 | Option | Value | Default | What it does |
 |---|---|---|---|
-| `layout` | `scale` · `rows` · `bars` · `tiles` | `scale` | **Layout** |
+| `layout` | `compact` · `scale` · `rows` · `bars` · `tiles` | `scale` | **Layout** |
 | `pollutants` | list of: `pm2_5` · `pm10` · `ozone` · `co2` |  | **Pollutants** — Default: all that are found. |
 | `extra` | mapping / list |  | **More readings** — More readings, e.g. - entity: sensor.erie_benzene with optional label, icon and thresholds: [moderate, elevated, high, very high] in the sensor's unit. Benzene and CO₂ have built-in thresholds. |
 | `tile_fill` | `true` / `false` | `false` | **Stretch tiles to fill the width** — Off: each tile is as wide as what's in it. |
