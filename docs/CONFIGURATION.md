@@ -648,6 +648,8 @@ Default size: 6 of 12 wide, 4 rows high.
 | Option | Value | Default | What it does |
 |---|---|---|---|
 | `show_chart` | `true` / `false` | `true` | **Show the chart** — 24 h speed and gust chart. |
+| `chart_mode` | `inline` · `popover` | `inline` | **Show the chart** — Pop-over: the panel shows just the compass or rose; the chart opens on demand (tap outside, the button or Esc closes it). |
+| `chart_popover_height` | number 120–500 px | `220` | **Pop-over height** |
 | `chart_position` | `below` · `above` | `below` | **Chart position** |
 | `chart_legend` | `true` / `false` | `false` | **Chart legend** — Speed / Gust legend on the chart. |
 | `windrose_chart` | `true` / `false` | `true` | **Chart with the Wind Rose Card** — Also with the Wind Rose Card. |
