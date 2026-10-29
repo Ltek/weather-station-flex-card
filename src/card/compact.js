@@ -67,7 +67,7 @@ const BUILD = {
   },
   rain(p, h, s) {
     const d = h.config?.unit_system?.temperature === "°C" ? 1 : 2;
-    const rows = Array.isArray(p.rows) && p.rows.length ? p.rows : ["rain_rate", "rain_today", "rain_24h", "rain_event", "rain_week", "rain_month", "rain_year"];
+    const rows = Array.isArray(p.show_rows) && p.show_rows.length ? p.show_rows : ["rain_rate", "rain_today", "rain_24h", "rain_event", "rain_week", "rain_month", "rain_year"];
     const names = { rain_rate: "Now", rain_hour: "1 h", rain_today: "Today", rain_24h: "24 h", rain_event: "Event", rain_week: "Week", rain_month: "Month", rain_year: "Year" };
     return rows.filter((k) => names[k]).map((k) => {
       const v = entityValue(h, (p.entities || {})[k] || metricEntity(k, s, h));

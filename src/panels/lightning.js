@@ -3,7 +3,7 @@
 // indoors" warning when a strike is within 10 miles (16 km) in the last 30
 // minutes (the 30-30 rule). The panel hides itself when there's no sensor.
 import { LitElement, html, css, nothing } from "lit";
-import { panelStyles, head, fmt, moreInfo, statStyles, statRow } from "./shared.js";
+import { panelStyles, head, fmt, moreInfo, statStyles, statRow, onlyOtherStates } from "./shared.js";
 import { entityValue, findHealthEntity } from "../card/resolve.js";
 import { metricEntity } from "../card/metrics.js";
 
@@ -40,6 +40,11 @@ class WsfcLightning extends LitElement {
       .bolt { color: #ffc93c; }
     `,
   ];
+
+  // Skip redraws for other entities' updates.
+  shouldUpdate(changed) {
+    return !onlyOtherStates(changed, this.hass, Object.values(lightningIds(this.config || {}, this.station, this.hass)));
+  }
 
   render() {
     if (!this.hass) return nothing;

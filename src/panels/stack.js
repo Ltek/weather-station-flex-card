@@ -98,8 +98,8 @@ class WsfcStack extends LitElement {
         const ownBtn = p.compact_expand === false;
         return html`<section data-j=${i} class="tile ${p.type} folded ctile-row ${ownBtn ? "can-fold" : ""} ${fx}" style=${`${style};${colors}`}>
           ${ownBtn ? btn : nothing}${compactRow(tiles, {
-            icon: p.show_icon === false ? null : p.icon || meta.icon,
-            title: p.compact_title ? p.title || meta.label : "",
+            icon: p.show_icon === false || p.compact_icon === false ? null : p.icon || meta.icon,
+            title: p.compact_title !== false ? p.title || meta.label : "",
             onTap: p.compact_expand !== false ? toggle : null,
             onTile: (eid) => this.dispatchEvent(new CustomEvent("hass-more-info", { detail: { entityId: eid }, bubbles: true, composed: true })),
           })}

@@ -2,7 +2,10 @@
 // above Home Assistant's editor dialog) with a visible textarea, per the design
 // system: the async clipboard is often blocked inside the editor, so the text
 // is always selectable, and Copy / Paste are best-effort helpers.
-import { dump, load } from "js-yaml";
+import { lazyLib } from "../card/lazy.js";
+// js-yaml is loaded the first time the dialog opens (a separate file).
+let yaml;
+const loadYaml = async () => (yaml ||= await lazyLib("wsfc-yaml.js"));
 
 const CSS = `
   .wsfc-io::backdrop { background: rgba(0, 0, 0, 0.55); }
@@ -21,13 +24,13 @@ const CSS = `
 `;
 
 /** YAML for a config (keys in their order, no type line duplicated). */
-export const configToYaml = (config) => dump(config, { lineWidth: -1, noRefs: true });
+export const configToYaml = (config) => yaml.dump(config, { lineWidth: -1, noRefs: true });
 
 /** Parse pasted YAML or JSON; throws with a readable message. */
 export function parseConfig(text, cardType) {
   let cfg;
   try {
-    cfg = load(String(text || ""));
+    cfg = yaml.load(String(text || ""));
   } catch (e) {
     throw new Error(`Not valid YAML or JSON: ${e.reason || e.message}`);
   }
@@ -41,7 +44,20 @@ export function parseConfig(text, cardType) {
  * Open the dialog. mode "export" shows the config; "import" takes text and
  * calls onImport(config) when applied.
  */
-export function openConfigDialog({ mode, config, cardType, onImport }) {
+export async function openConfigDialog(opts) {
+  try {
+    await loadYaml();
+  } catch (e) {
+    alert(String(e?.message || e));
+    return;
+  }
+  return openDialog(opts);
+}
+
+/** Make YAML available to configToYaml / parseConfig (for callers outside the dialog). */
+export const yamlReady = loadYaml;
+
+function openDialog({ mode, config, cardType, onImport }) {
   const d = document.createElement("dialog");
   d.className = "wsfc-io";
   const style = document.createElement("style");

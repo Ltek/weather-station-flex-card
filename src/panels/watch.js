@@ -7,8 +7,8 @@
 //                 heat danger / heat caution / frost now / frost tonight / calm.
 //                 Unofficial — not a weather service warning.
 import { LitElement, html, css, svg, nothing } from "lit";
-import { panelStyles, head, fmt, moreInfo } from "./shared.js";
-import { metricValue, entityValue } from "../card/resolve.js";
+import { panelStyles, head, fmt, moreInfo, onlyOtherStates } from "./shared.js";
+import { metricValue, entityValue, metricSensor } from "../card/resolve.js";
 import { metricEntity } from "../card/metrics.js";
 import { watchForecast } from "../card/forecast.js";
 
@@ -96,6 +96,11 @@ class WsfcVpd extends LitElement {
     const t = metricValue(s, h, "temperature"), rh = metricValue(s, h, "humidity");
     const kpa = vpdFrom(toC(t), rh?.value);
     return kpa == null ? null : { kpa, entity: t?.entity, computed: true };
+  }
+
+  // Skip redraws for other entities' updates.
+  shouldUpdate(changed) {
+    return !onlyOtherStates(changed, this.hass, [this.config?.entity || metricEntity("vpd", this.station, this.hass), metricSensor(this.station, this.hass, "temperature"), metricSensor(this.station, this.hass, "humidity")]);
   }
 
   render() {
@@ -193,6 +198,11 @@ class WsfcFrostWatch extends LitElement {
     if (hrs.length) return conv(Math.min(...hrs));
     const d = (this._daily || []).map((f) => f.templow).filter((x) => x != null);
     return d.length ? conv(Math.min(...d.slice(0, 2).map(Number))) : null;
+  }
+
+  // Skip redraws for other entities' updates.
+  shouldUpdate(changed) {
+    return !onlyOtherStates(changed, this.hass, ["temperature", "apparent_temperature", "dew_point", "wind_speed"].map((k) => metricSensor(this.station, this.hass, k)).concat(["sun.sun", this.station?.entity]));
   }
 
   render() {

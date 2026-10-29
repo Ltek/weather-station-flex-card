@@ -16,6 +16,7 @@ for (const k of ["window", "document", "customElements", "HTMLElement", "CustomE
 }
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "wsfc-doc-"));
 fs.copyFileSync(path.join(root, "dist/weather-station-flex-card.js"), path.join(tmp, "card.mjs"));
+for (const f of fs.readdirSync(path.join(root, "dist"))) if (/^wsfc-.*\.js$/.test(f)) fs.copyFileSync(path.join(root, "dist", f), path.join(tmp, f));
 const origLog = console.log; console.log = () => {}; console.info = () => {};
 await import(pathToFileURL(path.join(tmp, "card.mjs")).href);
 console.log = origLog;

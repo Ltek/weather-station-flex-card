@@ -10,7 +10,7 @@
 // Season and degree days come from the station's own history when it covers
 // them, else the area data (CoAgMET, else Open-Meteo; see card/climate.js).
 import { LitElement, html, css, nothing } from "lit";
-import { panelStyles, head, fmt, moreInfo, statStyles, statRow } from "./shared.js";
+import { panelStyles, head, fmt, moreInfo, statStyles, statRow, onlyOtherStates } from "./shared.js";
 import { entityValue } from "../card/resolve.js";
 import { metricEntity } from "../card/metrics.js";
 import { fetchStatistics } from "../card/history.js";
@@ -93,6 +93,13 @@ class WsfcGarden extends LitElement {
     } finally {
       this._busy = false;
     }
+  }
+
+  // Skip redraws for other entities' updates (reloads every 10 min).
+  shouldUpdate(changed) {
+    if (!this._at || Date.now() - this._at > 10 * 60e3) return true;
+    const st = this.station, h = this.hass, c = this.config || {};
+    return !onlyOtherStates(changed, h, [metricEntity("temperature", st, h), metricEntity("rain_today", st, h), c.soil_temperature_entity || metricEntity("soil_temperature", st, h), c.soil_moisture_entity || metricEntity("soil_moisture", st, h), st?.entity]);
   }
 
   render() {

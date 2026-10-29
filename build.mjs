@@ -79,6 +79,19 @@ const common = {
   logLevel: "info",
 };
 
+// Leaflet (radar) and js-yaml (Import / Export) are loaded only when used, as
+// their own self-contained files next to the card (dist/wsfc-leaflet.js,
+// dist/wsfc-yaml.js), so a dashboard without a radar never downloads Leaflet.
+// The card imports nothing at load time: a missing extra file only affects
+// the feature that needs it.
+for (const f of fs.readdirSync(path.join(root, "dist"))) if (/^wsfc-.*\.js$/.test(f)) fs.rmSync(path.join(root, "dist", f));
+for (const [name, spec] of [["wsfc-leaflet", "leaflet/dist/leaflet-src.esm.js"], ["wsfc-yaml", "js-yaml"]]) {
+  await esbuild.build({
+    stdin: { contents: `export * from ${JSON.stringify(spec)};`, resolveDir: root, loader: "js" },
+    bundle: true, format: "esm", target: ["es2020", "safari15"], minify: true, legalComments: "eof", logLevel: "error",
+    outfile: path.join(root, "dist", `${name}.js`),
+  });
+}
 await esbuild.build({
   ...common,
   entryPoints: [path.join(root, "src/card/weather-station-flex-card.js")],
@@ -89,6 +102,9 @@ await esbuild.build({
 });
 
 if (preview) {
+  // The preview loads the split libraries from beside its own bundle.
+  fs.mkdirSync(path.join(root, "preview/build"), { recursive: true });
+  for (const f of fs.readdirSync(path.join(root, "dist"))) if (/^wsfc-.*\.js$/.test(f)) fs.copyFileSync(path.join(root, "dist", f), path.join(root, "preview/build", f));
   await esbuild.build({
     ...common,
     entryPoints: [path.join(root, "preview/main.js")],

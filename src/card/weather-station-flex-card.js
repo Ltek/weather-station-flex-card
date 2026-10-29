@@ -32,6 +32,7 @@ import "../panels/air-quality.js";
 import "../panels/clock.js";
 import "../panels/records.js";
 import { foldInfo } from "./fold-info.js";
+import { activeAlerts, alertsBar, alertStyles } from "./alerts.js";
 import { COMPACT_TYPES, NEEDS_PANEL, compactTiles, compactRow, compactStyles } from "./compact.js";
 import "../panels/watch.js";
 import "../panels/rain.js";
@@ -115,6 +116,12 @@ class WeatherStationFlexCard extends LitElement {
     return this._full && this._config.fit_height !== false && (!!this._config.fit_strict || !!this._config.auto_fit);
   }
 
+  /** The phone layout's entries when it applies (narrow screen and one is set), else null. */
+  _phoneLayout() {
+    const l = this._config?.phone_layout;
+    return this._layoutSize === "narrow" && Array.isArray(l) && l.length ? l : null;
+  }
+
   // Auto-fit: the layout and sizes are the design (for the Screen guide's
   // size); every screen shows that design scaled to fit it.
   get _autoFit() {
@@ -149,6 +156,10 @@ class WeatherStationFlexCard extends LitElement {
     if (!this._autoFit) return;
     const grid = this.renderRoot?.querySelector(".grid");
     if (!grid) return;
+    // Our own zoom changes resize the panels: don't let those re-trigger a pass.
+    this._afBusy = true;
+    requestAnimationFrame(() => requestAnimationFrame(() => (this._afBusy = false)));
+    this._watchAutoFit(grid);
     const c = this._config;
     const base = this._autoBase();
     const min = (Number(c.auto_fit_min) || 60) / 100;
@@ -180,11 +191,17 @@ class WeatherStationFlexCard extends LitElement {
     }
   }
 
-  _scheduleAutoFit(soon = false) {
-    if (!this._autoFit) return;
-    clearTimeout(this._afT);
-    // Content can change size after it loads (history, forecasts): look again.
-    this._afT = setTimeout(() => requestAnimationFrame(() => this._autoFitPanels()), soon ? 30 : 1500);
+  // Content can change size after it loads (history, forecasts): watch the
+  // panels and look again at most once a second — not on every state update.
+  _watchAutoFit(grid) {
+    if (!this._autoFit) { this._afRo?.disconnect(); this._afRo = null; return; }
+    this._afRo ||= new ResizeObserver(() => {
+      if (this._afBusy || this._afT) return;
+      this._afT = setTimeout(() => { this._afT = null; requestAnimationFrame(() => this._autoFitPanels()); }, 1000);
+    });
+    const els = [...grid.querySelectorAll(":scope > section.tile > *")].filter((x) => x.tagName?.startsWith("WSFC-"));
+    const seen = (this._afSeen ||= new WeakSet());
+    for (const el of els) if (!seen.has(el)) { seen.add(el); this._afRo.observe(el); }
   }
 
   // Collapse to the title header: panels with a header, in the grid.
@@ -244,13 +261,13 @@ class WeatherStationFlexCard extends LitElement {
     const z = Math.max(0.4, Math.min(2, (Number(p.content_scale) || 100) / 100));
     const meta = panelMeta(p);
     const title = p.title || this._autoTitle(p);
-    const showTitle = !!p.compact_title;
+    const showTitle = p.compact_title !== false;
     // Tiles that open their sensors: the fold button opens the full panel.
     const ownBtn = p.compact_expand === false;
     return html`<section class="tile ${p.type} compact-tile ${ownBtn ? "own-btn" : ""} ${cls}" style=${`grid-column: span ${span};grid-row: span 1;${this._foldColors(p, true)}`} data-i=${i}>
       ${ownBtn ? html`<button class="collapse" type="button" @click=${() => this._toggleCollapse(p, i)} aria-label=${`Expand ${title}`} title="Show"><ha-icon icon="mdi:chevron-down"></ha-icon></button>` : nothing}
       <div class="cwrap" style=${z !== 1 ? `zoom:${z}` : ""}>${compactRow(tiles, {
-        icon: p.show_icon === false ? null : p.icon || meta.icon,
+        icon: p.show_icon === false || p.compact_icon === false ? null : p.icon || meta.icon,
         title: showTitle ? title : "",
         onTap: p.compact_expand !== false ? () => this._toggleCollapse(p, i) : null,
         onTile: (eid) => this.dispatchEvent(new CustomEvent("hass-more-info", { detail: { entityId: eid }, bubbles: true, composed: true })),
@@ -276,10 +293,12 @@ class WeatherStationFlexCard extends LitElement {
 
   /** Title colours for a foldable panel (style string). */
   _foldColors(p, collapsed) {
-    const C = (k, d) => this._collapseOpt(p, k, d);
-    return collapsed
-      ? `--wsfc-head-icon:${C("collapsed_icon_color", "var(--disabled-color, var(--disabled-text-color, #6f6f6f))")};--wsfc-head-text:${C("collapsed_text_color", "var(--disabled-text-color, #6f6f6f)")};`
-      : `--wsfc-head-icon:${C("expanded_icon_color", "var(--state-icon-color, var(--paper-item-icon-color, #44739e))")};${C("expanded_text_color", "") ? `--wsfc-head-text:${C("expanded_text_color", "")};` : ""}`;
+    // Folded and open look the same unless colours are set (folded falls back to
+    // the open colours, then the theme), so a folded title stays easy to read.
+    const C = (k) => this._collapseOpt(p, k, "");
+    const icon = (collapsed && C("collapsed_icon_color")) || C("expanded_icon_color");
+    const text = (collapsed && C("collapsed_text_color")) || C("expanded_text_color");
+    return `${icon ? `--wsfc-head-icon:${icon};` : ""}${text ? `--wsfc-head-text:${text};` : ""}`;
   }
 
   _isCollapsed(p, i) {
@@ -414,6 +433,9 @@ class WeatherStationFlexCard extends LitElement {
     this._unwatchHourly = null;
     this._hourlyFor = null;
     this._ro?.disconnect();
+    this._afRo?.disconnect();
+    this._afRo = null;
+    this._afSeen = null;
     window.removeEventListener("keydown", this._onKey);
   }
 
@@ -437,8 +459,7 @@ class WeatherStationFlexCard extends LitElement {
     // Re-fit when the layout inputs change, and once more after panels have
     // loaded their content (charts, forecasts).
     const key = JSON.stringify([this._config?.panels, [...(this._hidden || [])], [...(this._collapsed || [])], this._focus, this._layoutSize, this._config?.layout, this._config?.auto_fit, this._config?.layout_screen, this._config?.auto_fit_min, this._config?.auto_fit_max]);
-    // Auto-fit: re-check after state updates too (content can grow), throttled.
-    if (key === this._fitKey) { this._scheduleAutoFit(); return; }
+    if (key === this._fitKey) return;
     this._fitKey = key;
     this._scheduleFit();
     clearTimeout(this._fitLate);
@@ -540,6 +561,7 @@ class WeatherStationFlexCard extends LitElement {
         ${c.background === "image" ? this._renderImage() : bg && !lite ? this._renderBackground() : nothing}
         ${c.title ? this._renderTitle() : nothing}
         ${c.panel_bar === false || barInHeading ? nothing : html`<div class="topbar">${this._renderBar()}</div>`}
+        ${this._renderAlerts()}
         <div class="scroller"><div class="grid">${this._renderPanels()}${this._overlay != null ? this._renderOverlay() : nothing}</div></div>
         ${this._popup != null ? this._renderPopup() : nothing}
       </ha-card>
@@ -620,8 +642,31 @@ class WeatherStationFlexCard extends LitElement {
     this._hourlyFor = eid;
     this._unwatchHourly = watchForecast(this.hass, eid, "hourly", (f) => {
       this._hourlyNow = f?.[0];
+      this._hourly = f;
       this.requestUpdate();
     });
+  }
+
+  // Tonight's low (°F) from the hourly forecast, for the alerts bar.
+  _lowF() {
+    const now = Date.now();
+    const u = this.hass.states[this._config.entity]?.attributes?.temperature_unit;
+    const t = (this._hourly || []).filter((f) => { const x = Date.parse(f.datetime); return x > now && x < now + 18 * 3600e3; }).map((f) => Number(f.temperature)).filter(Number.isFinite);
+    if (!t.length) return null;
+    const m = Math.min(...t);
+    return u === "°C" ? (m * 9) / 5 + 32 : m;
+  }
+
+  _renderAlerts() {
+    const c = this._config;
+    if (!c.alerts_bar) return nothing;
+    this._watchHourly();
+    const list = activeAlerts(this.hass, this._station, c, this._lowF());
+    return html`<div class="alertrow">${alertsBar(list, (a) => {
+      if (a.entity) return this.dispatchEvent(new CustomEvent("hass-more-info", { detail: { entityId: a.entity }, bubbles: true, composed: true }));
+      const i = c.panels.findIndex((p) => p.type === a.type);
+      if (i >= 0) this._focus = i;
+    })}</div>`;
   }
 
   _renderTitle() {
@@ -703,13 +748,21 @@ class WeatherStationFlexCard extends LitElement {
   _renderPanels() {
     const panels = this._config.panels;
     let idx = panels.map((p, i) => i).filter((i) => panels[i].display !== "popup" && !this._isHidden(panels[i], i) && !this._isEmpty(panels[i], i));
+    // Phone layout (narrow screens): its own order, widths and heights.
+    const phone = this._phoneLayout();
+    if (phone) {
+      const pos = new Map(phone.map((e, k) => [Number(e.i), k]));
+      idx = idx.filter((i) => phone.find((e) => Number(e.i) === i)?.show !== false)
+        .sort((a, b) => (pos.has(a) ? pos.get(a) : 1e3 + a) - (pos.has(b) ? pos.get(b) : 1e3 + b));
+    }
     if (this._focus != null) idx = [this._focus];
     if (!idx.length) return html`<div class="empty">All panels are hidden — use the panel buttons to show one.</div>`;
     const size = this._layoutSize;
     return idx.map((i) => {
       const p = panels[i];
       const meta = panelMeta(p);
-      const lay = layoutOf(p, size);
+      const ph = phone?.find((e) => Number(e.i) === i);
+      const lay = ph ? { span: Math.max(1, Math.min(12, Number(ph.span ?? 12))), rows: Math.max(0, Number(ph.rows ?? rowsOf(p))) } : layoutOf(p, size);
       const span = this._focus != null ? 12 : lay.span;
       const rows = this._focus != null ? Math.max(rowsOf(p), 5) : lay.rows;
       // Tracks are content-sized; a panel spanning N rows gets the height of N row units.
@@ -727,12 +780,7 @@ class WeatherStationFlexCard extends LitElement {
       const collapsed = collapsible && this._isCollapsed(p, i);
       const titleTap = collapsible && this._collapseOpt(p, "collapse_title_tap", true);
       // Title colours: collapsed and expanded each have an icon and a text colour.
-      const C = (k, d) => this._collapseOpt(p, k, d);
-      const heads = collapsible
-        ? collapsed
-          ? `--wsfc-head-icon:${C("collapsed_icon_color", "var(--disabled-color, var(--disabled-text-color, #6f6f6f))")};--wsfc-head-text:${C("collapsed_text_color", "var(--disabled-text-color, #6f6f6f)")};`
-          : `--wsfc-head-icon:${C("expanded_icon_color", "var(--state-icon-color, var(--paper-item-icon-color, #44739e))")};${C("expanded_text_color", "") ? `--wsfc-head-text:${C("expanded_text_color", "")};` : ""}`
-        : "";
+      const heads = collapsible ? this._foldColors(p, collapsed) : "";
       const h = `calc(${rows} * var(--wsfc-row) + ${rows - 1} * var(--wsfc-gap))`;
       const style = heads + (collapsed
         ? `grid-column: span ${span};grid-row: span 1;`
@@ -854,7 +902,8 @@ class WeatherStationFlexCard extends LitElement {
     return el;
   }
 
-  static styles = [chipStyles, tileStyles, compactStyles, css`
+  static styles = [chipStyles, tileStyles, compactStyles, alertStyles, css`
+    .alertrow:empty { display: none; }
     /* Compact view: one row of tiles; the panel's own element stays hidden for its data. */
     /* A folded panel open over the others. */
     .grid { position: relative; }

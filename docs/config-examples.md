@@ -135,7 +135,7 @@ CoAgMET package: copy both files from `extras/coagmet/` (`coagmet_records.yaml` 
 - type: records
   area_source: auto          # auto | coagmet | open_meteo | off
 - type: rain
-  rows: [rain_today, rain_24h, rain_event, rain_week, rain_month, rain_year, last_rain]
+  show_rows: [rain_today, rain_24h, rain_event, rain_week, rain_month, rain_year, last_rain]
 - type: garden
   outlook_source: forecast   # or open_meteo
 - type: vpd

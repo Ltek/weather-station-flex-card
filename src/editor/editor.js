@@ -81,6 +81,12 @@ const LAYOUT_GROUPS = [
     { name: "row_height", selector: { number: { min: 40, max: 300, mode: "box", unit_of_measurement: "px" } }, helper: "Height of one row unit (default 110)." },
     { name: "gap", selector: { number: { min: 0, max: 32, mode: "box", unit_of_measurement: "px" } }, helper: "Space between panels (default 12)." },
   ]],
+  ["Alerts bar", [
+    { name: "alerts_bar", label: "Alerts bar", selector: { boolean: {} }, default: false, helper: "A thin row at the top that appears only while something needs attention: heat or frost (the Frost & heat watch rules), lightning within 10 miles in the last 30 minutes, and weather alerts. Tap one to open its panel." },
+    { name: "alerts_watch", label: "Heat and frost", when: (d) => !!d.alerts_bar, selector: { boolean: {} }, default: true },
+    { name: "alerts_lightning", label: "Lightning nearby", when: (d) => !!d.alerts_bar, selector: { boolean: {} }, default: true },
+    { name: "alerts_entity", label: "Weather alerts sensor", when: (d) => !!d.alerts_bar, selector: { entity: { domain: "sensor" } }, helper: "Optional, e.g. the NWS Alerts integration's sensor (its Alerts attribute)." },
+  ]],
   ["Collapsed panels", [
     { name: "collapsed_view", label: "Default view when collapsed", selector: { select: { options: [{ value: "minimal", label: "Minimal — the title and a line of info (e.g. 7 strikes today)" }, { value: "compact", label: "Compact — one row of tiles with all the data" }] } }, default: "minimal", helper: "For panels with Collapse button on; panels without a tiles view use Minimal. Each panel can override it — Convert all now clears those overrides." },
     { name: "collapsed_open", label: "A folded panel opens", selector: { select: { options: [{ value: "auto", label: "Automatic — over the other panels in full screen or Auto-fit, else in place" }, { value: "inplace", label: "In place — the panel grows, the others move" }, { value: "overlay", label: "Over the other panels — nothing moves; tap outside or Esc to close" }, { value: "popup", label: "As a pop-up" }] } }, default: "auto", helper: "Each panel can override this (Collapse → Opens)." },
@@ -109,9 +115,9 @@ const LABELS = {
   owm_api_key: "OpenWeatherMap API key", owm_layers: "OpenWeatherMap layers", owm_default: "Layer shown first", owm_opacity: "Layer opacity",
   base_map_url: "Custom tile URL", base_map_attribution: "Custom tile attribution", day_offset: "Day", icon_size: "Icon size",
   show_moon: "Show moon", show_sun: "Show sun", attribute: "Text attribute", alerts_entity: "Alerts sensor", card: "Card configuration",
-  show_status: "Show station status", show_devices: "Show device names", overlay: "Layer", model: "Forecast model", level: "Altitude", wind_unit: "Wind unit", marker: "Location pin", preset: "Graph", engine: "Graph card", days_to_show: "Days", period: "Resolution", chart_type: "Chart type", stat_types: "Values", show_chart: "Altitude chart", show_arc: "Sun arc", show_sky: "Sky gradient & forecast row", timeframe: "Time window", hours: "Hours", anchor: "Now is", moon: "Moon at night", moon_phase: "Draw the moon phase", background: "Card background", panel_opacity: "Panel opacity", panel_blur: "Panel blur", sky_bar: "Sky Bar in the hero", show_facts: "Show sun times", moon_size: "Moon size", direction: "Direction", min_width: "Minimum width", grow: "Grow", show_bar: "Panel buttons here", background_image: "Background image", background_image_url: "Background image URL", background_image_fit: "Image fit", background_dim: "Darken image",
+  show_status: "Show station status", show_devices: "Show device names", overlay: "Layer", model: "Forecast model", level: "Altitude", wind_unit: "Wind unit", marker: "Location pin", preset: "Graph", engine: "Graph card", days_to_show: "Days", period: "Resolution", chart_type: "Chart type", stat_types: "Values", show_arc: "Sun arc", show_sky: "Sky gradient & forecast row", timeframe: "Time window", anchor: "Now is", moon: "Moon at night", moon_phase: "Draw the moon phase", background: "Card background", panel_opacity: "Panel opacity", panel_blur: "Panel blur", sky_bar: "Sky Bar in the hero", show_facts: "Show sun times", moon_size: "Moon size", direction: "Direction", min_width: "Minimum width", grow: "Grow", show_bar: "Panel buttons here", background_image: "Background image", background_image_url: "Background image URL", background_image_fit: "Image fit", background_dim: "Darken image",
   panel_radius: "Corner radius", panel_shadow: "Shadow", panel_border_width: "Border width", panel_border_color: "Border color", panel_glow: "Glow", panel_glow_color: "Glow color", panel_glow_size: "Glow size",
-  rose_engine: "Wind rose", fit: "Fit to the panel", show_view_buttons: "View buttons", readings_position: "Readings", chart_position: "Chart position", show_legend: "Rose legend", wr_bars: "Speed bars", wr_corners: "Corner info", wr_stats: "Min / avg / max", wr_buttons: "Buttons", wr_buttons_position: "Button position", wr_period: "Default period", wr_beaufort: "Bar scale", wr_arrow: "Direction arrow", windrose_chart: "Chart with the Wind Rose Card", compass_arrow_size: "Pointer size", compass_arrow_color: "Pointer color", wr_arrow_size: "Arrow size", wr_arrow_color: "Arrow color", wr_speed_arrows: "Speed arrows", wr_speed_arrow_size: "Speed arrow size", stats_items: "Show", stats_align: "Alignment", chart_legend: "Chart legend", dial_scale: "Size", wr_scale: "Size", corner_speed: "Speed", corner_direction: "Direction", corner_gust: "Gust", corner_label_size: "Label size", corner_value_size: "Value size", corner_color: "Text color", stats_size: "Text size", stats_weight: "Text weight", stats_color: "Text color", wr_stats: "Position", windrose_preset: "Wind Rose Card preset", windrose: "Wind Rose Card options", auto_scale: "Set scale to Auto", show_time: "Show the time", show_seconds: "Seconds", time_format: "Time format", show_date: "Show the date", date_format: "Date format", align: "Alignment", auto_size: "Auto size", time_size: "Time size", date_size: "Date size", time_weight: "Time weight", date_color: "Date color", scale: "Auto scaling", device: "Pollen location", hide_off_season: "Hide out-of-season species", hide_when_off_season: "Hide the panel out of season", hide_when_none: "Hide the panel when all are None", species: "Species", max_rows: "Rows", show_tomorrow: "Tomorrow's trend", show_season: "Season strip", location: "Town / area text",
+  rose_engine: "Wind rose", fit: "Fit to the panel", show_view_buttons: "View buttons", readings_position: "Readings", chart_position: "Chart position", show_legend: "Rose legend", wr_bars: "Speed bars", wr_corners: "Corner info", wr_stats: "Min / avg / max", wr_buttons: "Buttons", wr_buttons_position: "Button position", wr_period: "Default period", wr_beaufort: "Bar scale", wr_arrow: "Direction arrow", windrose_chart: "Chart with the Wind Rose Card", compass_arrow_size: "Pointer size", compass_arrow_color: "Pointer color", wr_arrow_size: "Arrow size", wr_arrow_color: "Arrow color", wr_speed_arrows: "Speed arrows", wr_speed_arrow_size: "Speed arrow size", stats_items: "Show", stats_align: "Alignment", chart_legend: "Chart legend", dial_scale: "Size", wr_scale: "Size", corner_speed: "Speed", corner_direction: "Direction", corner_gust: "Gust", corner_label_size: "Label size", corner_value_size: "Value size", corner_color: "Text color", stats_size: "Text size", stats_weight: "Text weight", stats_color: "Text color", windrose_preset: "Wind Rose Card preset", windrose: "Wind Rose Card options", auto_scale: "Set scale to Auto", show_time: "Show the time", show_seconds: "Seconds", time_format: "Time format", show_date: "Show the date", date_format: "Date format", align: "Alignment", auto_size: "Auto size", time_size: "Time size", date_size: "Date size", time_weight: "Time weight", date_color: "Date color", scale: "Auto scaling", device: "Pollen location", hide_off_season: "Hide out-of-season species", hide_when_off_season: "Hide the panel out of season", hide_when_none: "Hide the panel when all are None", species: "Species", max_rows: "Rows", show_tomorrow: "Tomorrow's trend", show_season: "Season strip", location: "Town / area text",
   seasons: "Season months", entities: "Sensors", pollutants: "Pollutants", show_scale: "AQI scale", show_aqi: "Show the AQI", extra: "More readings", bar_height: "Bar height", source: "Source text", show_source: "Show the source", show_location: "Show the town / area", hide_none: "Hide species at None", show_nothing: "Show the \"nothing in the air\" text", nothing_text: "\"Nothing in the air\" text", "entities.aqi": "AQI sensor",
   "entities.pm2_5": "PM2.5 sensor", "entities.pm10": "PM10 sensor", "entities.ozone": "Ozone sensor", "entities.co2": "CO₂ sensor",
 };
@@ -146,6 +152,32 @@ function applyForm(obj, schema, data, defaults = {}) {
     setPath(out, f.name, v);
   }
   return prune(out);
+}
+
+// One-tap presets per panel type (null = back to the default).
+const PANEL_PRESETS = {
+  air_quality: [["Tablet compact", { layout: "tiles", show_scale: false, show_location: false, show_source: false, content_scale: 85, content_width: 70, content_height: 60, compact: null }], ["Tiles row", { compact: true }], ["Full detail", { layout: "scale", show_scale: null, show_location: null, show_source: null, content_scale: null, content_width: null, content_height: null, compact: null }]],
+  pollen: [["Tablet compact", { hide_when_off_season: true, hide_when_none: true, show_season: false, show_source: false, show_location: false, content_height: 60, compact: null }], ["Tiles row", { compact: true }], ["Full detail", { show_season: null, show_source: null, show_location: null, content_height: null, compact: null }]],
+  rain: [["Essentials", { show_rows: ["rain_rate", "rain_today", "rain_24h", "rain_event"], show_normal: false, compact: null }], ["Everything", { show_rows: ["rain_rate", "rain_hour", "rain_today", "rain_24h", "rain_event", "rain_week", "rain_month", "rain_year", "last_rain"], show_normal: null, compact: null }], ["Tiles row", { compact: true }]],
+  garden: [["Frost only", { show_soil: false, show_water: false, show_gdd: false }], ["Everything", { show_outlook: null, show_season: null, show_gdd: null, show_soil: null, show_water: null }]],
+  records: [["Area only", { show_station: false }], ["Today only", { show_month: false, show_all_time: false }], ["Everything", { show_station: null, show_today: null, show_month: null, show_all_time: null }]],
+  lightning: [["Quiet", { hide_when_zero: true, show_battery: false, show_note: false }], ["Everything", { hide_when_zero: null, show_battery: null, show_note: null }]],
+  wind: [["Rose, chart on demand", { view: "rose", chart_mode: "popover" }], ["Compass and chart", { view: "compass", chart_mode: null }]],
+  radar: [["Light on tablets", { start_paused: true, collapsible: true, collapsed: true }], ["Live", { start_paused: null, collapsed: null }]],
+  wind_map: [["Light on tablets", { start_paused: true, collapsible: true, collapsed: true }], ["Live", { start_paused: null, collapsed: null }]],
+  frost_watch: [["Tiles row", { compact: true }], ["Full", { compact: null }]],
+  vpd: [["Number only", { show_plant: false, show_scale: false, show_note: false }], ["Full", { show_plant: null, show_scale: null, show_note: null, show_advice: null }]],
+};
+
+/** A panel's name in lists (its title, else its type's label). */
+const nameOfPanel = (p) => (p.type === "metric" ? METRICS[p.metric]?.label || "Metric" : (panelMeta(p)?.label || p.type).replace(/ \(.*\)$/, ""));
+
+/** True when a field has a stored value other than its default. */
+function isChanged(obj, f, defaults = {}) {
+  const v = getPath(obj, f.name);
+  if (v === undefined) return false;
+  const def = defaults[f.name] !== undefined ? defaults[f.name] : f.default;
+  return def === undefined || JSON.stringify(v) !== JSON.stringify(def);
 }
 
 // Layout fields a panel loses when it goes into a stack (the stack has the place and size).
@@ -323,6 +355,13 @@ class WeatherStationFlexCardEditor extends LitElement {
           <ha-icon icon="mdi:play-circle-outline"></ha-icon><span>Live preview</span>
           <span class="live-hint">${isLive() ? "animations and maps running" : "animations and maps paused while editing"}</span>
         </label>
+        <div class="findbar">
+          <ha-icon icon="mdi:magnify"></ha-icon>
+          <input class="ftext find" type="search" placeholder="Find a setting (e.g. compact, blur, rain)" .value=${this._q || ""} aria-label="Find a setting"
+            @input=${(e) => { this._q = e.target.value; this.requestUpdate(); }} @keydown=${(e) => e.key === "Escape" && ((this._q = ""), this.requestUpdate())} />
+          <label class="onlychg" title="Show only the settings you've changed from their defaults"><input type="checkbox" .checked=${!!this._onlyChanged} @change=${(e) => { this._onlyChanged = e.target.checked; this.requestUpdate(); }} />Only changed</label>
+        </div>
+        ${this._q && this._q.trim().length >= 2 ? this._searchResults(this._q.trim()) : nothing}
         ${this._section("station", "mdi:weather-cloudy-clock", "Weather station", () => this._stationEditor())}
         ${this._section("general", "mdi:palette-outline", "Appearance", () => this._general(APPEARANCE_GROUPS))}
         ${this._section("buttons", "mdi:gesture-tap-button", "Panel buttons", () => this._buttonsEditor())}
@@ -331,6 +370,60 @@ class WeatherStationFlexCardEditor extends LitElement {
         ${this._section("panels", "mdi:view-list-outline", `Panels (${this._panels.length})`, () => this._panelList())}
       </div>
     `;
+  }
+
+  // Every setting the editor can show: where it lives and how to get there.
+  _searchIndex() {
+    const out = [];
+    const label = (f) => f.label || LABELS[f.name] || f.name.replace(/[._]/g, " ");
+    for (const [area, title, groups] of [["general", "Appearance", APPEARANCE_GROUPS], ["behavior", "Layout & Behavior", LAYOUT_GROUPS]])
+      for (const [g, fields] of groups) for (const f of fields) out.push({ label: label(f), help: f.helper || "", where: `${title} › ${g}`, go: { open: area }, f });
+    for (const f of REMEMBER) out.push({ label: label(f), help: f.helper || "", where: "Panel buttons", go: { open: "buttons" }, f });
+    const add = (p, key, nested) => {
+      const m = panelMeta(p);
+      if (!m) return;
+      const name = p.title || nameOfPanel(p);
+      const common = (nested ? STACK_CHILD_SCHEMA : COMMON_SCHEMA).map((f) => ({ f, sec: f.section || "Size and Scaling" }));
+      const own = m.groups
+        ? m.groups.flatMap(([t, fs], i) => fs.map((f) => ({ f, sec: `${m.label} options`, sub: i ? t : null })))
+        : (m.schema || []).map((f) => ({ f, sec: f.section || (["content_width", "content_height"].includes(f.name) ? "Size and Scaling" : `${m.label} options`) }));
+      for (const { f, sec, sub } of [...common, ...own]) out.push({ label: label(f), help: f.helper || "", where: `Panels › ${name} › ${sec}${sub ? ` › ${sub}` : ""}`, go: { open: "panels", panel: key, type: p.type, sec, sub }, f });
+    };
+    this._panels.forEach((p, i) => { add(p, `${i}`, false); if (p.type === "stack") (p.panels || []).forEach((c, j) => c && add(c, `${i}.${j}`, true)); });
+    return out;
+  }
+
+  _searchResults(q) {
+    const words = q.toLowerCase().split(/\s+/).filter(Boolean);
+    const hits = this._searchIndex().filter((x) => { const t = `${x.label} ${x.help} ${x.where} ${x.f.name}`.toLowerCase(); return words.every((w) => t.includes(w)); });
+    hits.sort((a, b) => (b.label.toLowerCase().includes(words[0]) ? 1 : 0) - (a.label.toLowerCase().includes(words[0]) ? 1 : 0));
+    return html`<div class="finds" role="listbox" aria-label="Matching settings">
+      ${hits.length ? hits.slice(0, 40).map((x) => html`<button class="find-hit" role="option" @click=${() => this._goTo(x)}><b>${x.label}</b><span>${x.where}</span></button>`) : html`<div class="fhelp">No setting matches "${q}".</div>`}
+      ${hits.length > 40 ? html`<div class="fhelp">${hits.length - 40} more — type more of the name.</div>` : nothing}
+    </div>`;
+  }
+
+  // Open the area / panel / section that holds a setting and point at it.
+  async _goTo(x) {
+    const g = x.go;
+    this._q = "";
+    this._open = g.open;
+    if (g.panel != null) {
+      this._openPanel = g.panel;
+      this._flatOpen ||= new Map();
+      for (const k of this._flatOpen.keys()) if (k.startsWith(`${g.type}|`)) this._flatOpen.set(k, false);
+      this._flatOpen.set(`${g.type}|${g.sec}`, true);
+      if (g.sub) { this._subOpen ||= new Set(); this._subOpen.add(`${g.type}:${g.sub}`); }
+    }
+    this.requestUpdate();
+    await this.updateComplete;
+    await new Promise((r) => requestAnimationFrame(r));
+    const el = [...this.renderRoot.querySelectorAll(".fld, .frow, .fchk, label")].find((n) => n.textContent.trim().startsWith(x.label));
+    if (el) {
+      el.scrollIntoView({ block: "center", behavior: "smooth" });
+      el.classList.add("flash");
+      setTimeout(() => el.classList.remove("flash"), 1600);
+    }
   }
 
   _section(id, icon, title, body) {
@@ -405,8 +498,10 @@ class WeatherStationFlexCardEditor extends LitElement {
   _general(groups = APPEARANCE_GROUPS) {
     const bg = this._config.background || "none";
     return groups.map(([title, fields]) => {
-      const f = fields;
-      return html`<div class="agrp"><div class="agrp-t">${title}</div>${this._form(formData(this._config, f, GENERAL_DEFAULTS), f, (v) => {
+      const f = this._onlyChanged ? fields.filter((x) => isChanged(this._config, x, GENERAL_DEFAULTS)) : fields;
+      if (!f.length) return nothing;
+      const dot = fields.some((x) => isChanged(this._config, x, GENERAL_DEFAULTS));
+      return html`<div class="agrp"><div class="agrp-t">${title}${dot ? html`<i class="chg" title="Has changed settings"></i>` : nothing}</div>${this._form(formData(this._config, f, GENERAL_DEFAULTS), f, (v) => {
         const { panels: _p, ...rest } = this._config;
         const next = applyForm(rest, f, v, GENERAL_DEFAULTS);
         if (this._config.panels) next.panels = this._config.panels;
@@ -529,7 +624,7 @@ class WeatherStationFlexCardEditor extends LitElement {
         <select id="lg-s" class="sel" @change=${(e) => set({ layout_screen: e.target.value === "custom" ? "1600x900" : e.target.value || undefined })}>
           ${presets.map(([v, l]) => html`<option value=${v} ?selected=${v === cur}>${l}</option>`)}
           <option value="custom" ?selected=${custom}>Custom size…</option>
-        </select></div>
+        </select><button class="btn sm ghost" title="Set the Screen guide to this device's browser window (open the editor on the tablet and press this)" @click=${() => set({ layout_screen: `${window.innerWidth}x${window.innerHeight}` })}><ha-icon icon="mdi:tablet"></ha-icon>This device</button></div>
       ${custom ? html`<div class="frow"><label for="lg-c">Width × height</label>
         <input id="lg-c" class="ftext" .value=${cur} placeholder="1600x900" @change=${(e) => set({ layout_screen: /^\d{3,5}\s*[x×]\s*\d{3,5}$/.test(e.target.value.trim()) ? e.target.value.trim().replace(/\s+/g, "").replace("×", "x") : cur })} /></div>` : nothing}
       ${cur ? html`<div class="frow"><label for="lg-m">Show as</label>
@@ -541,16 +636,45 @@ class WeatherStationFlexCardEditor extends LitElement {
   }
 
   _layoutEditor() {
+    const c = this._config;
+    const phoneMode = this._mapFor === "phone";
+    const phone = Array.isArray(c.phone_layout) ? c.phone_layout : null;
+    const setPhone = (list) => {
+      const next = { ...this._config };
+      if (list && list.length) next.phone_layout = list; else delete next.phone_layout;
+      this._emit(next);
+    };
+    // The phone layout as panels for the map: each grid panel in the phone order, with its phone size.
+    const grid = this._panels.map((p, i) => ({ p, i })).filter(({ p }) => p.display !== "popup");
+    const phonePanels = () => {
+      const pos = new Map((phone || []).map((e, k) => [Number(e.i), e]));
+      return grid
+        .map(({ p, i }) => ({ ...p, __i: i, span: pos.get(i)?.span ?? 12, rows: pos.get(i)?.rows ?? (p.rows ?? 0), show: pos.has(i) ? pos.get(i).show !== false : p.show }))
+        .sort((a, b) => ((phone || []).findIndex((e) => Number(e.i) === a.__i) + 1 || 1e3 + a.__i) - ((phone || []).findIndex((e) => Number(e.i) === b.__i) + 1 || 1e3 + b.__i));
+    };
+    // (The map drops sizes equal to the type's default, so read them back through spanOf / rowsOf.)
+    const fromPhone = (list) => list.filter((p) => p.__i != null).map((p) => ({ i: p.__i, span: spanOf(p), ...(rowsOf(p) ? { rows: rowsOf(p) } : {}), ...(p.show === false ? { show: false } : {}) }));
     return html`
-      <p class="hint"><b>Drag</b> a panel to move it; drag its <b>right or bottom edge</b> (or the corner) to resize. Keyboard: arrows move, Shift+arrows resize. This is the desktop layout — tablets and phones adapt automatically. Dashed = hidden on load.</p>
-      ${this._screenGuide()}
-      ${this._guideSpec() ? html`<wsfc-layout-probe .hass=${this.hass} .config=${this._config} .guide=${this._guideSpec()}
-        @probe-measured=${(e) => { this._measured = e.detail; this.requestUpdate(); }}></wsfc-layout-probe>` : nothing}
-      <wsfc-layout-map .panels=${this._panels} .guide=${this._guideSpec()} .measured=${this._guideSpec() ? this._measured : null} @layout-changed=${(e) => {
-        this._flexEds.clear();
-        this._openPanel = null;
-        this._setPanels(e.detail.panels);
-      }}></wsfc-layout-map>
+      <div class="frow"><label for="lm-for">Layout for</label>
+        <select id="lm-for" class="sel" @change=${(e) => { this._mapFor = e.target.value; this.requestUpdate(); }}>
+          <option value="main" ?selected=${!phoneMode}>Main layout (tablets and larger)</option>
+          <option value="phone" ?selected=${phoneMode}>Phone layout (narrow screens)${phone ? "" : " — not set"}</option>
+        </select></div>
+      ${phoneMode
+        ? html`<p class="hint">On screens narrower than ${c.narrow_width || 720} px the card uses this layout: its own order, widths and heights for the same panels. Without one, panels stack full width automatically.</p>
+            <div class="presets">${phone
+              ? html`<button class="btn sm ghost" @click=${() => setPhone(null)}><ha-icon icon="mdi:delete-outline"></ha-icon>Remove the phone layout</button>`
+              : html`<button class="btn sm" @click=${() => setPhone(grid.map(({ p, i }) => ({ i, span: 12, ...(p.rows ? { rows: p.rows } : {}) })))}><ha-icon icon="mdi:cellphone"></ha-icon>Create a phone layout</button>`}</div>
+            ${phone ? html`<wsfc-layout-map .panels=${phonePanels()} @layout-changed=${(e) => setPhone(fromPhone(e.detail.panels))}></wsfc-layout-map>` : nothing}`
+        : html`<p class="hint"><b>Drag</b> a panel to move it; drag its <b>right or bottom edge</b> (or the corner) to resize. Keyboard: arrows move, Shift+arrows resize. This is the main layout${phone ? "; phones use the Phone layout" : " — phones stack the panels automatically (or set a Phone layout above)"}. Dashed = hidden on load.</p>
+            ${this._screenGuide()}
+            ${this._guideSpec() ? html`<wsfc-layout-probe .hass=${this.hass} .config=${this._config} .guide=${this._guideSpec()}
+              @probe-measured=${(e) => { this._measured = e.detail; this.requestUpdate(); }}></wsfc-layout-probe>` : nothing}
+            <wsfc-layout-map .panels=${this._panels} .guide=${this._guideSpec()} .measured=${this._guideSpec() ? this._measured : null} @layout-changed=${(e) => {
+              this._flexEds.clear();
+              this._openPanel = null;
+              this._setPanels(e.detail.panels);
+            }}></wsfc-layout-map>`}
     `;
   }
 
@@ -739,7 +863,7 @@ class WeatherStationFlexCardEditor extends LitElement {
   // Flat expandable settings section (design system: borderless when closed,
   // a thin divider between them; open = accent border and accent title).
   // Closed at first; opening one closes the panel's other sections.
-  _flat(p, name, body) {
+  _flat(p, name, body, dot = false) {
     const id = `${p.type}|${name}`;
     this._flatOpen ||= new Map();
     const open = !!this._flatOpen.get(id);
@@ -749,7 +873,7 @@ class WeatherStationFlexCardEditor extends LitElement {
       this._flatOpen.set(id, e.target.open);
       this.requestUpdate();
     }}>
-      <summary>${name}</summary>
+      <summary>${name}${dot ? html`<i class="chg" title="Has changed settings"></i>` : nothing}</summary>
       <div class="flat-body">${body}</div>
     </details>`;
   }
@@ -765,7 +889,12 @@ class WeatherStationFlexCardEditor extends LitElement {
       part.f.push(f);
     }
     const form = (f) => this._form(formData(p, f, defs), f, (v) => update({ ...applyForm(p, f, v, defs), type: p.type }));
-    return parts.map(({ k, f }) => {
+    const only = this._onlyChanged;
+    return parts.map(({ k, f: all }) => {
+      // "Only changed settings": hide unchanged fields and empty sections.
+      const f = only ? all.filter((x) => isChanged(p, x, defs)) : all;
+      if (!f.length) return nothing;
+      const dot = all.some((x) => isChanged(p, x, defs));
       const name = k.slice(4);
       if (k.startsWith("sub:")) {
         const id = `${p.type}:${name}`;
@@ -776,11 +905,11 @@ class WeatherStationFlexCardEditor extends LitElement {
           else this._subOpen.delete(id);
           this.requestUpdate();
         }}>
-          <summary><ha-icon icon=${f[0]?.subIcon || "mdi:weather-sunset"}></ha-icon><span>${name}</span></summary>
+          <summary><ha-icon icon=${f[0]?.subIcon || "mdi:weather-sunset"}></ha-icon><span>${name}</span>${dot ? html`<i class="chg" title="Has changed settings"></i>` : nothing}</summary>
           ${open ? html`<div class="psub-body">${form(f)}</div>` : nothing}
         </details>`;
       }
-      return flat ? this._flat(p, name, form(f)) : html`<div class="grp">${name}</div>${form(f)}`;
+      return flat ? this._flat(p, name, form(f), dot) : html`<div class="grp">${name}${dot ? html`<i class="chg" title="Has changed settings"></i>` : nothing}</div>${form(f)}`;
     });
   }
 
@@ -800,6 +929,21 @@ class WeatherStationFlexCardEditor extends LitElement {
     if (p.type === "hero") common = common.filter((f) => !["icon", "display", "in_bar"].includes(f.name));
     // Panels without a title header can't fold down to it.
     if (!canCollapseType(p.type)) common = common.filter((f) => f.section !== "Collapse");
+    // "Card default" choices say what the card's setting currently is.
+    const C = this._config, strictish = C.layout === "fullscreen" && C.fit_height !== false && (C.fit_strict || C.auto_fit);
+    const DEF = {
+      collapsed_view: () => (C.collapsed_view === "compact" ? "Compact" : "Minimal"),
+      collapsed_open: () => ({ inplace: "In place", overlay: "Over the other panels", popup: "As a pop-up" })[C.collapsed_open] || (C.layout === "fullscreen" || C.auto_fit ? "Automatic: over the other panels" : "Automatic: in place"),
+      collapse_title_tap: () => (C.collapse_title_tap === false ? "Off" : "On"),
+      show_collapse_hint: () => (C.show_collapse_hint === false ? "Hide" : "Show"),
+      collapsed_info: () => (C.collapsed_info === "off" ? "None" : "The panel's summary"),
+      overflow: () => (strictish || C.panel_overflow === "scroll" ? "Scroll" : "Grow"),
+    };
+    common = common.map((f) => {
+      const opts = f.selector?.select?.options;
+      if (!DEF[f.name] || !opts?.some((o) => o.value === "default")) return f;
+      return { ...f, selector: { select: { ...f.selector.select, options: opts.map((o) => (o.value === "default" ? { ...o, label: `Card default — ${DEF[f.name]()}` } : o)) } } };
+    });
     // Tiles view only where the panel has one.
     if (!COMPACT_TYPES.has(p.type)) common = common.filter((f) => !["collapsed_view", "compact_expand", "compact_title", "compact"].includes(f.name));
     // Panels without a header have no title options.
@@ -815,6 +959,12 @@ class WeatherStationFlexCardEditor extends LitElement {
         <button class="btn sm ghost" ?disabled=${!customized} title="Keeps the panel's type, position and size" @click=${() => { this._flexEds.clear(); reset(); }}>
           <ha-icon icon="mdi:restore"></ha-icon>Reset to default</button>
       </div>
+      ${PANEL_PRESETS[p.type] && !nested ? html`<div class="presets"><span class="fhelp">Presets</span>${PANEL_PRESETS[p.type].map(([name, patch]) => html`<button class="btn sm ghost" @click=${() => {
+        const np = { ...p };
+        for (const [k, v] of Object.entries(patch)) { if (v === null) delete np[k]; else np[k] = v; }
+        this._flexEds.clear();
+        update(np);
+      }}>${name}</button>`)}</div>` : nothing}
       ${isGraph
         ? html`<div class="grp first">Series</div>
             <wsfc-series-editor .hass=${this.hass} .panel=${p} .station=${this._station} @panel-changed=${(e) => update(e.detail.panel)}></wsfc-series-editor>`
@@ -934,6 +1084,19 @@ class WeatherStationFlexCardEditor extends LitElement {
     .live .live-hint { margin-left: auto; color: var(--ltek-c-muted); font-size: var(--ltek-fs-small, 12px); }
     .guidebar { margin: 0 0 var(--ltek-sp-3); }
     /* Flat expandable settings sections (one per settings group of a panel). */
+    .findbar { display: flex; align-items: center; gap: var(--ltek-sp-3); margin: 0 0 var(--ltek-sp-3); }
+    .findbar ha-icon { --mdc-icon-size: 20px; color: var(--ltek-c-muted); }
+    .findbar .find { flex: 1; min-width: 0; }
+    .onlychg { display: inline-flex; gap: 6px; align-items: center; font-size: var(--ltek-fs-label); color: var(--ltek-c-label); white-space: nowrap; cursor: pointer; }
+    .finds { display: flex; flex-direction: column; gap: 2px; margin: 0 0 var(--ltek-sp-4); max-height: 320px; overflow: auto; border: 1px solid var(--accent-color, var(--ltek-c-accent)); border-radius: var(--ltek-r-ctrl); padding: 4px; }
+    .find-hit { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; text-align: left; padding: 6px 8px; border: 0; border-radius: 6px; background: transparent; color: inherit; font: inherit; cursor: pointer; }
+    .find-hit:hover, .find-hit:focus-visible { background: var(--ltek-c-accent-fade); outline: none; }
+    .find-hit b { font-size: var(--ltek-fs-label); font-weight: var(--ltek-fw-semibold); }
+    .find-hit span { font-size: var(--ltek-fs-small); color: var(--ltek-c-muted); }
+    .flash { animation: wsfc-flash 1.6s ease; border-radius: 6px; }
+    @keyframes wsfc-flash { 0%, 60% { background: var(--ltek-c-accent-fade); box-shadow: 0 0 0 2px var(--ltek-c-accent); } 100% { background: transparent; box-shadow: none; } }
+    .chg { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-left: 8px; vertical-align: middle; background: var(--warning-color, #ffa600); flex: 0 0 auto; }
+    .presets { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 0 0 var(--ltek-sp-3); }
     .convert { display: flex; gap: var(--ltek-sp-3); align-items: center; flex-wrap: wrap; margin: var(--ltek-sp-2) 0 var(--ltek-sp-4); }
     details.flat { border: 1px solid transparent; border-top-color: var(--ltek-c-border-soft); border-radius: 0; }
     details.flat + details.flat { margin-top: 0; }

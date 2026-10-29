@@ -4,6 +4,7 @@
 // a radar panel is actually shown).
 import { LitElement, html, css, unsafeCSS } from "lit";
 import leafletCss from "inline-css:leaflet/dist/leaflet.css";
+import { lazyLib } from "../card/lazy.js";
 import { panelStyles, seg, head, pausedStyles, paused } from "./shared.js";
 
 const RAINVIEWER_INDEX = "https://api.rainviewer.com/public/weather-maps.json";
@@ -14,7 +15,8 @@ const LAST_FRAME_HOLD_MS = 1800;
 const REFRESH_MS = 5 * 60e3;
 
 let L = null;
-const loadLeaflet = async () => (L ||= (await import("leaflet")).default);
+// Leaflet is its own file next to the card, loaded with the first radar panel.
+const loadLeaflet = async () => (L ||= await lazyLib("wsfc-leaflet.js"));
 
 // Base maps (no API key needed). `base_map_url` overrides with any XYZ service.
 const ESRI = "https://server.arcgisonline.com/ArcGIS/rest/services";
@@ -106,7 +108,13 @@ class WsfcRadar extends LitElement {
   }
 
   async _initMap() {
-    await loadLeaflet();
+    try {
+      await loadLeaflet();
+    } catch (e) {
+      this._error = String(e?.message || e);
+      this.requestUpdate();
+      return;
+    }
     const el = this.renderRoot.getElementById("map");
     if (!el || this._map || this.lite) return;
     const lat = this.config?.latitude ?? this.hass?.config?.latitude ?? 39.5;

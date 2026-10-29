@@ -1,5 +1,29 @@
 # Changelog
 
+## v2026.10.29.76
+
+**Faster on tablets**
+- **Smaller card file:** Leaflet (radar) and js-yaml (Import / Export) are now separate files next to the card (`dist/wsfc-leaflet.js`, `dist/wsfc-yaml.js`), loaded only when a radar panel or the Import / Export dialog is used. The card file is 980 KB (was 1.17 MB); a dashboard without a radar loads about 190 KB less. If one is missing, only its feature reports it.
+- **Fewer redraws:** Wind, Rain totals, Lightning, Air dryness, Frost & heat watch, Weather records and Frost & the garden now skip Home Assistant updates for other entities (Air quality, Pollen and the clock already did).
+- **Auto-fit** re-measures only when a panel's content changes size (at most once a second), not after every state update.
+
+**Settings**
+- **Find a setting:** a search box at the top of the editor lists every matching setting with where it lives; pick one to open its section and highlight it.
+- **Only changed:** shows only the settings you've changed from their defaults; sections holding changes get a dot.
+- **Card default — X:** "Card default" choices in a panel say what the card's setting currently is (View when collapsed, Opens, title tap, hint, info, When the content doesn't fit).
+- **Presets** for Air quality, Pollen, Rain totals, Frost & the garden, Weather records, Lightning, Wind, Radar, Wind map, Frost & heat watch and Air dryness (e.g. "Tablet compact", "Tiles row", "Full detail").
+- **Folded panels keep their colours:** a folded title uses the same icon and text colours as an open one unless you set folded colours (they were dimmed).
+- **Compact view shows the icon and the title** by default; each can be turned off (Show the icon / Show the title in the tiles row).
+
+**Features**
+- **Phone layout:** Layout Map → Layout for → Phone layout: its own order, widths, heights and hidden panels for narrow screens (under 720 px), created from the main layout with one tap.
+- **Alerts bar** (Layout & Behavior → Alerts bar): a row at the top that appears only while something needs attention — heat or frost, lightning within 10 miles in the last 30 minutes, weather alerts from an alerts sensor; tap one to open its panel.
+- **This device** button in the Screen guide: sets it to the browser window you're using (press it on the tablet).
+
+**Fixes**
+- Rain totals' row list was stored as `rows`, the same name as the panel's height; it is now `show_rows` (existing configs are converted).
+- Two editor labels clashed (Wind's and Astronomy's chart checkbox; the sparkline's and Sky Tracker's hours).
+
 ## v2026.10.29.75
 
 - **Wind: chart as a pop-over.** Wind options → Chart → **Show the chart: As a pop-over**: the panel shows just the compass or rose, and a chart button in its header opens the 24 h speed and gust chart over the panel (tap outside, the button or Esc closes it). **Pop-over height** slider (default 220 px).

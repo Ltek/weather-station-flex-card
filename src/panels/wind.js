@@ -3,7 +3,7 @@
 // speed/gust chart underneath.
 import { LitElement, html, svg, css } from "lit";
 import { Chart, baseOptions, withAlpha, INLINE_PLUGINS, LEGEND_PLUGINS } from "./chart.js";
-import { panelStyles, seg, reading, fmt, head } from "./shared.js";
+import { panelStyles, seg, reading, fmt, head, onlyOtherStates } from "./shared.js";
 import { cardinal } from "../card/metrics.js";
 import { pick, metricValue } from "../card/resolve.js";
 import { fetchHistory, decimate } from "../card/history.js";
@@ -90,6 +90,13 @@ class WsfcWind extends LitElement {
   _ids() {
     const c = this.config, s = this.station, h = this.hass;
     return { speed: pick(c, s, h, "wind_speed"), gust: pick(c, s, h, "wind_gust_speed"), dir: pick(c, s, h, "wind_bearing") };
+  }
+
+  // Skip redraws for other entities' updates (history reloads every 5 min).
+  shouldUpdate(changed) {
+    if (Date.now() - (this._loadedAt || 0) > 5 * 60e3) return true;
+    const ids = this._ids();
+    return !onlyOtherStates(changed, this.hass, [ids.speed, ids.gust, ids.dir]);
   }
 
   render() {

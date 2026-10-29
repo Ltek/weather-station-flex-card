@@ -3,7 +3,7 @@
 // (sensor from the coagmet_records package) until the station's own history is
 // long enough. A badge marks a day that beats the area record for its date.
 import { LitElement, html, css, nothing } from "lit";
-import { panelStyles, head, fmt, moreInfo } from "./shared.js";
+import { panelStyles, head, fmt, moreInfo, onlyOtherStates } from "./shared.js";
 import { metricEntity } from "../card/metrics.js";
 import { fetchStatistics, fetchToday } from "../card/history.js";
 import { areaSummary, areaSensor, convert, TMAX, TMIN, PRECIP, GUST } from "../card/climate.js";
@@ -97,6 +97,12 @@ class WsfcRecords extends LitElement {
     } finally {
       this._loading = false;
     }
+  }
+
+  // Skip redraws for other entities' updates (reloads every 5 min).
+  shouldUpdate(changed) {
+    if (!this._loadedAt || Date.now() - this._loadedAt > 5 * 60e3) return true;
+    return !onlyOtherStates(changed, this.hass, [...Object.values(this._ids()), areaSensor(this.hass, this.config || {})]);
   }
 
   render() {

@@ -4,11 +4,11 @@
 // rained, and this month and year against the area's normal (CoAgMET or
 // Open-Meteo, see card/climate.js).
 import { LitElement, html, css, nothing } from "lit";
-import { panelStyles, head, fmt, moreInfo, statStyles, statRow } from "./shared.js";
+import { panelStyles, head, fmt, moreInfo, statStyles, statRow, onlyOtherStates } from "./shared.js";
 import { entityValue } from "../card/resolve.js";
 import { metricEntity } from "../card/metrics.js";
 import { fetchStatistics } from "../card/history.js";
-import { areaSummary, convert, PRECIP } from "../card/climate.js";
+import { areaSummary, areaSensor, convert, PRECIP } from "../card/climate.js";
 
 export const RAIN_ROWS = [
   ["rain_rate", "Raining now"],
@@ -70,6 +70,12 @@ class WsfcRain extends LitElement {
     return past + (todayVal || 0);
   }
 
+  // Skip redraws for other entities' updates.
+  shouldUpdate(changed) {
+    if (!this._at || Date.now() - this._at > 10 * 60e3) return true; // time to reload the history
+    return !onlyOtherStates(changed, this.hass, [...["rain_rate", "rain_hour", "rain_today", "rain_24h", "rain_event", "rain_week", "rain_month", "rain_year"].map((k) => (this.config?.entities || {})[k] || metricEntity(k, this.station, this.hass)), areaSensor(this.hass, this.config || {})]);
+  }
+
   render() {
     if (!this.hass) return nothing;
     const c = this.config || {}, s = this.station, h = this.hass;
@@ -80,7 +86,7 @@ class WsfcRain extends LitElement {
     const unit = today?.unit || (metricHA ? "mm" : "in");
     const lang = h.locale?.language;
     const dayFmt = new Intl.DateTimeFormat(lang, { weekday: "short", day: "numeric", month: "short" });
-    const show = Array.isArray(c.rows) && c.rows.length ? c.rows : DEFAULT_ROWS;
+    const show = Array.isArray(c.show_rows) && c.show_rows.length ? c.show_rows : DEFAULT_ROWS;
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
     const yearStart = new Date(now.getFullYear(), 0, 1).getTime();

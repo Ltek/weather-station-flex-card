@@ -213,7 +213,7 @@ export const PANEL_TYPES = {
       { name: "show_arc", selector: { boolean: {} }, default: true, helper: "Sun arc: the sun's path, its position now, sunrise and sunset; the moon at night." },
       { name: "show_sky", selector: { boolean: {} }, default: true, helper: "Sky gradient: daylight and cloud cover over time, with the forecast row (temperatures, icons, wind…)." },
       { name: "timeframe", selector: { select: { options: opt([["hours", "Number of hours"], ["day", "Today (midnight to midnight)"], ["sunrise_sunset", "Sunrise to sunset"]]) } }, default: "hours", helper: "One time window for the arc and the sky." },
-      { name: "hours", selector: { number: { min: 6, max: 72, mode: "box" } }, default: 24 },
+      { name: "hours", label: "Hours", selector: { number: { min: 6, max: 72, mode: "box" } }, default: 24 },
       { name: "anchor", selector: { select: { options: opt([["now_center", "Now in the middle"], ["now_left", "Now at the left"]]) } }, default: "now_center" },
       { name: "moon", selector: { boolean: {} }, default: true, helper: "Show the moon on the arc at night." },
       { name: "moon_phase", selector: { boolean: {} }, default: true, helper: "Draw the moon in its current phase (off: a moon icon)." },
@@ -307,7 +307,7 @@ export const PANEL_TYPES = {
   rain: {
     tag: "wsfc-panel-rain", label: "Rain totals", icon: "mdi:weather-rainy", span: 4, rows: 0,
     schema: [
-      { name: "rows", label: "Rows", selector: { select: { multiple: true, options: opt([["rain_rate", "Raining now (rate)"], ["rain_hour", "Last hour"], ["rain_today", "Today"], ["rain_24h", "Last 24 hours"], ["rain_event", "This rain event"], ["rain_week", "This week"], ["rain_month", "This month"], ["rain_year", "This year"], ["last_rain", "Last rain"]]) } }, helper: "In this order. Week, month and year come from Home Assistant's history when the station has no sensor for them." },
+      { name: "show_rows", label: "Rows", selector: { select: { multiple: true, options: opt([["rain_rate", "Raining now (rate)"], ["rain_hour", "Last hour"], ["rain_today", "Today"], ["rain_24h", "Last 24 hours"], ["rain_event", "This rain event"], ["rain_week", "This week"], ["rain_month", "This month"], ["rain_year", "This year"], ["last_rain", "Last rain"]]) } }, helper: "In this order. Week, month and year come from Home Assistant's history when the station has no sensor for them." },
       { name: "show_normal", label: "Against the normal", selector: { boolean: {} }, default: true, helper: "This month and year so far against the area's normal (CoAgMET or Open-Meteo)." },
       { name: "area_source", label: "Area data from", selector: { select: { options: opt([["auto", "Automatic — CoAgMET sensor, else Open-Meteo"], ["coagmet", "CoAgMET sensor only (Colorado, measured)"], ["open_meteo", "Open-Meteo only (anywhere, modelled)"], ["off", "None"]]) } }, default: "auto" },
       { name: "content_width", label: "Horizontal spacing", selector: { number: { min: 30, max: 200, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100 },
@@ -467,10 +467,10 @@ export const TITLE_WHEN_SET = new Set(["chips", "sky_tracker", "card"]);
 // Folding a panel down to its title header (per panel; the colours, title tap
 // and hint text also have card-wide defaults under Appearance).
 export const COLLAPSE_COLORS = [
-  { name: "collapsed_icon_color", label: "Collapsed icon color", selector: { text: {} }, helper: "Not set: the theme's disabled colour." },
-  { name: "collapsed_text_color", label: "Collapsed title color", selector: { text: {} }, helper: "Not set: the theme's disabled text colour." },
-  { name: "expanded_icon_color", label: "Expanded icon color", selector: { text: {} }, helper: "Not set: the theme's state icon colour." },
-  { name: "expanded_text_color", label: "Expanded title color", selector: { text: {} }, helper: "Not set: the theme's text colour." },
+  { name: "expanded_icon_color", label: "Title icon color", selector: { text: {} }, helper: "Not set: the theme's normal title icon colour." },
+  { name: "expanded_text_color", label: "Title text color", selector: { text: {} }, helper: "Not set: the theme's text colour." },
+  { name: "collapsed_icon_color", label: "Folded icon color", selector: { text: {} }, helper: "Not set: the same as the title icon colour." },
+  { name: "collapsed_text_color", label: "Folded title color", selector: { text: {} }, helper: "Not set: the same as the title text colour." },
 ];
 export const COLLAPSE_FIELDS = [
   { name: "collapsible", label: "Collapse button", selector: { boolean: {} }, default: false, helper: "Fold the panel down to its title header to save space (e.g. maps). A folded map is paused. With Remember Panel Button States, this browser remembers what you folded." },
@@ -478,7 +478,8 @@ export const COLLAPSE_FIELDS = [
   { name: "collapsed_open", label: "Opens", when: (d) => !!(d.collapsible || d.compact), selector: { select: { options: opt([["default", "Card default (Layout & Behavior)"], ["inplace", "In place — the panel grows, the others move"], ["overlay", "Over the other panels — nothing moves"], ["popup", "As a pop-up"]]) } }, default: "default" },
   { name: "collapsed_view", label: "View when collapsed", when: (d) => !!(d.collapsible || d.compact), selector: { select: { options: opt([["default", "Card default (Layout & Behavior)"], ["minimal", "Minimal — the title and a line of info"], ["compact", "Compact — one row of tiles with all the data"]]) } }, default: "default" },
   { name: "compact_expand", label: "Tap the tiles to open the full panel", when: (d) => !!(d.collapsible || d.compact) && d.collapsed_view !== "minimal", selector: { boolean: {} }, default: true, helper: "Compact view. Off: a tap on a tile opens that sensor (the fold button still opens the panel)." },
-  { name: "compact_title", label: "Show the title in the tiles row", when: (d) => !!(d.collapsible || d.compact) && d.collapsed_view !== "minimal", selector: { boolean: {} }, default: false },
+  { name: "compact_icon", label: "Show the icon in the tiles row", when: (d) => !!(d.collapsible || d.compact) && d.collapsed_view !== "minimal", selector: { boolean: {} }, default: true },
+  { name: "compact_title", label: "Show the title in the tiles row", when: (d) => !!(d.collapsible || d.compact) && d.collapsed_view !== "minimal", selector: { boolean: {} }, default: true },
   { name: "collapse_title_tap", label: "Tap the title to fold / unfold", when: (d) => !!(d.collapsible || d.compact), selector: { select: { options: opt([["default", "Card default (Appearance)"], ["on", "On"], ["off", "Off"]]) } }, default: "default" },
   { name: "show_collapse_hint", label: "Hint under the title while folded", when: (d) => d.collapsed_view !== "compact" && !!d.collapsible, selector: { select: { options: opt([["default", "Card default (Appearance)"], ["on", "Show"], ["off", "Hide"]]) } }, default: "default" },
   { name: "collapse_hint", label: "Hint text", when: (d) => d.collapsed_view !== "compact" && !!d.collapsible && d.show_collapse_hint !== "off", selector: { text: {} }, helper: "Default \"Tap title to show\"." },
@@ -650,6 +651,8 @@ export function normalizePanels(config) {
     panels = [{ type: "hero", span: 12 }, ...panels];
   }
   panels = panels.map((p) => (p.type === "hero" && config.hero && typeof config.hero === "object" && !p.flex ? { ...p, flex: config.hero } : p));
-  return panels;
+  // Rain totals' row list was `rows` (the panel height's name) before v2026.10.29.76.
+  const fix = (p) => (p?.type === "rain" && Array.isArray(p.rows) ? (({ rows, ...r }) => ({ ...r, show_rows: rows }))(p) : p);
+  return panels.map((p) => (p?.type === "stack" ? { ...p, panels: (p.panels || []).map(fix) } : fix(p)));
 }
 

@@ -194,3 +194,17 @@ export const statStyles = css`
 export function statRow(label, value, small, cls = "", onClick) {
   return html`<div class="row ${cls} ${onClick ? "click" : ""}" @click=${onClick || nothing}><span>${label}</span><b>${value}</b>${small ? html`<small>${small}</small>` : nothing}</div>`;
 }
+
+/**
+ * For shouldUpdate(): false when the only change is a new hass whose states
+ * for `ids` (and theme / locale / units) are unchanged, so a panel skips the
+ * redraws caused by other entities. `ids` may hold falsy entries.
+ */
+export function onlyOtherStates(changed, hass, ids) {
+  if (changed.size !== 1 || !changed.has("hass")) return false;
+  const old = changed.get("hass");
+  if (!old || !hass) return false;
+  if (old.themes !== hass.themes || old.locale !== hass.locale || old.config !== hass.config || old.entities !== hass.entities) return false;
+  for (const e of ids) if (e && old.states[e] !== hass.states[e]) return false;
+  return true;
+}
