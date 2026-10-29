@@ -85,12 +85,12 @@ class WsfcStack extends LitElement {
       const can = !!card && card._canCollapse(p) && card._focus == null;
       const folded = can && card._isCollapsed(p, path);
       const el = this._el(p, i);
-      if (card) card._foldDecorate(el, p, path, folded);
+      if (card) { card._foldDecorate(el, p, path, folded); el.autostart = can; }
       const toggle = () => card._toggleCollapse(p, path);
       const btn = can
         ? html`<button class="fold" type="button" @click=${(e) => { e.stopPropagation(); toggle(); }} aria-expanded=${String(!folded)}
             aria-label=${`${folded ? "Expand" : "Collapse"} ${p.title || meta.label}`} title=${folded ? "Show" : "Collapse to its title"}>
-            <ha-icon icon=${folded ? "mdi:chevron-down" : "mdi:chevron-up"}></ha-icon></button>`
+            <ha-icon icon=${card._foldIcon(p, folded)}></ha-icon></button>`
         : nothing;
       const colors = can ? card._foldColors(p, folded) : "";
       if (folded && card._viewOf(p) === "compact") {

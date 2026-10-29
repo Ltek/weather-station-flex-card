@@ -32,6 +32,7 @@ import "../panels/air-quality.js";
 import "../panels/clock.js";
 import "../panels/records.js";
 import { foldInfo } from "./fold-info.js";
+import { OPEN_ICONS_SMALL, OPEN_ICONS_FULL } from "./icons.js";
 import { activeAlerts, alertsBar, alertStyles } from "./alerts.js";
 import { COMPACT_TYPES, NEEDS_PANEL, compactTiles, compactRow, compactStyles } from "./compact.js";
 import "../panels/watch.js";
@@ -265,7 +266,7 @@ class WeatherStationFlexCard extends LitElement {
     // Tiles that open their sensors: the fold button opens the full panel.
     const ownBtn = p.compact_expand === false;
     return html`<section class="tile ${p.type} compact-tile ${ownBtn ? "own-btn" : ""} ${cls}" style=${`grid-column: span ${span};grid-row: span 1;${this._foldColors(p, true)}`} data-i=${i}>
-      ${ownBtn ? html`<button class="collapse" type="button" @click=${() => this._toggleCollapse(p, i)} aria-label=${`Expand ${title}`} title="Show"><ha-icon icon="mdi:chevron-down"></ha-icon></button>` : nothing}
+      ${ownBtn ? html`<button class="collapse" type="button" @click=${() => this._toggleCollapse(p, i)} aria-label=${`Expand ${title}`} title="Show"><ha-icon icon=${this._foldIcon(p, true)}></ha-icon></button>` : nothing}
       <div class="cwrap" style=${z !== 1 ? `zoom:${z}` : ""}>${compactRow(tiles, {
         icon: p.show_icon === false || p.compact_icon === false ? null : p.icon || meta.icon,
         title: showTitle ? title : "",
@@ -283,7 +284,7 @@ class WeatherStationFlexCard extends LitElement {
     el.toggleAttribute("title-tap", inGrid && this._canCollapse(p) && this._focus == null && !!this._collapseOpt(p, "collapse_title_tap", true));
     // Hint under the title while folded ("Tap title to show").
     const tap = this._collapseOpt(p, "collapse_title_tap", true);
-    const tip = folded && this._collapseOpt(p, "show_collapse_hint", true) ? String(this._collapseOpt(p, "collapse_hint", "") || (tap ? "Tap title to show" : "Collapsed — tap the arrow to show")) : "";
+    const tip = folded && this._collapseOpt(p, "show_collapse_hint", false) ? String(this._collapseOpt(p, "collapse_hint", "") || (tap ? "Tap title to show" : "Collapsed — tap the arrow to show")) : "";
     // Info in the folded header (e.g. strikes today), before the hint.
     const info = folded ? foldInfo(p, p.collapsed_info && p.collapsed_info !== "default" ? p.collapsed_info : this._config.collapsed_info || "summary", this.hass, this._station, el) : "";
     const hint = [info, tip].filter(Boolean).join(" · ");
@@ -299,6 +300,23 @@ class WeatherStationFlexCard extends LitElement {
     const icon = (collapsed && C("collapsed_icon_color")) || C("expanded_icon_color");
     const text = (collapsed && C("collapsed_text_color")) || C("expanded_text_color");
     return `${icon ? `--wsfc-head-icon:${icon};` : ""}${text ? `--wsfc-head-text:${text};` : ""}`;
+  }
+
+  // Icons: the small pop-over (a folded panel opening over the others) and the
+  // full-size one (expand to the whole card / pop-up), chosen in Layout & Behavior.
+  get _iconSmall() {
+    return `mdi:${OPEN_ICONS_SMALL.includes(this._config.open_icon_small) ? this._config.open_icon_small : OPEN_ICONS_SMALL[0]}`;
+  }
+
+  get _iconFull() {
+    return `mdi:${OPEN_ICONS_FULL.includes(this._config.open_icon_full) ? this._config.open_icon_full : OPEN_ICONS_FULL[0]}`;
+  }
+
+  /** The fold button's icon: how the folded panel opens, or chevron-up to fold an open one. */
+  _foldIcon(p, folded) {
+    if (!folded) return "mdi:chevron-up";
+    const m = this._openMode(p);
+    return m === "overlay" ? this._iconSmall : m === "popup" ? this._iconFull : "mdi:chevron-down";
   }
 
   _isCollapsed(p, i) {
@@ -795,7 +813,7 @@ class WeatherStationFlexCard extends LitElement {
         ${collapsible
           ? html`<button class="collapse" type="button" @click=${() => this._toggleCollapse(p, i)} aria-expanded=${String(!collapsed)}
               aria-label=${`${collapsed ? "Expand" : "Collapse"} ${p.title || this._autoTitle(p)}`} title=${collapsed ? "Show" : "Collapse to its title"}>
-              <ha-icon icon=${collapsed ? "mdi:chevron-down" : "mdi:chevron-up"}></ha-icon></button>`
+              <ha-icon icon=${this._foldIcon(p, collapsed)}></ha-icon></button>`
           : nothing}
         ${tapToOpen && !collapsed
           ? html`<button class="tap-open" type="button" aria-haspopup="dialog" aria-label=${`Open ${p.title || this._autoTitle(p)}`}
@@ -803,12 +821,12 @@ class WeatherStationFlexCard extends LitElement {
                 // The preview takes no pointer, so the title is found by position.
                 if (titleTap && e.offsetY < 52) { e.stopPropagation(); this._toggleCollapse(p, i); return; }
                 this._popup = i;
-              }}><span><ha-icon icon="mdi:arrow-expand"></ha-icon></span></button>`
+              }}><span><ha-icon icon=${this._iconFull}></ha-icon></span></button>`
           : nothing}
         ${expandable
           ? html`<button class="expand" type="button" @click=${() => (this._focus = this._focus == null ? i : null)}
               aria-label=${this._focus == null ? `Expand ${p.title || this._autoTitle(p)}` : "Back to all panels"}>
-              <ha-icon icon=${this._focus == null ? "mdi:arrow-expand" : "mdi:arrow-collapse"}></ha-icon>
+              <ha-icon icon=${this._focus == null ? this._iconFull : "mdi:arrow-collapse"}></ha-icon>
             </button>`
           : nothing}
         ${this._panelEl(p, i)}
@@ -878,6 +896,8 @@ class WeatherStationFlexCard extends LitElement {
     el.cardBg = this._animatedBg;
     // A collapsed panel is paused too (a folded map stops loading and animating).
     const folded = !popup && this._canCollapse(p) && this._focus == null && this._isCollapsed(p, i);
+    // A foldable panel only shows when the user opens it: start its animation then.
+    el.autostart = this._canCollapse(p);
     this._foldDecorate(el, p, i, folded, !popup);
     // Content size (zoom) and, for panels that use them, horizontal / vertical spacing.
     const z = Number(p.content_scale) || 100;

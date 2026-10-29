@@ -28,6 +28,7 @@ import { setUnsaved, isLive, setLive } from "../card/unsaved.js";
 import { detected } from "../card/detected.js";
 import { ANIM_SPEEDS } from "../card/animation-speed.js";
 import { canCollapseType } from "../card/weather-station-flex-card.js";
+import { OPEN_ICONS_SMALL, OPEN_ICONS_FULL } from "../card/icons.js";
 import { COMPACT_TYPES } from "../card/compact.js";
 import { metricSensor, entityValue, integrationOf } from "../card/resolve.js";
 import "./sources.js";
@@ -90,9 +91,11 @@ const LAYOUT_GROUPS = [
   ["Collapsed panels", [
     { name: "collapsed_view", label: "Default view when collapsed", selector: { select: { options: [{ value: "minimal", label: "Minimal — the title and a line of info (e.g. 7 strikes today)" }, { value: "compact", label: "Compact — one row of tiles with all the data" }] } }, default: "minimal", helper: "For panels with Collapse button on; panels without a tiles view use Minimal. Each panel can override it — Convert all now clears those overrides." },
     { name: "collapsed_open", label: "A folded panel opens", selector: { select: { options: [{ value: "auto", label: "Automatic — over the other panels in full screen or Auto-fit, else in place" }, { value: "inplace", label: "In place — the panel grows, the others move" }, { value: "overlay", label: "Over the other panels — nothing moves; tap outside or Esc to close" }, { value: "popup", label: "As a pop-up" }] } }, default: "auto", helper: "Each panel can override this (Collapse → Opens)." },
+    { name: "open_icon_small", label: "Small pop-over icon", selector: { select: { options: OPEN_ICONS_SMALL.map((v, k) => ({ value: v, label: `mdi:${v}${k ? "" : " (default)"}` })) } }, default: OPEN_ICONS_SMALL[0], helper: "On a folded panel that opens over the others." },
+    { name: "open_icon_full", label: "Full-size icon", selector: { select: { options: OPEN_ICONS_FULL.map((v, k) => ({ value: v, label: `mdi:${v}${k ? "" : " (default)"}` })) } }, default: OPEN_ICONS_FULL[0], helper: "Expand to the whole card, tap-to-open tiles and panels that open as a pop-up." },
     { name: "collapse_title_tap", label: "Tap the title to fold / unfold", selector: { boolean: {} }, default: true, helper: "For panels with Collapse button on (each panel can override this)." },
-    { name: "show_collapse_hint", label: "Hint under the title while folded", selector: { boolean: {} }, default: true },
-    { name: "collapse_hint", label: "Hint text", when: (d) => d.show_collapse_hint !== false, selector: { text: {} }, helper: "Default \"Tap title to show\"." },
+    { name: "show_collapse_hint", label: "Hint under the title while folded", selector: { boolean: {} }, default: false, helper: "e.g. \"Tap title to show\" (off by default: the open button already says it)." },
+    { name: "collapse_hint", label: "Hint text", when: (d) => !!d.show_collapse_hint, selector: { text: {} }, helper: "Default \"Tap title to show\"." },
     { name: "collapsed_info", label: "Info in the header while folded", selector: { select: { options: [{ value: "summary", label: "The panel's summary (e.g. strikes today, rain today)" }, { value: "off", label: "None" }] } }, default: "summary" },
     ...COLLAPSE_COLORS,
   ]],
@@ -935,7 +938,7 @@ class WeatherStationFlexCardEditor extends LitElement {
       collapsed_view: () => (C.collapsed_view === "compact" ? "Compact" : "Minimal"),
       collapsed_open: () => ({ inplace: "In place", overlay: "Over the other panels", popup: "As a pop-up" })[C.collapsed_open] || (C.layout === "fullscreen" || C.auto_fit ? "Automatic: over the other panels" : "Automatic: in place"),
       collapse_title_tap: () => (C.collapse_title_tap === false ? "Off" : "On"),
-      show_collapse_hint: () => (C.show_collapse_hint === false ? "Hide" : "Show"),
+      show_collapse_hint: () => (C.show_collapse_hint ? "Show" : "Hide"),
       collapsed_info: () => (C.collapsed_info === "off" ? "None" : "The panel's summary"),
       overflow: () => (strictish || C.panel_overflow === "scroll" ? "Scroll" : "Grow"),
     };

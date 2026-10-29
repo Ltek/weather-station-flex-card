@@ -43,6 +43,8 @@ class WsfcRadar extends LitElement {
     config: { attribute: false },
     station: { attribute: false },
     lite: { attribute: false }, // editing: placeholder instead of the live map
+    // Set by the card for a panel the user unfolds: play then, despite Start paused.
+    autostart: { attribute: false },
     _playing: { state: true },
     _frameLabel: { state: true },
     _overlay: { state: true },
@@ -84,7 +86,7 @@ class WsfcRadar extends LitElement {
     const overlay = this._overlay ?? this.config?.owm_default ?? "none";
     if (this._playing === undefined) {
       // Start paused: only the latest frame is loaded until play is pressed.
-      this._playing = !this.config?.start_paused;
+      this._playing = !!this.autostart || !this.config?.start_paused;
       this._lean = !this._playing;
     }
     if (this.lite) return html`${head(this.config, this._radarOn ? "mdi:radar" : "mdi:map", this._radarOn ? "Radar" : "Map")}${paused(this._radarOn ? "mdi:radar" : "mdi:map", this._radarOn ? "Radar loop" : "Map")}`;
@@ -135,7 +137,11 @@ class WsfcRadar extends LitElement {
   updated(changed) {
     if (changed.has("lite") && changed.get("lite") !== undefined) {
       if (this.lite) this._teardown();
-      else if (!this._map) this._initMap();
+      else {
+        // Unfolded by the user: play the whole loop.
+        if (this.autostart && !this._playing) { this._playing = true; this._lean = false; }
+        if (!this._map) this._initMap();
+      }
     }
     if (changed.has("hass")) {
       const dark = !!this.hass?.themes?.darkMode;

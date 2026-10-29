@@ -36,7 +36,7 @@ export function windyUrl(c, hass) {
 }
 
 class WsfcWindMap extends LitElement {
-  static properties = { hass: { attribute: false }, config: { attribute: false }, station: { attribute: false }, lite: { attribute: false }, _on: { state: true } };
+  static properties = { hass: { attribute: false }, config: { attribute: false }, station: { attribute: false }, lite: { attribute: false }, autostart: { attribute: false }, _on: { state: true } };
   static styles = [
     panelStyles,
     pausedStyles,
@@ -62,9 +62,12 @@ class WsfcWindMap extends LitElement {
     const url = windyUrl(c, this.hass);
     if (url !== this._url) this._url = url;
     // Start paused: nothing loads until play; the stop button unloads it again.
-    if (this._on === undefined) this._on = !c.start_paused;
+    if (this._on === undefined) this._on = !!this.autostart || !c.start_paused;
+    // Unfolded by the user (it was paused while folded): load the map.
+    if (this.autostart && !this.lite && this._wasLite) this._on = true;
+    this._wasLite = !!this.lite;
     const name = `${WINDY_OVERLAYS[c.overlay || "wind"] || "Wind"} map`;
-    const stop = c.start_paused && this._on
+    const stop = c.start_paused && this._on && !this.lite
       ? html`<button class="stop" type="button" @click=${() => (this._on = false)} aria-label="Stop the Windy map" title="Stop"><ha-icon icon="mdi:stop"></ha-icon></button>`
       : nothing;
     const title = head(c, "mdi:weather-windy", c.title || name, stop);

@@ -1,5 +1,12 @@
 # Changelog
 
+## v2026.10.29.77
+
+- **Opening a folded panel starts its animation:** a folded Radar or Windy map with Start paused plays (the whole radar loop / the live map) when you open it — over the others, in place or as a pop-up.
+- **Open icons:** a folded panel that opens over the others shows a small pop-over icon (default `mdi:picture-in-picture-top-right`; or open-in-new, resize, image-size-select-large, dock-window); expanding to full size, tap-to-open tiles and panels opening as a pop-up show the full-size icon (default `mdi:fullscreen`; or arrow-expand-all). Panels that open in place keep the chevron. Layout & Behavior → Collapsed panels → Small pop-over icon / Full-size icon.
+- **"Tap title to show" is off by default** (the open icon already says it); turn it on in Layout & Behavior or per panel.
+- A folded Windy map no longer shows its stop button.
+
 ## v2026.10.29.76
 
 **Faster on tablets**
