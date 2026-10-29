@@ -1,5 +1,9 @@
 # Changelog
 
+## v2026.10.29.79
+
+- **Vertical stacks spread their panels over spare height** (e.g. compact rows of tiles in a tall stack) instead of leaving it all at the bottom. Stack options → **Spare height**: Spread the panels out evenly (default), Centre them, or Keep them at the top.
+
 ## v2026.10.29.78
 
 - **Full-size icon defaults to `mdi:arrow-expand` again** (fullscreen and arrow-expand-all are the alternatives).

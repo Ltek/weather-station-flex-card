@@ -43,6 +43,9 @@ class WsfcStack extends LitElement {
       :host { display: flex; gap: var(--wsfc-gap, 12px); min-height: 0; height: 100%; }
       :host([direction="horizontal"]) { flex-direction: row; flex-wrap: wrap; align-items: stretch; }
       :host([direction="vertical"]) { flex-direction: column; }
+      /* Spare height (compact rows in a tall stack): spread out, centred or at the top. */
+      :host([direction="vertical"][spacing="spread"]) { justify-content: space-evenly; }
+      :host([direction="vertical"][spacing="center"]) { justify-content: center; }
       .tile { min-width: 0; }
       :host([direction="horizontal"]) .tile { flex: var(--grow, 1) 1 var(--basis, var(--wsfc-stack-min, 180px)); }
       :host([direction="vertical"]) .tile { flex: var(--grow, 0) 1 auto; }
@@ -57,6 +60,7 @@ class WsfcStack extends LitElement {
 
   updated() {
     this.setAttribute("direction", this.config?.direction === "vertical" ? "vertical" : "horizontal");
+    this.setAttribute("spacing", ["center", "top"].includes(this.config?.spacing) ? this.config.spacing : "spread");
     const min = this.config?.min_width;
     this.style.setProperty("--wsfc-stack-min", min ? `${min}px` : "");
   }
