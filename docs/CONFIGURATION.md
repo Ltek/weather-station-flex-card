@@ -102,8 +102,10 @@ With no `panels:` the card shows its default dashboard (hero, bulletin, Sky Trac
 |---|---|---|---|
 | `collapsed_view` | `minimal` · `compact` | `minimal` | **Default view when collapsed** — For panels with Collapse button on; panels without a tiles view use Minimal. Each panel can override it — Convert all now clears those overrides. |
 | `collapsed_open` | `auto` · `inplace` · `overlay` · `popup` | `auto` | **A folded panel opens** — Each panel can override this (Collapse → Opens). |
+| `open_icon_small` | `picture-in-picture-top-right` · `open-in-new` · `resize` · `image-size-select-large` · `dock-window` | `picture-in-picture-top-right` | **Small pop-over icon** — On a folded panel that opens over the others. |
+| `open_icon_full` | `fullscreen` · `arrow-expand-all` | `fullscreen` | **Full-size icon** — Expand to the whole card, tap-to-open tiles and panels that open as a pop-up. |
 | `collapse_title_tap` | `true` / `false` | `true` | **Tap the title to fold / unfold** — For panels with Collapse button on (each panel can override this). |
-| `show_collapse_hint` | `true` / `false` | `true` | **Hint under the title while folded** |
+| `show_collapse_hint` | `true` / `false` | `false` | **Hint under the title while folded** — e.g. "Tap title to show" (off by default: the open button already says it). |
 | `collapse_hint` | text |  | **Hint text** — Default "Tap title to show". |
 | `collapsed_info` | `summary` · `off` | `summary` | **Info in the header while folded** |
 | `expanded_icon_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Title icon color** — Not set: the theme's normal title icon colour. |
