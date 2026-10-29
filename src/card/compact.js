@@ -209,18 +209,20 @@ export function compactTiles(p, hass, station, el) {
 }
 
 export const compactStyles = css`
-  .compact { display: flex; align-items: center; gap: calc(6px * var(--wsfc-sx, 1)); min-width: 0; overflow-x: auto; scrollbar-width: none; }
+  /* --ck: content size (1 = normal); a vertical stack raises it to fill its height. */
+  .compact { --ck: 1; display: flex; align-items: center; gap: calc(6px * var(--ck) * var(--wsfc-sx, 1)); min-width: 0; overflow-x: auto; scrollbar-width: none; }
   .compact::-webkit-scrollbar { display: none; }
   .compact.tap { cursor: pointer; }
-  .compact > ha-icon { --mdc-icon-size: 20px; color: var(--wsfc-head-icon, var(--secondary-text-color)); flex: 0 0 auto; margin-right: 2px; }
-  .compact > .ct { font-size: 13px; font-weight: 500; white-space: nowrap; flex: 0 0 auto; margin-right: 4px; }
-  .ctile { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; padding: calc(4px * var(--wsfc-sy, 1)) calc(10px * var(--wsfc-sx, 1)) calc(4px * var(--wsfc-sy, 1)) calc(8px * var(--wsfc-sx, 1));
-    border-radius: 10px; background: rgba(127, 127, 127, 0.1); line-height: 1.15; }
-  .ctile .dot { width: 9px; height: 9px; border-radius: 50%; flex: 0 0 auto; background: var(--c); }
-  .ctile .n { display: block; font-size: 10px; color: var(--secondary-text-color); white-space: nowrap; }
-  .ctile .v { display: block; font-size: 14px; font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; }
-  .ctile .v small { font-size: 11px; font-weight: 400; color: var(--secondary-text-color); margin-left: 3px; }
-  .compact .empty { font-size: 12px; color: var(--secondary-text-color); }
+  .compact > ha-icon { --mdc-icon-size: calc(20px * var(--ck)); color: var(--wsfc-head-icon, var(--secondary-text-color)); flex: 0 0 auto; margin-right: calc(2px * var(--ck)); }
+  .compact > .ct { font-size: calc(13px * var(--ck)); font-weight: 500; white-space: nowrap; flex: 0 0 auto; margin-right: calc(4px * var(--ck)); }
+  .ctile { display: flex; align-items: center; gap: calc(6px * var(--ck)); flex: 0 0 auto;
+    padding: calc(4px * var(--ck) * var(--wsfc-sy, 1)) calc(10px * var(--ck) * var(--wsfc-sx, 1)) calc(4px * var(--ck) * var(--wsfc-sy, 1)) calc(8px * var(--ck) * var(--wsfc-sx, 1));
+    border-radius: calc(10px * var(--ck)); background: rgba(127, 127, 127, 0.1); line-height: 1.15; }
+  .ctile .dot { width: calc(9px * var(--ck)); height: calc(9px * var(--ck)); border-radius: 50%; flex: 0 0 auto; background: var(--c); }
+  .ctile .n { display: block; font-size: calc(10px * var(--ck)); color: var(--secondary-text-color); white-space: nowrap; }
+  .ctile .v { display: block; font-size: calc(14px * var(--ck)); font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .ctile .v small { font-size: calc(11px * var(--ck)); font-weight: 400; color: var(--secondary-text-color); margin-left: calc(3px * var(--ck)); }
+  .compact .empty { font-size: calc(12px * var(--ck)); color: var(--secondary-text-color); }
 `;
 
 /** The compact row. onTap: open the full panel; else a tile opens its entity. */

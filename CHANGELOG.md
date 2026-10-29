@@ -1,5 +1,9 @@
 # Changelog
 
+## v2026.10.29.80
+
+- **Compact rows in a vertical stack grow to fill it.** The rows share the stack's height and their tiles get larger until the widest row runs out of room, all rows at the same size, so the data is easier to read from across the room. Stack options → Spare height has a new default, **Grow compact rows to fill it**. The other choices (spread, centre, top) keep the normal size. **Largest compact size** (100–400 %, default 250 %) sets a limit.
+
 ## v2026.10.29.79
 
 - **Vertical stacks spread their panels over spare height** (e.g. compact rows of tiles in a tall stack) instead of leaving it all at the bottom. Stack options → **Spare height**: Spread the panels out evenly (default), Centre them, or Keep them at the top.

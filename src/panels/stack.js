@@ -46,6 +46,9 @@ class WsfcStack extends LitElement {
       /* Spare height (compact rows in a tall stack): spread out, centred or at the top. */
       :host([direction="vertical"][spacing="spread"]) { justify-content: space-evenly; }
       :host([direction="vertical"][spacing="center"]) { justify-content: center; }
+      /* Fill: compact rows share the spare height and their tiles grow to fill it (see _fitCompact). */
+      :host([direction="vertical"][spacing="fill"]) .tile.ctile-row { flex: 1 1 0 !important; min-height: 0; overflow: hidden; padding-top: 4px; padding-bottom: 4px; }
+      :host([direction="vertical"][spacing="fill"]) .tile.ctile-row .compact { flex-wrap: wrap; overflow: hidden; row-gap: calc(6px * var(--ck)); }
       .tile { min-width: 0; }
       :host([direction="horizontal"]) .tile { flex: var(--grow, 1) 1 var(--basis, var(--wsfc-stack-min, 180px)); }
       :host([direction="vertical"]) .tile { flex: var(--grow, 0) 1 auto; }
@@ -60,9 +63,49 @@ class WsfcStack extends LitElement {
 
   updated() {
     this.setAttribute("direction", this.config?.direction === "vertical" ? "vertical" : "horizontal");
-    this.setAttribute("spacing", ["center", "top"].includes(this.config?.spacing) ? this.config.spacing : "spread");
+    const sp = this.config?.direction === "vertical" && ["spread", "center", "top"].includes(this.config?.spacing) ? this.config.spacing : "fill";
+    this.setAttribute("spacing", sp);
     const min = this.config?.min_width;
     this.style.setProperty("--wsfc-stack-min", min ? `${min}px` : "");
+    this._fitCompact();
+  }
+
+  connectedCallback() {
+    super.connectedCallback();
+    this._ro ||= new ResizeObserver(() => this._fitCompact());
+    this._ro.observe(this);
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    this._ro?.disconnect();
+  }
+
+  // Spare height "fill": make the compact rows' tiles as large as fits (the same size in every
+  // row, up to compact_max_scale), wrapping a row's tiles onto a second line when that helps.
+  _fitCompact() {
+    cancelAnimationFrame(this._fitRaf);
+    this._fitRaf = requestAnimationFrame(() => {
+      const rows = [...this.shadowRoot.querySelectorAll(".tile.ctile-row .compact")];
+      const on = this.getAttribute("spacing") === "fill" && this.getAttribute("direction") === "vertical";
+      if (!on || !rows.length) { rows.forEach((r) => r.style.removeProperty("--ck")); return; }
+      const max = Math.max(1, Math.min(4, Number(this.config?.compact_max_scale ?? 250) / 100));
+      const fits = (r, k) => {
+        r.style.setProperty("--ck", k);
+        const box = r.parentElement, cs = getComputedStyle(box);
+        const h = box.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+        return r.scrollHeight <= h + 1 && r.scrollWidth <= r.clientWidth + 1;
+      };
+      let k = max;
+      for (const r of rows) {
+        if (fits(r, k)) continue;
+        let lo = 1, hi = k;
+        for (let n = 0; n < 7; n++) { const m = (lo + hi) / 2; if (fits(r, m)) lo = m; else hi = m; }
+        k = lo;
+      }
+      k = Math.floor(k * 20) / 20;
+      rows.forEach((r) => r.style.setProperty("--ck", k));
+    });
   }
 
   render() {
