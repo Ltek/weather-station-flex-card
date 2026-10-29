@@ -1,5 +1,9 @@
 # Changelog
 
+## v2026.10.29.75
+
+- **Wind: chart as a pop-over.** Wind options → Chart → **Show the chart: As a pop-over**: the panel shows just the compass or rose, and a chart button in its header opens the 24 h speed and gust chart over the panel (tap outside, the button or Esc closes it). **Pop-over height** slider (default 220 px).
+
 ## v2026.10.28.74
 
 - **A folded panel can open over the others.** Layout & Behavior → Collapsed panels → **A folded panel opens**: Automatic (over the other panels in full screen or Auto-fit, else in place), In place, **Over the other panels** (anchored to the panel's own place and width, growing down — or up near the bottom of the screen; tap outside, the ✕ or Esc to close; nothing else moves) or As a pop-up. Each panel can override it (Collapse → Opens), stacked panels too.

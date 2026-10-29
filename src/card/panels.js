@@ -112,7 +112,9 @@ export const PANEL_TYPES = {
       ]],
       ["Chart", "mdi:chart-line", [
         { name: "show_chart", label: "Show the chart", selector: { boolean: {} }, default: true, helper: "24 h speed and gust chart." },
-        { name: "chart_position", when: (d) => d.show_chart !== false, selector: { select: { options: opt([["below", "Below"], ["above", "Above"]]) } }, default: "below" },
+        { name: "chart_mode", label: "Show the chart", when: (d) => d.show_chart !== false, selector: { select: { options: opt([["inline", "In the panel"], ["popover", "As a pop-over — a chart button in the header opens it over the panel"]]) } }, default: "inline", helper: "Pop-over: the panel shows just the compass or rose; the chart opens on demand (tap outside, the button or Esc closes it)." },
+        { name: "chart_popover_height", label: "Pop-over height", when: (d) => d.show_chart !== false && d.chart_mode === "popover", selector: { number: { min: 120, max: 500, step: 10, mode: "slider", unit_of_measurement: "px" } }, default: 220 },
+        { name: "chart_position", when: (d) => d.show_chart !== false && d.chart_mode !== "popover", selector: { select: { options: opt([["below", "Below"], ["above", "Above"]]) } }, default: "below" },
         { name: "chart_legend", when: (d) => d.show_chart !== false, selector: { boolean: {} }, default: false, helper: "Speed / Gust legend on the chart." },
         { name: "windrose_chart", when: (d) => d.show_chart !== false, selector: { boolean: {} }, default: true, helper: "Also with the Wind Rose Card." },
       ]],

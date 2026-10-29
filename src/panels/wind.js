@@ -38,6 +38,7 @@ class WsfcWind extends LitElement {
     _view: { state: true },
     _rose: { state: true },
     _error: { state: true },
+    _chartOpen: { state: true },
   };
   static styles = [
     panelStyles,
@@ -61,6 +62,21 @@ class WsfcWind extends LitElement {
       .unit { fill: var(--secondary-text-color); font-size: 11px; text-anchor: middle; }
       .ptr { fill: var(--wsfc-wind); transition: transform .8s ease; }
       .wr { min-height: 0; position: relative; }
+      :host { position: relative; }
+      .chart-btn { display: inline-grid; place-items: center; width: 32px; height: 32px; padding: 0; margin-left: 6px; border: 0; border-radius: 50%; cursor: pointer;
+        background: rgba(127, 127, 127, 0.15); color: var(--primary-text-color); flex: 0 0 auto; }
+      .chart-btn.on { background: var(--primary-color); color: var(--text-primary-color, #fff); }
+      .chart-btn ha-icon { --mdc-icon-size: 18px; }
+      .chart-btn:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 2px; }
+      /* The chart pop-over: over the panel, under its header. */
+      .pop-scrim { position: absolute; inset: 0; z-index: 4; }
+      .chart-pop { position: absolute; left: 0; right: 0; top: 44px; z-index: 5; display: flex; flex-direction: column; gap: 4px;
+        height: max(150px, min(var(--wsfc-wind-pop-h, 220px), calc(100% - 48px))); padding: 8px 10px 10px; box-sizing: border-box; border-radius: 12px;
+        background: var(--ha-card-background, var(--card-background-color, #1c1c1c)); box-shadow: 0 8px 26px rgba(0, 0, 0, 0.5);
+        border: 1px solid var(--divider-color, rgba(127, 127, 127, 0.35)); }
+      .pop-h { font-size: 12px; color: var(--wsfc-muted); }
+      .pop-body { flex: 1 1 auto; min-height: 0; position: relative; }
+      .pop-body canvas { position: absolute; inset: 0; }
       .wr-stage { position: absolute; inset: 0; visibility: hidden; pointer-events: none; overflow: hidden; }
       /* Fit mode: the chart is a fixed strip and the rose / dial takes what's left. */
       :host([fit]) .body { flex: 0 0 auto; height: var(--wsfc-wind-chart-h, 110px); min-height: 0; }
@@ -99,7 +115,22 @@ class WsfcWind extends LitElement {
     </div>`;
     const legend = view === "rose" && !wr && c.show_legend !== false ? this._roseLegend(unit) : "";
     const chartTop = c.chart_position === "above";
-    const chart = c.show_chart === false || (wr && c.windrose_chart === false) ? "" : html`<div class="body ${chartTop ? "above" : ""}"><canvas aria-label="Wind speed and gust history"></canvas></div>`;
+    const hasChart = !(c.show_chart === false || (wr && c.windrose_chart === false));
+    // Chart as a pop-over: a header button opens it over the panel.
+    const pop = hasChart && c.chart_mode === "popover";
+    const chart = !hasChart || pop ? "" : html`<div class="body ${chartTop ? "above" : ""}"><canvas aria-label="Wind speed and gust history"></canvas></div>`;
+    const chartBtn = pop
+      ? html`<button class="chart-btn ${this._chartOpen ? "on" : ""}" type="button" @click=${(e) => { e.stopPropagation(); this._toggleChart(); }}
+          aria-expanded=${String(!!this._chartOpen)} aria-label=${this._chartOpen ? "Close the wind chart" : "Open the wind chart"} title="Wind chart (24 h)">
+          <ha-icon icon=${this._chartOpen ? "mdi:close" : "mdi:chart-line"}></ha-icon></button>`
+      : "";
+    const popover = pop && this._chartOpen
+      ? html`<div class="pop-scrim" @click=${() => this._toggleChart(false)}></div>
+          <div class="chart-pop" role="dialog" style=${c.chart_popover_height ? `--wsfc-wind-pop-h:${Number(c.chart_popover_height)}px` : ""} aria-label="Wind speed and gust, last 24 hours" @click=${(e) => e.stopPropagation()}>
+            <div class="pop-h"><span>Wind · last 24 h</span></div>
+            <div class="pop-body"><canvas aria-label="Wind speed and gust history"></canvas></div>
+          </div>`
+      : "";
     let main;
     if (wr) {
       const ids = this._ids();
@@ -121,14 +152,27 @@ class WsfcWind extends LitElement {
         : html`<div class="top center">${dial}</div>${legend ? html`<div class="side">${legend}</div>` : ""}`;
     }
     return html`
-      ${head(c, "mdi:weather-windy", "Wind", buttons)}
+      ${head(c, "mdi:weather-windy", "Wind", html`${buttons}${chartBtn}`)}
       ${chartTop ? chart : ""}
       ${rp === "above" ? readings : ""}
       ${main}
       ${rp === "below" || (rp === "side" && wr) ? readings : ""}
       ${chartTop ? "" : chart}
       ${this._error ? html`<div class="note">${this._error}</div>` : ""}
+      ${popover}
     `;
+  }
+
+  _toggleChart(open = !this._chartOpen) {
+    this._chartOpen = open;
+    if (!open) { this._chart?.destroy(); this._chart = null; }
+    if (open && !this._escKey) {
+      this._escKey = (e) => e.key === "Escape" && (e.stopPropagation(), this._toggleChart(false));
+      window.addEventListener("keydown", this._escKey, true);
+    } else if (!open && this._escKey) {
+      window.removeEventListener("keydown", this._escKey, true);
+      this._escKey = null;
+    }
   }
 
   connectedCallback() {
@@ -247,6 +291,9 @@ class WsfcWind extends LitElement {
       this._load(ids).catch((e) => (this._error = `History unavailable: ${e?.message || e}`));
     }
     if (this._pendingDraw && this.renderRoot.querySelector("canvas")) this._drawChart(this._pendingDraw);
+    // The pop-over's canvas is new each time it opens: draw the last data into it.
+    const cv = this.renderRoot.querySelector("canvas");
+    if (cv && this._lastDraw && (!this._chart || this._chart.canvas !== cv)) this._drawChart(this._lastDraw);
   }
 
   // Fit mode: the panel has a fixed height. Size the rose / dial (it sizes from
@@ -298,6 +345,8 @@ class WsfcWind extends LitElement {
     this._chart?.destroy();
     this._chart = null;
     this._loadedKey = "";
+    if (this._escKey) { window.removeEventListener("keydown", this._escKey, true); this._escKey = null; }
+    this._chartOpen = false;
   }
 
   async _load(ids) {
@@ -317,6 +366,7 @@ class WsfcWind extends LitElement {
     const canvas = this.renderRoot.querySelector("canvas");
     if (!canvas) return;
     this._pendingDraw = null;
+    this._lastDraw = d;
     const cs = getComputedStyle(this);
     const wind = cs.getPropertyValue("--wsfc-wind").trim() || "#42a5f5";
     const gust = cs.getPropertyValue("--wsfc-gust").trim() || "#ff9800";
