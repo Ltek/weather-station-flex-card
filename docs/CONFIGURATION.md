@@ -580,7 +580,8 @@ Default size: 12 of 12 wide, fits its content.
 | Option | Value | Default | What it does |
 |---|---|---|---|
 | `direction` | `horizontal` · `vertical` | `horizontal` | **Direction** |
-| `spacing` | `spread` · `center` · `top` | `spread` | **Spare height** — When the stack is taller than its panels (e.g. compact rows of tiles): where the spare height goes. |
+| `spacing` | `fill` · `spread` · `center` · `top` | `fill` | **Spare height** — When the stack is taller than its panels (e.g. compact rows of tiles): where the spare height goes. |
+| `compact_max_scale` | number 100–400 % | `250` | **Largest compact size** — How large compact rows may grow (they also stop when the widest row runs out of room). |
 | `min_width` | number 80–800 px |  | **Minimum width** — Horizontal: children wrap to a new line only below this width (default 180). |
 
 ### Station graph — `type: statistics`
