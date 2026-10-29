@@ -87,6 +87,15 @@ With no `panels:` the card shows its default dashboard (hero, bulletin, Sky Trac
 | `row_height` | number 40–300 px |  | **Row height** — Height of one row unit (default 110). |
 | `gap` | number 0–32 px |  | **Gap** — Space between panels (default 12). |
 
+### Alerts bar
+
+| Option | Value | Default | What it does |
+|---|---|---|---|
+| `alerts_bar` | `true` / `false` | `false` | **Alerts bar** — A thin row at the top that appears only while something needs attention: heat or frost (the Frost & heat watch rules), lightning within 10 miles in the last 30 minutes, and weather alerts. Tap one to open its panel. |
+| `alerts_watch` | `true` / `false` | `true` | **Heat and frost** |
+| `alerts_lightning` | `true` / `false` | `true` | **Lightning nearby** |
+| `alerts_entity` | entity id (`sensor.*`) |  | **Weather alerts sensor** — Optional, e.g. the NWS Alerts integration's sensor (its Alerts attribute). |
+
 ### Collapsed panels
 
 | Option | Value | Default | What it does |
@@ -97,10 +106,10 @@ With no `panels:` the card shows its default dashboard (hero, bulletin, Sky Trac
 | `show_collapse_hint` | `true` / `false` | `true` | **Hint under the title while folded** |
 | `collapse_hint` | text |  | **Hint text** — Default "Tap title to show". |
 | `collapsed_info` | `summary` · `off` | `summary` | **Info in the header while folded** |
-| `collapsed_icon_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Collapsed icon color** — Not set: the theme's disabled colour. |
-| `collapsed_text_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Collapsed title color** — Not set: the theme's disabled text colour. |
-| `expanded_icon_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Expanded icon color** — Not set: the theme's state icon colour. |
-| `expanded_text_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Expanded title color** — Not set: the theme's text colour. |
+| `expanded_icon_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Title icon color** — Not set: the theme's normal title icon colour. |
+| `expanded_text_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Title text color** — Not set: the theme's text colour. |
+| `collapsed_icon_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Folded icon color** — Not set: the same as the title icon colour. |
+| `collapsed_text_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Folded title color** — Not set: the same as the title text colour. |
 
 ### Panel buttons
 
@@ -125,17 +134,18 @@ Where the buttons go: `panel_bar: false` hides the bar; a Button Menu panel (`he
 | `collapsed_open` | `default` · `inplace` · `overlay` · `popup` | `default` | **Opens** |
 | `collapsed_view` | `default` · `minimal` · `compact` | `default` | **View when collapsed** |
 | `compact_expand` | `true` / `false` | `true` | **Tap the tiles to open the full panel** — Compact view. Off: a tap on a tile opens that sensor (the fold button still opens the panel). |
-| `compact_title` | `true` / `false` | `false` | **Show the title in the tiles row** |
+| `compact_icon` | `true` / `false` | `true` | **Show the icon in the tiles row** |
+| `compact_title` | `true` / `false` | `true` | **Show the title in the tiles row** |
 | `collapse_title_tap` | `default` · `on` · `off` | `default` | **Tap the title to fold / unfold** |
 | `show_collapse_hint` | `default` · `on` · `off` | `default` | **Hint under the title while folded** |
 | `collapse_hint` | text |  | **Hint text** — Default "Tap title to show". |
 | `collapsed_info` | `default` · `summary` · `entity` · `off` | `default` | **Info in the header while folded** |
 | `collapsed_entity` | entity id |  | **Entity to show** — Its value in the folded header (used by "An entity's value", and instead of the summary when set). |
 | `collapsed_label` | text |  | **Label before the value** |
-| `collapsed_icon_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Collapsed icon color** — Not set: the theme's disabled colour. |
-| `collapsed_text_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Collapsed title color** — Not set: the theme's disabled text colour. |
-| `expanded_icon_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Expanded icon color** — Not set: the theme's state icon colour. |
-| `expanded_text_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Expanded title color** — Not set: the theme's text colour. |
+| `expanded_icon_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Title icon color** — Not set: the theme's normal title icon colour. |
+| `expanded_text_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Title text color** — Not set: the theme's text colour. |
+| `collapsed_icon_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Folded icon color** — Not set: the same as the title icon colour. |
+| `collapsed_text_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Folded title color** — Not set: the same as the title text colour. |
 | `show_title` | `true` / `false` | `true` | **Show the title** |
 | `title` | text |  | **Title** |
 | `show_icon` | `true` / `false` | `true` | **Show the title icon** |
@@ -163,17 +173,18 @@ Panels inside a `stack` have no grid place of their own; they take:
 | `collapsed_open` | `default` · `inplace` · `overlay` · `popup` | `default` | **Opens** |
 | `collapsed_view` | `default` · `minimal` · `compact` | `default` | **View when collapsed** |
 | `compact_expand` | `true` / `false` | `true` | **Tap the tiles to open the full panel** — Compact view. Off: a tap on a tile opens that sensor (the fold button still opens the panel). |
-| `compact_title` | `true` / `false` | `false` | **Show the title in the tiles row** |
+| `compact_icon` | `true` / `false` | `true` | **Show the icon in the tiles row** |
+| `compact_title` | `true` / `false` | `true` | **Show the title in the tiles row** |
 | `collapse_title_tap` | `default` · `on` · `off` | `default` | **Tap the title to fold / unfold** |
 | `show_collapse_hint` | `default` · `on` · `off` | `default` | **Hint under the title while folded** |
 | `collapse_hint` | text |  | **Hint text** — Default "Tap title to show". |
 | `collapsed_info` | `default` · `summary` · `entity` · `off` | `default` | **Info in the header while folded** |
 | `collapsed_entity` | entity id |  | **Entity to show** — Its value in the folded header (used by "An entity's value", and instead of the summary when set). |
 | `collapsed_label` | text |  | **Label before the value** |
-| `collapsed_icon_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Collapsed icon color** — Not set: the theme's disabled colour. |
-| `collapsed_text_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Collapsed title color** — Not set: the theme's disabled text colour. |
-| `expanded_icon_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Expanded icon color** — Not set: the theme's state icon colour. |
-| `expanded_text_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Expanded title color** — Not set: the theme's text colour. |
+| `expanded_icon_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Title icon color** — Not set: the theme's normal title icon colour. |
+| `expanded_text_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Title text color** — Not set: the theme's text colour. |
+| `collapsed_icon_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Folded icon color** — Not set: the same as the title icon colour. |
+| `collapsed_text_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Folded title color** — Not set: the same as the title text colour. |
 | `show_title` | `true` / `false` | `true` | **Show the title** |
 | `title` | text |  | **Title** |
 | `show_icon` | `true` / `false` | `true` | **Show the title icon** |
@@ -450,7 +461,7 @@ Default size: 2 of 12 wide, 2 rows high.
 | `color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Color** — Not set: the metric's color. |
 | `digits` | number 0–3 |  | **Decimals** |
 | `chart` | `line` · `bar` · `none` |  | **Sparkline** |
-| `hours` | number 1–168 |  | **Hours** — Sparkline hours (default 24). |
+| `hours` | number 1–168 |  | **Sparkline hours** — Sparkline hours (default 24). |
 | `show_minmax` | `true` / `false` | `true` | **Show today's min/max** |
 
 ### Moon — `type: moon`
@@ -514,7 +525,7 @@ Default size: 4 of 12 wide, fits its content.
 
 | Option | Value | Default | What it does |
 |---|---|---|---|
-| `rows` | list of: `rain_rate` · `rain_hour` · `rain_today` · `rain_24h` · `rain_event` · `rain_week` · `rain_month` · `rain_year` · `last_rain` |  | **Rows** — In this order. Week, month and year come from Home Assistant's history when the station has no sensor for them. |
+| `show_rows` | list of: `rain_rate` · `rain_hour` · `rain_today` · `rain_24h` · `rain_event` · `rain_week` · `rain_month` · `rain_year` · `last_rain` |  | **Rows** — In this order. Week, month and year come from Home Assistant's history when the station has no sensor for them. |
 | `show_normal` | `true` / `false` | `true` | **Against the normal** — This month and year so far against the area's normal (CoAgMET or Open-Meteo). |
 | `area_source` | `auto` · `coagmet` · `open_meteo` · `off` | `auto` | **Area data from** |
 | `content_width` | number 30–200 % | `100` | **Horizontal spacing** |
@@ -705,7 +716,7 @@ Default size: 6 of 12 wide, 4 rows high.
 
 | Option | Value | Default | What it does |
 |---|---|---|---|
-| `wr_stats` | `preset` · `top` · `bottom` · `off` | `preset` | **Position** |
+| `wr_stats` | `preset` · `top` · `bottom` · `off` | `preset` | **Min / avg / max** |
 | `stats_items` | list of: `min` · `avg` · `max` · `median` · `p90` · `calm` | `["min","avg","max","p90","calm"]` | **Show** |
 | `stats_align` | `left` · `center` · `right` | `left` | **Alignment** |
 | `stats_size` | number 8–40 px | `13` | **Text size** |
@@ -886,7 +897,7 @@ CoAgMET package: copy both files from `extras/coagmet/` (`coagmet_records.yaml` 
 - type: records
   area_source: auto          # auto | coagmet | open_meteo | off
 - type: rain
-  rows: [rain_today, rain_24h, rain_event, rain_week, rain_month, rain_year, last_rain]
+  show_rows: [rain_today, rain_24h, rain_event, rain_week, rain_month, rain_year, last_rain]
 - type: garden
   outlook_source: forecast   # or open_meteo
 - type: vpd
