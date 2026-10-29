@@ -1,5 +1,10 @@
 # Changelog
 
+## v2026.10.29.78
+
+- **Full-size icon defaults to `mdi:arrow-expand` again** (fullscreen and arrow-expand-all are the alternatives).
+- **Custom open icons:** both icon drop-downs (Layout & Behavior → Collapsed panels) end with **Custom icon…**, which shows Home Assistant's icon picker for any icon. In YAML, `open_icon_small` / `open_icon_full` also take an icon directly, e.g. `mdi:weather-windy`.
+
 ## v2026.10.29.77
 
 - **Opening a folded panel starts its animation:** a folded Radar or Windy map with Start paused plays (the whole radar loop / the live map) when you open it — over the others, in place or as a pop-up.

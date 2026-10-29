@@ -32,7 +32,7 @@ import "../panels/air-quality.js";
 import "../panels/clock.js";
 import "../panels/records.js";
 import { foldInfo } from "./fold-info.js";
-import { OPEN_ICONS_SMALL, OPEN_ICONS_FULL } from "./icons.js";
+import { OPEN_ICONS_SMALL, OPEN_ICONS_FULL, openIcon } from "./icons.js";
 import { activeAlerts, alertsBar, alertStyles } from "./alerts.js";
 import { COMPACT_TYPES, NEEDS_PANEL, compactTiles, compactRow, compactStyles } from "./compact.js";
 import "../panels/watch.js";
@@ -305,11 +305,11 @@ class WeatherStationFlexCard extends LitElement {
   // Icons: the small pop-over (a folded panel opening over the others) and the
   // full-size one (expand to the whole card / pop-up), chosen in Layout & Behavior.
   get _iconSmall() {
-    return `mdi:${OPEN_ICONS_SMALL.includes(this._config.open_icon_small) ? this._config.open_icon_small : OPEN_ICONS_SMALL[0]}`;
+    return openIcon(this._config, "open_icon_small", OPEN_ICONS_SMALL);
   }
 
   get _iconFull() {
-    return `mdi:${OPEN_ICONS_FULL.includes(this._config.open_icon_full) ? this._config.open_icon_full : OPEN_ICONS_FULL[0]}`;
+    return openIcon(this._config, "open_icon_full", OPEN_ICONS_FULL);
   }
 
   /** The fold button's icon: how the folded panel opens, or chevron-up to fold an open one. */

@@ -68,6 +68,14 @@ const APPEARANCE_GROUPS = [
     { name: "panel_glow_size", when: (d) => !!d.panel_glow, selector: { number: { min: 2, max: 40, step: 1, mode: "slider", unit_of_measurement: "px" } }, default: 10 },
   ]]
 ];
+// An icon choice: the listed icons or "Custom icon…", which shows an icon picker.
+function openIconFields(name, label, list, helper) {
+  return [
+    { name, label, selector: { select: { options: [...list.map((v, k) => ({ value: v, label: `mdi:${v}${k ? "" : " (default)"}` })), { value: "custom", label: "Custom icon…" }] } }, default: list[0], helper },
+    { name: `${name}_custom`, label: "Custom icon", when: (d) => d[name] === "custom", selector: { icon: {} }, helper: "Any Home Assistant icon, e.g. mdi:arrow-expand-down." },
+  ];
+}
+
 // Layout & Behavior section (with the layout map below these).
 const LAYOUT_GROUPS = [
   ["Screen fit & sizing", [
@@ -91,8 +99,8 @@ const LAYOUT_GROUPS = [
   ["Collapsed panels", [
     { name: "collapsed_view", label: "Default view when collapsed", selector: { select: { options: [{ value: "minimal", label: "Minimal — the title and a line of info (e.g. 7 strikes today)" }, { value: "compact", label: "Compact — one row of tiles with all the data" }] } }, default: "minimal", helper: "For panels with Collapse button on; panels without a tiles view use Minimal. Each panel can override it — Convert all now clears those overrides." },
     { name: "collapsed_open", label: "A folded panel opens", selector: { select: { options: [{ value: "auto", label: "Automatic — over the other panels in full screen or Auto-fit, else in place" }, { value: "inplace", label: "In place — the panel grows, the others move" }, { value: "overlay", label: "Over the other panels — nothing moves; tap outside or Esc to close" }, { value: "popup", label: "As a pop-up" }] } }, default: "auto", helper: "Each panel can override this (Collapse → Opens)." },
-    { name: "open_icon_small", label: "Small pop-over icon", selector: { select: { options: OPEN_ICONS_SMALL.map((v, k) => ({ value: v, label: `mdi:${v}${k ? "" : " (default)"}` })) } }, default: OPEN_ICONS_SMALL[0], helper: "On a folded panel that opens over the others." },
-    { name: "open_icon_full", label: "Full-size icon", selector: { select: { options: OPEN_ICONS_FULL.map((v, k) => ({ value: v, label: `mdi:${v}${k ? "" : " (default)"}` })) } }, default: OPEN_ICONS_FULL[0], helper: "Expand to the whole card, tap-to-open tiles and panels that open as a pop-up." },
+    ...openIconFields("open_icon_small", "Small pop-over icon", OPEN_ICONS_SMALL, "On a folded panel that opens over the others."),
+    ...openIconFields("open_icon_full", "Full-size icon", OPEN_ICONS_FULL, "Expand to the whole card, tap-to-open tiles and panels that open as a pop-up."),
     { name: "collapse_title_tap", label: "Tap the title to fold / unfold", selector: { boolean: {} }, default: true, helper: "For panels with Collapse button on (each panel can override this)." },
     { name: "show_collapse_hint", label: "Hint under the title while folded", selector: { boolean: {} }, default: false, helper: "e.g. \"Tap title to show\" (off by default: the open button already says it)." },
     { name: "collapse_hint", label: "Hint text", when: (d) => !!d.show_collapse_hint, selector: { text: {} }, helper: "Default \"Tap title to show\"." },
