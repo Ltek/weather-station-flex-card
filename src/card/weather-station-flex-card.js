@@ -16,9 +16,9 @@ import { WeatherForecastCard } from "../../vendor/weather-forecast-card/src/weat
 import "../../vendor/weather-forecast-card/src/components/animation/wfc-animation-provider";
 import { animSpeedVars, LOW_POWER_VARS } from "./animation-speed.js";
 import "./animation-extra.js";
-import { stationCondition, deriveHass, clearSkyRadiation, skyClearness } from "./condition.js";
+import { stationCondition, deriveHass, clearSkyRadiation, skyClearness, ensureSolarScale, conditionSummary, resetSolarScale, sunElevation } from "./condition.js";
 import { metricEntity } from "./metrics.js";
-globalThis.__wsfcCondition = { stationCondition, clearSkyRadiation, skyClearness, metricEntity };
+globalThis.__wsfcCondition = { stationCondition, clearSkyRadiation, skyClearness, metricEntity, conditionSummary, resetSolarScale, sunElevation };
 import "../panels/flex.js";
 import "../panels/graph.js";
 import "../panels/wind.js";
@@ -481,6 +481,7 @@ class WeatherStationFlexCard extends LitElement {
     // Current condition from the station: the weather entity's state is replaced
     // in the hass every panel sees (changes here don't start another update).
     if ((changed.has("hass") || changed.has("_config")) && this.hass && this._config?.condition_source === "station") {
+      ensureSolarScale(this.hass, this._station, this._config, () => this.requestUpdate());
       const cond = stationCondition(this.hass, this._station, this._config);
       this.hass = deriveHass(this.hass, this._config.entity, cond, (this._condCache ||= {}));
     }

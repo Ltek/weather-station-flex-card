@@ -1,5 +1,10 @@
 # Changelog
 
+## v2026.10.30.87
+
+- **Condition from the station: the light sensor is calibrated to itself.** Clear days read as cloudy when a station's solar sensor reads lower than the textbook clear-sky value (shading, sensor tolerance, haze, altitude). The card now learns a correction from the sensor's last 10 days of history (its brightest readings against the clear-sky model for the sun's height at the time), refreshed every 6 hours, so the sky is judged against the station's own clear days. **Clear-sky calibration** (20–160 %) in Weather station → Current condition overrides it.
+- A **Now:** line under those settings shows the working: the reading, the clear-sky value it's measured against, the calibration, the rain, humidity and wind, and the resulting condition next to the entity's.
+
 ## v2026.10.30.86
 
 - **Current condition from your station.** Weather station → Current condition → **Current condition from: Your station's readings**. Rain rate, solar radiation (or light), humidity, wind, temperature and the lightning sensor decide the condition, instead of the weather entity's guess:

@@ -4,6 +4,7 @@
 
 const CACHE_TTL_MS = 5 * 60 * 1000;
 const cache = new Map();
+export const clearHistoryCache = () => cache.clear();
 
 async function cached(key, loader) {
   const hit = cache.get(key);
