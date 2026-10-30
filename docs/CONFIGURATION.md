@@ -383,7 +383,11 @@ No options of its own beyond `flex:`.
 
 Default size: 8 of 12 wide, 3 rows high. Also takes `flex:`: Weather Flex section settings (what the embedded section editor saves), merged over the panel's defaults.
 
-No options of its own beyond `flex:`.
+| Option | Value | Default | What it does |
+|---|---|---|---|
+| `text_scale` | number 50–200 % | `100` | **Text size** — Day and time labels, temperatures and chart figures. Separate from Scale all Panel Contents. |
+| `icon_scale` | number 50–250 % | `100` | **Icon size** — The condition icons in the forecast. |
+| `chart_scale` | number 40–200 % | `100` | **Chart height** — The temperature / precipitation chart under the icons. |
 
 ### Day forecast — `type: day`
 
@@ -399,7 +403,11 @@ Default size: 4 of 12 wide, 4 rows high.
 
 Default size: 8 of 12 wide, 4 rows high. Also takes `flex:`: Weather Flex section settings (what the embedded section editor saves), merged over the panel's defaults.
 
-No options of its own beyond `flex:`.
+| Option | Value | Default | What it does |
+|---|---|---|---|
+| `text_scale` | number 50–200 % | `100` | **Text size** — Day and time labels, temperatures and chart figures. Separate from Scale all Panel Contents. |
+| `icon_scale` | number 50–250 % | `100` | **Icon size** — The condition icons in the forecast. |
+| `chart_scale` | number 40–200 % | `100` | **Chart height** — The temperature / precipitation chart under the icons. |
 
 ### Frost & heat watch — `type: frost_watch`
 
@@ -461,7 +469,11 @@ Default size: 6 of 12 wide, fits its content.
 
 Default size: 8 of 12 wide, 3 rows high. Also takes `flex:`: Weather Flex section settings (what the embedded section editor saves), merged over the panel's defaults.
 
-No options of its own beyond `flex:`.
+| Option | Value | Default | What it does |
+|---|---|---|---|
+| `text_scale` | number 50–200 % | `100` | **Text size** — Day and time labels, temperatures and chart figures. Separate from Scale all Panel Contents. |
+| `icon_scale` | number 50–250 % | `100` | **Icon size** — The condition icons in the forecast. |
+| `chart_scale` | number 40–200 % | `100` | **Chart height** — The temperature / precipitation chart under the icons. |
 
 ### Lightning — `type: lightning`
 
@@ -713,7 +725,7 @@ Default size: 6 of 12 wide, 4 rows high.
 | `rose_bins` | mapping / list |  | **Rose speed bins** — Built-in rose: speed thresholds in the sensor's unit, e.g. [1, 5, 10, 15, 25]. |
 | `windrose_preset` | `standard` · `periods` · `beaufort` · `corners` · `stats` · `playback` · `minimal` | `standard` | **Wind Rose Card preset** — Wind Rose Card starting layout; the settings below change parts of it. |
 | `wr_period` | `preset` · `-1h` · `-8h` · `-1d` · `-7d` · `-30d` | `preset` | **Default period** — Period shown first. |
-| `wr_scale` | number 30–150 % | `100` | **Size** — Wind Rose Card size within the panel. |
+| `wr_scale` | number 30–150 % | `100` | **Size** — Wind Rose Card size within the panel. Not used while the panel fits its height (Layout → Fit): then the rose is as large as the height allows. |
 | `wr_arrow` | `true` / `false` | `true` | **Direction arrow** — Current direction arrow. |
 | `wr_arrow_size` | number 10–240 | `50` | **Arrow size** — Direction arrow (pointer) size. |
 | `wr_arrow_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Arrow color** — Not set: red. The Wind Rose Card uses it for the speed-bar arrows too. |
