@@ -31,6 +31,14 @@ With no `panels:` the card shows its default dashboard (hero, bulletin, Sky Trac
 | `layout_screen` | `window` or `<width>x<height>` | Editor only: the Layout map's screen guide. |
 | `layout_guide` | `line` · `frame` | Editor only: how the screen guide is drawn. |
 
+### Current condition
+
+| Option | Value | Default | What it does |
+|---|---|---|---|
+| `condition_source` | `entity` · `station` | `entity` | **Current condition from** — With the station: rain rate, solar radiation (or light), humidity, wind, temperature and the lightning sensor decide sunny, partly cloudy, cloudy, rain, snow, fog, windy and lightning. The hero, bulletin and background follow it. At night, and when the sun is low, the entity's view of the sky is used. |
+| `station_windy_mph` | number 10–60 mph | `25` | **Windy from** |
+| `station_pouring_inh` | number 0.1–1 in/h | `0.3` | **Pouring from** |
+
 ### Background
 
 | Option | Value | Default | What it does |
