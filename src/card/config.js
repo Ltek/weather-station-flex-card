@@ -42,3 +42,19 @@ export function prune(obj) {
 }
 
 export const clone = (v) => (v === undefined ? v : JSON.parse(JSON.stringify(v)));
+
+/**
+ * Screen fit mode, from `screen_fit` or the settings it replaced (fit_height,
+ * fit_strict, auto_fit):
+ *   none    no fit: panels are their set heights, the page scrolls
+ *   rows    full screen: rows share the screen height; panels grow to fit their content (default)
+ *   strict  full screen: every panel is exactly its height; content scrolls inside it
+ *   scale   auto-fit: exact heights, and each panel's contents scale to fit the screen
+ */
+export function fitMode(c = {}) {
+  if (["none", "rows", "strict", "scale"].includes(c.screen_fit)) return c.screen_fit;
+  if (c.auto_fit) return "scale";
+  if (c.fit_height === false) return "none";
+  if (c.fit_strict) return "strict";
+  return "rows";
+}

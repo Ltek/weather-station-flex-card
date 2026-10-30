@@ -99,10 +99,13 @@ export const ANIM_SPEEDS = [
 /** CSS variables for the configured speeds (percent, 100 = normal). */
 export function animSpeedVars(c) {
   const out = [];
+  // Overall speed multiplies every effect's own speed.
+  const all = Math.max(SPEED_MIN, Math.min(SPEED_MAX, Number(c?.anim_speed) || 100)) / 100;
   for (const [key, v] of ANIM_SPEEDS) {
     let pct = Number(c?.[key]);
-    if (pct > 0) pct = Math.max(SPEED_MIN, Math.min(SPEED_MAX, pct));
-    if (pct > 0 && pct !== 100) out.push(`${v}:${(100 / pct).toFixed(3)}`);
+    pct = pct > 0 ? Math.max(SPEED_MIN, Math.min(SPEED_MAX, pct)) : 100;
+    const k = (pct / 100) * all;
+    if (Math.abs(k - 1) > 1e-6) out.push(`${v}:${(1 / k).toFixed(3)}`);
   }
   return out;
 }

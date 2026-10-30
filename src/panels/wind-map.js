@@ -2,7 +2,7 @@
 // rain, temperature, clouds or pressure layers) centred on home. Usually shown
 // as a tile that opens larger in a pop-up (display: tile_popup).
 import { LitElement, html, css, nothing } from "lit";
-import { panelStyles, head, pausedStyles, paused } from "./shared.js";
+import { panelStyles, head, pausedStyles, paused, onlyOtherStates, configEntities } from "./shared.js";
 
 export const WINDY_OVERLAYS = {
   wind: "Wind", gust: "Gusts", rain: "Rain & thunder", temp: "Temperature", clouds: "Clouds",
@@ -55,6 +55,12 @@ class WsfcWindMap extends LitElement {
       button.stop:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 2px; }
     `,
   ];
+  // The map doesn't show sensor states: skip redraws caused by other entities
+  // (theme, locale and location changes still come through).
+  shouldUpdate(changed) {
+    return !onlyOtherStates(changed, this.hass, [...configEntities(this.config)]);
+  }
+
   render() {
     if (!this.hass) return nothing;
     const c = this.config || {};

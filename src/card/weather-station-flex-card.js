@@ -14,6 +14,7 @@ import { setDetected } from "./detected.js";
 import { extraMetricEntity } from "./air.js";
 import { WeatherForecastCard } from "../../vendor/weather-forecast-card/src/weather-forecast-card";
 import "../../vendor/weather-forecast-card/src/components/animation/wfc-animation-provider";
+import { fitMode } from "./config.js";
 import { animSpeedVars, LOW_POWER_VARS } from "./animation-speed.js";
 import "./animation-extra.js";
 import { stationCondition, deriveHass, clearSkyRadiation, skyClearness, ensureSolarScale, conditionSummary, resetSolarScale, sunElevation } from "./condition.js";
@@ -43,7 +44,10 @@ import "../panels/watch.js";
 import "../panels/rain.js";
 import "../panels/garden.js";
 import "../panels/lightning.js";
-import "../editor/editor.js";
+// The editor is its own file (dist/wsfc-editor.js), loaded when the editor opens;
+// it takes the card's modules from the host table.
+import "./host.generated.js";
+import { lazyLib } from "./lazy.js";
 
 const NARROW_PX = 720;
 // Panels with a title header, which can fold down to it.
@@ -91,7 +95,13 @@ class WeatherStationFlexCard extends LitElement {
     screenWidth: { attribute: false },
   };
 
-  static getConfigElement() {
+  /** Load the card editor (dist/wsfc-editor.js) once. */
+  static loadEditor() {
+    return customElements.get("weather-station-flex-card-editor") ? Promise.resolve() : lazyLib("wsfc-editor.js");
+  }
+
+  static async getConfigElement() {
+    await WeatherStationFlexCard.loadEditor();
     return document.createElement("weather-station-flex-card-editor");
   }
 
@@ -109,7 +119,9 @@ class WeatherStationFlexCard extends LitElement {
       throw new Error("entity is required: the weather entity that supplies the forecast and condition (e.g. weather.openweathermap)");
     }
     const panels = normalizePanels(config);
-    this._config = { ...config, panels };
+    // Screen fit: one setting (screen_fit) for what fit_height / fit_strict / auto_fit did.
+    const mode = fitMode(config);
+    this._config = { ...config, panels, screen_fit: mode, fit_height: mode !== "none", fit_strict: mode === "strict", auto_fit: mode === "scale" };
     this._popup = null;
     this._focus = null;
     this._hidden = this._loadHidden(panels);
@@ -307,7 +319,7 @@ class WeatherStationFlexCard extends LitElement {
   }
 
   // Icons: the small pop-over (a folded panel opening over the others) and the
-  // full-size one (expand to the whole card / pop-up), chosen in Layout & Behavior.
+  // full-size one (expand to the whole card / pop-up), chosen in Panel behavior.
   get _iconSmall() {
     return openIcon(this._config, "open_icon_small", OPEN_ICONS_SMALL);
   }
@@ -566,8 +578,12 @@ class WeatherStationFlexCard extends LitElement {
   }
 
   // Shared "station" config handed to every panel: entity + Weather Sources.
+  // The same object while the sources are unchanged, so panels can tell that
+  // nothing but hass changed (and skip redraws for other entities).
   get _station() {
-    return { entity: this._config.entity, metric_sources: this._config.metric_sources };
+    const c = this._config;
+    if (!this.__station || this.__station.entity !== c.entity || this.__station.metric_sources !== c.metric_sources) this.__station = { entity: c.entity, metric_sources: c.metric_sources };
+    return this.__station;
   }
 
   render() {

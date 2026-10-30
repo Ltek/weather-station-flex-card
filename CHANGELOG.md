@@ -1,5 +1,25 @@
 # Changelog
 
+## v2026.10.30.89
+
+**Performance**
+
+- **Panels only redraw when their own sensors change.** Every Home Assistant state change (anywhere in the house) used to redraw almost every panel, because each panel was handed a new copy of the station settings each time. Now a change to an entity the card doesn't use redraws nothing but stacks with compact rows; the hero, sky tracker and forecasts redraw for the station's sensors and weather entity; radar and wind map ignore sensor changes. Measured on the tablet layout: 8 of 9 panels → 1 for an unrelated update.
+- **The editor is its own file** (`dist/wsfc-editor.js`, about 250 KB), loaded when you open the card editor. The card file drops from 1,035 KB to 788 KB (316 → 252 KB compressed), so dashboards load and start faster. It takes the card's own modules when it loads, so both always match: update every file in `dist/` together (HACS does).
+- Leaflet's stylesheet now comes with Leaflet (`wsfc-leaflet.js`), loaded with the first radar panel, instead of being in the card.
+
+**Settings**
+
+- **Screen fit** is one drop-down instead of three checkboxes: Off · Share the screen height (default) · Exact heights · Auto-fit. `screen_fit: none | rows | strict | scale` replaces `fit_height`, `fit_strict` and `auto_fit`; old configs read the same, and the editor rewrites them to `screen_fit` the next time you change it.
+- **Overall speed** for the animated background (`anim_speed`), with the eight per-effect speeds in a closed **Per-effect speeds** sub-panel; each per-effect speed multiplies the overall one.
+
+**Editor layout**
+
+- **Screen fit & layout** (was Layout & Behavior) now holds only fit and sizing.
+- **Panel behavior** (was Panel buttons) holds the panel buttons and the Collapsed panels settings, with Convert all now.
+- The **Alerts bar** moved to Appearance.
+- Sections, top to bottom: Weather station · Background · Appearance · Screen fit & layout · Panel behavior · Layout Map · Panels.
+
 ## v2026.10.30.88
 
 - **Forecast panels (Daily, Hourly, Forecast): separate size sliders** in Size and Scaling, alongside Scale all Panel Contents: **Text size** (50–200 %: day and time labels, temperatures, chart figures), **Icon size** (50–250 %) and **Chart height** (40–200 %). In a fixed-height panel, where Scale all Panel Contents is held back by the height, these change the shares instead, e.g. bigger icons and a lower chart.

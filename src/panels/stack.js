@@ -11,7 +11,7 @@
 //       - { type: metric, metric: solar_radiation, grow: 2 }   # twice as wide
 import { LitElement, html, css, nothing } from "lit";
 import { PANEL_TYPES, panelMeta } from "../card/panels.js";
-import { tileStyles } from "./shared.js";
+import { tileStyles, onlyOtherStates } from "./shared.js";
 import { compactRow, compactStyles, compactTiles, NEEDS_PANEL } from "../card/compact.js";
 
 class WsfcStack extends LitElement {
@@ -59,6 +59,18 @@ class WsfcStack extends LitElement {
   constructor() {
     super();
     this._els = new Map();
+  }
+
+  // A new hass alone: hand it to the child panels (each decides whether to
+  // redraw) and redraw the stack itself only for compact rows, whose tiles read
+  // the states directly.
+  shouldUpdate(changed) {
+    if (changed.size !== 1 || !changed.has("hass") || !changed.get("hass")) return true;
+    const old = changed.get("hass"), h = this.hass;
+    if (old.themes !== h.themes || old.locale !== h.locale || old.config !== h.config || old.entities !== h.entities) return true;
+    if (this.renderRoot?.querySelector?.(".tile.ctile-row")) return true;
+    for (const el of this._els.values()) el.hass = h;
+    return false;
   }
 
   updated() {

@@ -14,11 +14,12 @@
 // against the panel's base so only the user's changes are saved under `flex:`.
 // Its entity/metric_sources edits are global and go to the card's top level.
 import { LitElement, html, css, nothing } from "lit";
+import "./core-editor.js";
 import { CARD_VERSION, CARD_NAME, CARD_TYPE } from "../card/constants.js";
 import { PANEL_TYPES, COMMON_SCHEMA, COLLAPSE_COLORS, STACK_CHILD_SCHEMA, NO_TITLE, TITLE_WHEN_SET, panelMeta, spanOf, rowsOf, inBarOf, normalizePanels } from "../card/panels.js";
 import { CORE_EDITOR_TAG, flexOverride, deepMerge } from "../card/core.js";
 import { flexBase, trackerConfig } from "../panels/flex.js";
-import { prune, clone } from "../card/config.js";
+import { prune, clone, fitMode } from "../card/config.js";
 import { METRICS, metricEntity } from "../card/metrics.js";
 import "./layout-map.js";
 import "./layout-probe.js";
@@ -58,8 +59,9 @@ const BACKGROUND_GROUPS = [
     { name: "background_effects", label: "Animation effects", when: (d) => d.background === "animated", selector: { select: { multiple: true, options: [["rain", "Rain"], ["snow", "Snow"], ["lightning", "Lightning"], ["sky", "Sky"], ["moon", "Moon"], ["sun", "Sun"], ["cloud", "Clouds"], ["fog", "Fog"], ["hail", "Hail"], ["wind", "Wind gusts"], ["exceptional", "Unusual weather glow"]].map(([value, label]) => ({ value, label })) } }, default: ["rain", "snow", "lightning", "sky", "moon", "sun", "cloud", "fog", "hail", "wind", "exceptional"], helper: "Which effects the weather animation draws. At night it shows the dark sky and the moon instead of the sun. Rain, snow and storms get an overcast sky and cloud deck (Sky, Clouds)." },
     { name: "background_moon_phase", label: "Show moon phase", when: (d) => d.background === "animated", selector: { boolean: {} }, default: true, helper: "Shade the night-time moon to the current lunar phase (off: a full moon)." },
     { name: "anim_low_power", label: "Low-power animation", when: (d) => d.background !== "image", selector: { boolean: {} }, default: false, helper: "For tablets and other low-powered screens: no panel blur while the background animates, each cloud drawn once on its own, and simpler cloud edges. Smoother drift; clouds look a little softer." },
-    ...ANIM_SPEEDS.map(([name, , label], k) => ({ name, label, when: (d) => d.background !== "image", selector: { number: { min: 10, max: 150, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100,
-      helper: k === 0 ? "Animation speeds (100% = normal, 50% = half as fast), for the card background and the hero's own animation." : undefined })),
+    { name: "anim_speed", label: "Overall speed", when: (d) => d.background !== "image", selector: { number: { min: 10, max: 150, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100,
+      helper: "Every animation at once (100% = normal, 50% = half as fast), for the card background and the hero's own animation. Per-effect speeds below multiply it." },
+    ...ANIM_SPEEDS.map(([name, , label]) => ({ name, label, sub: "Per-effect speeds", subIcon: "mdi:speedometer", when: (d) => d.background !== "image", selector: { number: { min: 10, max: 150, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100 })),
     { name: "fog_density", label: "Fog density", when: (d) => d.background === "animated" && (d.background_effects ?? ["fog"]).includes("fog"), selector: { number: { min: 30, max: 200, step: 10, mode: "slider", unit_of_measurement: "%" } }, default: 100, helper: "How thick the fog is: the number of mist banks and how much they hide." },
     { name: "lightning_interval", label: "Time between strikes", when: (d) => d.background === "animated" && (d.background_effects ?? ["lightning"]).includes("lightning"), selector: { number: { min: 2, max: 90, step: 1, mode: "slider", unit_of_measurement: "s" } }, default: 12, helper: "In storms: roughly how often the clouds light up (each strike comes at its own irregular time around this)." },
     { name: "lightning_intensity", label: "Lightning intensity", when: (d) => d.background === "animated" && (d.background_effects ?? ["lightning"]).includes("lightning"), selector: { number: { min: 10, max: 200, step: 10, mode: "slider", unit_of_measurement: "%" } }, default: 100, helper: "How brightly the clouds and the sky light up." },
@@ -90,7 +92,13 @@ const APPEARANCE_GROUPS = [
     { name: "panel_glow", selector: { boolean: {} }, default: false, helper: "A soft glow around each panel." },
     { name: "panel_glow_color", when: (d) => !!d.panel_glow, selector: { text: {} }, helper: "Not set: the border color, else the theme's primary color." },
     { name: "panel_glow_size", when: (d) => !!d.panel_glow, selector: { number: { min: 2, max: 40, step: 1, mode: "slider", unit_of_measurement: "px" } }, default: 10 },
-  ]]
+  ]],
+  ["Alerts bar", [
+    { name: "alerts_bar", label: "Alerts bar", selector: { boolean: {} }, default: false, helper: "A thin row at the top that appears only while something needs attention: heat or frost (the Frost & heat watch rules), lightning within 10 miles in the last 30 minutes, and weather alerts. Tap one to open its panel." },
+    { name: "alerts_watch", label: "Heat and frost", when: (d) => !!d.alerts_bar, selector: { boolean: {} }, default: true },
+    { name: "alerts_lightning", label: "Lightning nearby", when: (d) => !!d.alerts_bar, selector: { boolean: {} }, default: true },
+    { name: "alerts_entity", label: "Weather alerts sensor", when: (d) => !!d.alerts_bar, selector: { entity: { domain: "sensor" } }, helper: "Optional, e.g. the NWS Alerts integration's sensor (its Alerts attribute)." },
+  ]],
 ];
 // An icon choice: the listed icons or "Custom icon…", which shows an icon picker.
 function openIconFields(name, label, list, helper) {
@@ -100,26 +108,28 @@ function openIconFields(name, label, list, helper) {
   ];
 }
 
-// Layout & Behavior section (with the layout map below these).
+// Screen fit & layout section.
 const LAYOUT_GROUPS = [
   ["Screen fit & sizing", [
     { name: "layout", selector: { select: { options: [{ value: "auto", label: "Size to content" }, { value: "fullscreen", label: "Full screen (fills the view below the header)" }] } } },
-    { name: "fit_height", when: (d) => d.layout === "fullscreen", selector: { boolean: {} }, default: true, helper: "Full screen: panels with a height share the screen height (row height is calculated)." },
-    { name: "auto_fit", label: "Auto-fit to the screen", selector: { boolean: {} }, default: false, helper: "The layout and sizes you set are the design, for the Screen guide's size (Layout Map → Screen guide). Every screen shows that design scaled to fit: rows share the screen height, the layout stays as designed until the screen is phone-narrow, and each panel's contents scale with the screen — smaller where they'd still overflow. Full screen recommended." },
-    { name: "auto_fit_min", label: "Smallest content scale", when: (d) => !!d.auto_fit, selector: { number: { min: 30, max: 100, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 60, helper: "Below this a panel scrolls instead, so text stays readable." },
-    { name: "auto_fit_max", label: "Largest content scale", when: (d) => !!d.auto_fit, selector: { number: { min: 100, max: 250, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 150, helper: "On screens bigger than the design." },
-    { name: "fit_strict", label: "Strict fit to screen dimensions", when: (d) => d.layout === "fullscreen" && d.fit_height !== false && !d.auto_fit, selector: { boolean: {} }, default: false, helper: "Every panel is exactly the height you set, so the page fits the screen as the layout map shows; content taller than its panel scrolls inside the panel. Off: panels grow to fit their content (the page may scroll)." },
-    { name: "panel_overflow", label: "When a panel's content doesn't fit", when: (d) => !(d.layout === "fullscreen" && d.fit_height !== false && (d.fit_strict || d.auto_fit)), selector: { select: { options: [{ value: "grow", label: "Grow — the panel gets taller (and its row with it)" }, { value: "scroll", label: "Scroll — the panel keeps its height, with a scroll bar inside" }] } }, default: "grow", helper: "For panels with a set height (Height above 0); each panel can override this. Scroll locks every panel to its size in any layout; Strict fit does the same in full screen." },
+    { name: "screen_fit", label: "Screen fit", selector: { select: { options: [
+        { value: "none", label: "Off — panels are their set heights; the page scrolls" },
+        { value: "rows", label: "Share the screen height — panels grow to fit their content" },
+        { value: "strict", label: "Exact heights — content scrolls inside its panel" },
+        { value: "scale", label: "Auto-fit — exact heights, and the contents scale to the screen" },
+      ] } }, default: "rows",
+      helper: "Share and Exact apply in Full screen. Auto-fit takes the layout and sizes you set as the design for the Screen guide's size (Layout Map → Screen guide) and scales each panel's contents to every other screen, smaller where they'd still overflow." },
+    { name: "auto_fit_min", label: "Smallest content scale", when: (d) => d.screen_fit === "scale", selector: { number: { min: 30, max: 100, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 60, helper: "Below this a panel scrolls instead, so text stays readable." },
+    { name: "auto_fit_max", label: "Largest content scale", when: (d) => d.screen_fit === "scale", selector: { number: { min: 100, max: 250, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 150, helper: "On screens bigger than the design." },
+    { name: "panel_overflow", label: "When a panel's content doesn't fit", when: (d) => !(d.layout === "fullscreen" && ["strict", "scale"].includes(d.screen_fit)), selector: { select: { options: [{ value: "grow", label: "Grow — the panel gets taller (and its row with it)" }, { value: "scroll", label: "Scroll — the panel keeps its height, with a scroll bar inside" }] } }, default: "grow", helper: "For panels with a set height (Height above 0); each panel can override this. Scroll locks every panel to its size in any layout; Strict fit does the same in full screen." },
     { name: "layout_size", selector: { select: { options: [{ value: "auto", label: "Automatic (from the card's width)" }, { value: "wide", label: "Wide — desktop layout" }, { value: "medium", label: "Medium — tablet layout" }, { value: "narrow", label: "Narrow — phone layout (stacked)" }] } }, helper: "In a Sections view the card is only as wide as its section; widen the section or use a Panel view for the desktop layout." },
     { name: "row_height", selector: { number: { min: 40, max: 300, mode: "box", unit_of_measurement: "px" } }, helper: "Height of one row unit (default 110)." },
     { name: "gap", selector: { number: { min: 0, max: 32, mode: "box", unit_of_measurement: "px" } }, helper: "Space between panels (default 12)." },
   ]],
-  ["Alerts bar", [
-    { name: "alerts_bar", label: "Alerts bar", selector: { boolean: {} }, default: false, helper: "A thin row at the top that appears only while something needs attention: heat or frost (the Frost & heat watch rules), lightning within 10 miles in the last 30 minutes, and weather alerts. Tap one to open its panel." },
-    { name: "alerts_watch", label: "Heat and frost", when: (d) => !!d.alerts_bar, selector: { boolean: {} }, default: true },
-    { name: "alerts_lightning", label: "Lightning nearby", when: (d) => !!d.alerts_bar, selector: { boolean: {} }, default: true },
-    { name: "alerts_entity", label: "Weather alerts sensor", when: (d) => !!d.alerts_bar, selector: { entity: { domain: "sensor" } }, helper: "Optional, e.g. the NWS Alerts integration's sensor (its Alerts attribute)." },
-  ]],
+];
+
+// Panel behavior section: panel buttons (below), then how panels fold and open.
+const PANEL_GROUPS = [
   ["Collapsed panels", [
     { name: "collapsed_view", label: "Default view when collapsed", selector: { select: { options: [{ value: "minimal", label: "Minimal — the title and a line of info (e.g. 7 strikes today)" }, { value: "compact", label: "Compact — one row of tiles with all the data" }] } }, default: "minimal", helper: "For panels with Collapse button on; panels without a tiles view use Minimal. Each panel can override it — Convert all now clears those overrides." },
     { name: "collapsed_open", label: "A folded panel opens", selector: { select: { options: [{ value: "auto", label: "Automatic — over the other panels in full screen or Auto-fit, else in place" }, { value: "inplace", label: "In place — the panel grows, the others move" }, { value: "overlay", label: "Over the other panels — nothing moves; tap outside or Esc to close" }, { value: "popup", label: "As a pop-up" }] } }, default: "auto", helper: "Each panel can override this (Collapse → Opens)." },
@@ -132,14 +142,14 @@ const LAYOUT_GROUPS = [
     ...COLLAPSE_COLORS,
   ]],
 ];
-// In the Panel buttons section.
+// In the Panel behavior section (Panel buttons).
 const REMEMBER = [{ name: "remember", selector: { boolean: {} }, default: true, helper: "Keep which panels were shown or hidden with the panel buttons after a refresh, in each browser. Off: every load starts from the panels' Shown setting (the eye icon)." }];
-const GENERAL_SCHEMA = [...STATION_FIELDS, ...[...BACKGROUND_GROUPS, ...APPEARANCE_GROUPS, ...LAYOUT_GROUPS].flatMap(([, f]) => f)];
-const GENERAL_DEFAULTS = { layout: "auto", panel_bar: true, remember: true, fit_height: true, layout_size: "auto", background: "none", panel_opacity: 0.55, panel_blur: 6 };
+const GENERAL_SCHEMA = [...STATION_FIELDS, ...[...BACKGROUND_GROUPS, ...APPEARANCE_GROUPS, ...LAYOUT_GROUPS, ...PANEL_GROUPS].flatMap(([, f]) => f)];
+const GENERAL_DEFAULTS = { layout: "auto", panel_bar: true, remember: true, screen_fit: "rows", layout_size: "auto", background: "none", panel_opacity: 0.55, panel_blur: 6 };
 
 const LABELS = {
   entity: "Weather entity", title: "Title", subtitle: "Subtitle", icon: "Icon", layout: "Layout", panel_bar: "Panel buttons",
-  remember: "Remember Panel Button States", station_device: "Weather station device", layout_size: "Layout size", fit_height: "Fit panels to the screen height", fit_strict: "Strict fit to screen dimensions", row_height: "Row height", gap: "Gap", span: "Width", rows: "Height", display: "Display",
+  remember: "Remember Panel Button States", station_device: "Weather station device", layout_size: "Layout size", fit_strict: "Strict fit to screen dimensions", row_height: "Row height", gap: "Gap", span: "Width", rows: "Height", display: "Display",
   in_bar: "Panel button", tile_background: "Panel background", show: "Shown", metric: "Metric", label: "Label", color: "Color", digits: "Decimals", chart: "Sparkline",
   hours: "Sparkline hours", show_minmax: "Show today's min/max", series: "Series", ranges: "Range buttons", range: "Default range",
   show_readings: "Show current readings", left_min: "Left axis min", left_max: "Left axis max", right_min: "Right axis min",
@@ -400,8 +410,8 @@ class WeatherStationFlexCardEditor extends LitElement {
         ${this._section("station", "mdi:weather-cloudy-clock", "Weather station", () => this._stationEditor())}
         ${this._section("background", "mdi:image-filter-hdr", "Background", () => this._general(BACKGROUND_GROUPS), (this._config.background || "none") === "animated" ? this._bgPreviewButton() : nothing)}
         ${this._section("general", "mdi:palette-outline", "Appearance", () => this._general(APPEARANCE_GROUPS))}
-        ${this._section("buttons", "mdi:gesture-tap-button", "Panel buttons", () => this._buttonsEditor())}
-        ${this._section("behavior", "mdi:tune-variant", "Layout & Behavior", () => html`${this._general(LAYOUT_GROUPS)}${this._convertBar()}`)}
+        ${this._section("behavior", "mdi:fit-to-screen-outline", "Screen fit & layout", () => this._general(LAYOUT_GROUPS))}
+        ${this._section("buttons", "mdi:gesture-tap-button", "Panel behavior", () => html`<div class="agrp"><div class="agrp-t">Panel buttons</div>${this._buttonsEditor()}</div>${this._general(PANEL_GROUPS)}${this._convertBar()}`)}
         ${this._section("layout", "mdi:view-dashboard-edit-outline", "Layout Map", () => this._layoutEditor())}
         ${this._section("panels", "mdi:view-list-outline", `Panels (${this._panels.length})`, () => this._panelList())}
       </div>
@@ -412,9 +422,9 @@ class WeatherStationFlexCardEditor extends LitElement {
   _searchIndex() {
     const out = [];
     const label = (f) => f.label || LABELS[f.name] || f.name.replace(/[._]/g, " ");
-    for (const [area, title, groups] of [["station", "Weather station", [["Current condition", STATION_FIELDS]]], ["background", "Background", BACKGROUND_GROUPS], ["general", "Appearance", APPEARANCE_GROUPS], ["behavior", "Layout & Behavior", LAYOUT_GROUPS]])
+    for (const [area, title, groups] of [["station", "Weather station", [["Current condition", STATION_FIELDS]]], ["background", "Background", BACKGROUND_GROUPS], ["general", "Appearance", APPEARANCE_GROUPS], ["behavior", "Screen fit & layout", LAYOUT_GROUPS], ["buttons", "Panel behavior", PANEL_GROUPS]])
       for (const [g, fields] of groups) for (const f of fields) out.push({ label: label(f), help: f.helper || "", where: `${title} › ${g}`, go: { open: area }, f });
-    for (const f of REMEMBER) out.push({ label: label(f), help: f.helper || "", where: "Panel buttons", go: { open: "buttons" }, f });
+    for (const f of REMEMBER) out.push({ label: label(f), help: f.helper || "", where: "Panel behavior › Panel buttons", go: { open: "buttons" }, f });
     const add = (p, key, nested) => {
       const m = panelMeta(p);
       if (!m) return;
@@ -492,7 +502,7 @@ class WeatherStationFlexCardEditor extends LitElement {
     if (!key) return null;
     const { preview, dashboard } = detected();
     const here = preview?.[key], live = dashboard?.[key];
-    const src = key === "radius" ? " (from the theme's card corner radius)" : key === "row" && this._config.layout === "fullscreen" && this._config.fit_height !== false ? " (calculated to fit the screen)" : "";
+    const src = key === "radius" ? " (from the theme's card corner radius)" : key === "row" && this._config.layout === "fullscreen" && fitMode(this._config) !== "none" ? " (calculated to fit the screen)" : "";
     if (here && live && here !== live) return `${here} in this preview, ${live} on the dashboard${src}`;
     if (here || live) return `${here || live}${src}`;
     return null;
@@ -533,19 +543,37 @@ class WeatherStationFlexCardEditor extends LitElement {
 
   _general(groups = APPEARANCE_GROUPS) {
     // Conditions (`when`) see the whole card's settings, since the groups split them up.
-    const whole = formData(this._config, GENERAL_SCHEMA, GENERAL_DEFAULTS);
+    const view = { ...this._config, screen_fit: fitMode(this._config) };
+    const whole = formData(view, GENERAL_SCHEMA, GENERAL_DEFAULTS);
     const bg = this._config.background || "none";
     return groups.map(([title, fields]) => {
       const f = this._onlyChanged ? fields.filter((x) => isChanged(this._config, x, GENERAL_DEFAULTS)) : fields;
       if (!f.length) return nothing;
       const dot = fields.some((x) => isChanged(this._config, x, GENERAL_DEFAULTS));
       const prev = groups === BACKGROUND_GROUPS && title === "Background" && bg === "animated" && this._bgPrev?.open;
-      return html`${prev ? this._bgPreview() : nothing}<div class="agrp"><div class="agrp-t">${title}${dot ? html`<i class="chg" title="Has changed settings"></i>` : nothing}</div>${this._form(formData(this._config, f, GENERAL_DEFAULTS), f, (v) => {
+      const form = (ff) => this._form(formData(view, ff, GENERAL_DEFAULTS), ff, (v) => {
         const { panels: _p, ...rest } = this._config;
-        const next = applyForm(rest, f, v, GENERAL_DEFAULTS);
+        const next = applyForm(rest, ff, v, GENERAL_DEFAULTS);
+        // Screen fit replaces three older settings: drop them once it's written.
+        if (ff.some((x) => x.name === "screen_fit")) { delete next.fit_height; delete next.fit_strict; delete next.auto_fit; }
         if (this._config.panels) next.panels = this._config.panels;
         this._emit(next);
-      }, whole)}</div>`;
+      }, whole);
+      // Fields marked `sub` go in a closed sub-panel at the end of the group.
+      const main = f.filter((x) => !x.sub), subs = [...new Set(f.filter((x) => x.sub).map((x) => x.sub))];
+      const sub = (name) => {
+        const sf = f.filter((x) => x.sub === name);
+        if (!sf.some((x) => typeof x.when !== "function" || x.when(whole))) return nothing;
+        const id = `card:${name}`, open = (this._subOpen ||= new Set()).has(id);
+        const sdot = sf.some((x) => isChanged(this._config, x, GENERAL_DEFAULTS));
+        return html`<details class="sub psub" ?open=${open} @toggle=${(e) => {
+          if (e.target !== e.currentTarget || e.target.open === this._subOpen.has(id)) return;
+          if (e.target.open) this._subOpen.add(id); else this._subOpen.delete(id);
+          this.requestUpdate();
+        }}><summary><ha-icon icon=${sf[0].subIcon || "mdi:tune"}></ha-icon><span>${name}</span>${sdot ? html`<i class="chg" title="Has changed settings"></i>` : nothing}</summary>
+          ${open ? html`<div class="psub-body">${form(sf)}</div>` : nothing}</details>`;
+      };
+      return html`${prev ? this._bgPreview() : nothing}<div class="agrp"><div class="agrp-t">${title}${dot ? html`<i class="chg" title="Has changed settings"></i>` : nothing}</div>${form(main)}${subs.map(sub)}</div>`;
     });
   }
 
@@ -668,7 +696,7 @@ class WeatherStationFlexCardEditor extends LitElement {
     const bar = c.panel_bar !== false && !this._panels.some((p) => p.type === "heading" && p.show_bar);
     // Dashboard header + the card's own margin, padding, button row and title.
     const chrome = 56 + (full ? 16 : 8) + 2 * gap + (bar ? 40 + gap : 0) + (c.title ? 44 + gap : 0);
-    return { w, h, chrome, gap, row: c.row_height || 110, fit: full && c.fit_height !== false, strict: full && c.fit_height !== false && !!c.fit_strict, mode: c.layout_guide || "line" };
+    return { w, h, chrome, gap, row: c.row_height || 110, fit: full && fitMode(c) !== "none", strict: full && ["strict", "scale"].includes(fitMode(c)), mode: c.layout_guide || "line" };
   }
 
   _screenGuide() {
@@ -694,7 +722,7 @@ class WeatherStationFlexCardEditor extends LitElement {
         <select id="lg-m" class="sel" @change=${(e) => set({ layout_guide: e.target.value === "line" ? undefined : e.target.value })}>
           ${[["line", "Dotted line at the screen edge"], ["frame", "Frame — shade what's off screen"]].map(([v, l]) => html`<option value=${v} ?selected=${(c.layout_guide || "line") === v}>${l}</option>`)}
         </select></div>
-        <div class="fhelp">The map is drawn to that screen's scale (window size inside the browser, below the dashboard header).${c.layout === "fullscreen" && c.fit_height !== false ? " Full screen with fit: rows share the screen height, as on the dashboard." : " Panels below the line need scrolling."}</div>` : nothing}
+        <div class="fhelp">The map is drawn to that screen's scale (window size inside the browser, below the dashboard header).${c.layout === "fullscreen" && fitMode(c) !== "none" ? " Full screen with fit: rows share the screen height, as on the dashboard." : " Panels below the line need scrolling."}</div>` : nothing}
     </div>`;
   }
 
@@ -995,10 +1023,10 @@ class WeatherStationFlexCardEditor extends LitElement {
     // Panels without a title header can't fold down to it.
     if (!canCollapseType(p.type)) common = common.filter((f) => f.section !== "Collapse");
     // "Card default" choices say what the card's setting currently is.
-    const C = this._config, strictish = C.layout === "fullscreen" && C.fit_height !== false && (C.fit_strict || C.auto_fit);
+    const C = this._config, strictish = C.layout === "fullscreen" && ["strict", "scale"].includes(fitMode(C));
     const DEF = {
       collapsed_view: () => (C.collapsed_view === "compact" ? "Compact" : "Minimal"),
-      collapsed_open: () => ({ inplace: "In place", overlay: "Over the other panels", popup: "As a pop-up" })[C.collapsed_open] || (C.layout === "fullscreen" || C.auto_fit ? "Automatic: over the other panels" : "Automatic: in place"),
+      collapsed_open: () => ({ inplace: "In place", overlay: "Over the other panels", popup: "As a pop-up" })[C.collapsed_open] || (C.layout === "fullscreen" || fitMode(C) === "scale" ? "Automatic: over the other panels" : "Automatic: in place"),
       collapse_title_tap: () => (C.collapse_title_tap === false ? "Off" : "On"),
       show_collapse_hint: () => (C.show_collapse_hint ? "Show" : "Hide"),
       collapsed_info: () => (C.collapsed_info === "off" ? "None" : "The panel's summary"),
@@ -1217,4 +1245,4 @@ customElements.get("weather-station-flex-card-editor") || customElements.define(
 // For tests.
 globalThis.__wsfcEditorHelpers = { stackWithNext, unstack, moveIntoStack };
 // For scripts/gen-config-doc.mjs (docs/CONFIGURATION.md is generated from these).
-globalThis.__wsfcSchemas = { STATION_FIELDS, BACKGROUND_GROUPS, APPEARANCE_GROUPS, LAYOUT_GROUPS, GENERAL_DEFAULTS, REMEMBER, LABELS, PANEL_TYPES, COMMON_SCHEMA, STACK_CHILD_SCHEMA };
+globalThis.__wsfcSchemas = { STATION_FIELDS, BACKGROUND_GROUPS, APPEARANCE_GROUPS, LAYOUT_GROUPS, PANEL_GROUPS, GENERAL_DEFAULTS, REMEMBER, LABELS, PANEL_TYPES, COMMON_SCHEMA, STACK_CHILD_SCHEMA };

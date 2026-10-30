@@ -211,3 +211,45 @@ export function onlyOtherStates(changed, hass, ids) {
   for (const e of ids) if (e && old.states[e] !== hass.states[e]) return false;
   return true;
 }
+
+// --- Which entities a panel can show (for shouldUpdate filters) ---------------
+const ENTITY_RE = /^(sensor|binary_sensor|weather|sun|input_number|input_text|input_select|input_boolean|number|select|switch|light|climate|device_tracker|zone|person|counter|template|event|update)\.[a-z0-9_]+$/;
+
+/** Entity ids written anywhere in a panel's config (series, chips, overrides…). */
+export function configEntities(cfg, out = new Set()) {
+  if (typeof cfg === "string") { if (ENTITY_RE.test(cfg)) out.add(cfg); }
+  else if (Array.isArray(cfg)) for (const v of cfg) configEntities(v, out);
+  else if (cfg && typeof cfg === "object") for (const v of Object.values(cfg)) configEntities(v, out);
+  return out;
+}
+
+const stationIdsCache = new WeakMap(); // station object -> { entities, devices, ids }
+/**
+ * Every entity the Weather Sources can draw on: the weather entity, sun.sun,
+ * entities named in the sources, and all entities of the source devices (and
+ * of devices with the same name, which the auto-mapping also searches).
+ * Cached per station object and Home Assistant entity / device registry.
+ */
+export function stationEntityIds(station, hass) {
+  if (!station || !hass) return [];
+  const hit = stationIdsCache.get(station);
+  if (hit && hit.entities === hass.entities && hit.devices === hass.devices) return hit.ids;
+  const ids = new Set([station.entity, "sun.sun"]);
+  configEntities(station.metric_sources, ids);
+  const devs = new Set();
+  for (const s of station.metric_sources?.sources || []) if (String(s?.ref || "").startsWith("device:")) devs.add(s.ref.slice(7));
+  // Devices with the same name (Ecowitt integrations side by side).
+  const names = new Set([...devs].map((d) => hass.devices?.[d]?.name_by_user || hass.devices?.[d]?.name).filter(Boolean));
+  for (const [id, d] of Object.entries(hass.devices || {})) if (names.has(d.name_by_user || d.name)) devs.add(id);
+  for (const [eid, e] of Object.entries(hass.entities || {})) if (devs.has(e.device_id)) ids.add(eid);
+  const out = [...ids].filter(Boolean);
+  stationIdsCache.set(station, { entities: hass.entities, devices: hass.devices, ids: out });
+  return out;
+}
+
+/** shouldUpdate() helper: redraw unless only hass changed and none of the station's or config's entities did. */
+export function stationPanelChanged(el, changed) {
+  if (changed.size !== 1 || !changed.has("hass")) return true;
+  const ids = [...stationEntityIds(el.station, el.hass), ...configEntities(el.config)];
+  return !onlyOtherStates(changed, el.hass, ids);
+}

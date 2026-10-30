@@ -148,7 +148,7 @@ CoAgMET package: copy both files from `extras/coagmet/` (`coagmet_records.yaml` 
 
 ```yaml
 layout: fullscreen
-fit_strict: true             # every panel exactly its rows; tall content scrolls inside
+screen_fit: strict           # every panel exactly its rows; tall content scrolls inside
 layout_screen: 1280x800      # the editor's layout map shows this screen at load
 panels:
   - type: radar

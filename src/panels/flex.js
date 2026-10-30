@@ -2,7 +2,7 @@
 // daily and sky_tracker. A panel's `flex:` holds Weather Flex config
 // (exactly what Weather Flex Card takes) deep-merged over the type's base.
 import { LitElement, html, css, nothing } from "lit";
-import { panelStyles, head } from "./shared.js";
+import { panelStyles, head, stationPanelChanged } from "./shared.js";
 import { CoreSlot, deepMerge } from "../card/core.js";
 import { renderFacts, factStyles } from "./astro-facts.js";
 
@@ -187,6 +187,12 @@ class WsfcFlexPanel extends LitElement {
 
   _coreConfig() {
     return deepMerge(flexBase(this.type, this.station), this.config?.flex || {});
+  }
+
+  // Redraw only when the station's or the panel's own entities change (the
+  // clock and forecasts update themselves).
+  shouldUpdate(changed) {
+    return stationPanelChanged(this, changed);
   }
 
   render() {

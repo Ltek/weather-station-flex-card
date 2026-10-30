@@ -329,7 +329,7 @@ for (const sel of document.querySelectorAll("[data-param]")) {
   });
 }
 // ?editor=1: render the visual editor next to the card; edits apply live.
-if (params.get("editor")) {
+if (params.get("editor")) customElements.get("weather-station-flex-card").loadEditor().then(() => {
   const ed = document.createElement("weather-station-flex-card-editor");
   ed.hass = card.hass;
   ed.setConfig(config());
@@ -342,7 +342,7 @@ if (params.get("editor")) {
   document.getElementById("side").append(ed);
   document.body.classList.add("with-editor");
   window.__editor = ed;
-}
+});
 window.__card = card;
 
 // Stand-in for Home Assistant's card helpers: shows the generated config.

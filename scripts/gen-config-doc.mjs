@@ -19,6 +19,7 @@ fs.copyFileSync(path.join(root, "dist/weather-station-flex-card.js"), path.join(
 for (const f of fs.readdirSync(path.join(root, "dist"))) if (/^wsfc-.*\.js$/.test(f)) fs.copyFileSync(path.join(root, "dist", f), path.join(tmp, f));
 const origLog = console.log; console.log = () => {}; console.info = () => {};
 await import(pathToFileURL(path.join(tmp, "card.mjs")).href);
+await customElements.get("weather-station-flex-card").loadEditor();
 console.log = origLog;
 const S = globalThis.__wsfcSchemas;
 if (!S) throw new Error("schemas not exposed by the bundle");
@@ -93,7 +94,7 @@ With no \`panels:\` the card shows its default dashboard (hero, bulletin, Sky Tr
 | \`layout_screen\` | \`window\` or \`<width>x<height>\` | Editor only: the Layout map's screen guide. |
 | \`layout_guide\` | \`line\` · \`frame\` | Editor only: how the screen guide is drawn. |
 `);
-for (const [title, fields] of [...(S.STATION_FIELDS ? [["Current condition", S.STATION_FIELDS]] : []), ...(S.BACKGROUND_GROUPS || []), ...S.APPEARANCE_GROUPS, ...(S.LAYOUT_GROUPS || [])]) {
+for (const [title, fields] of [...(S.STATION_FIELDS ? [["Current condition", S.STATION_FIELDS]] : []), ...(S.BACKGROUND_GROUPS || []), ...S.APPEARANCE_GROUPS, ...(S.LAYOUT_GROUPS || []), ...(S.PANEL_GROUPS || [])]) {
   out.push(`### ${title}\n\n${table(fields, S.GENERAL_DEFAULTS)}\n`);
 }
 out.push(`### Panel buttons\n\n${table(S.REMEMBER, S.GENERAL_DEFAULTS)}\n\nWhere the buttons go: \`panel_bar: false\` hides the bar; a Button Menu panel (\`heading\`) with \`show_bar: true\` holds them instead of the row above the panels. Which panels get a button is each panel's \`in_bar\`.\n`);

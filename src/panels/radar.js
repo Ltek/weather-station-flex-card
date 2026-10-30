@@ -2,10 +2,9 @@
 // OpenWeatherMap overlay layers (wind, precipitation, clouds, temperature).
 // Leaflet is loaded on first use (bundled, but its module code only runs when
 // a radar panel is actually shown).
-import { LitElement, html, css, unsafeCSS } from "lit";
-import leafletCss from "inline-css:leaflet/dist/leaflet.css";
+import { LitElement, html, css } from "lit";
 import { lazyLib } from "../card/lazy.js";
-import { panelStyles, seg, head, pausedStyles, paused } from "./shared.js";
+import { panelStyles, seg, head, pausedStyles, paused, onlyOtherStates, configEntities } from "./shared.js";
 
 const RAINVIEWER_INDEX = "https://api.rainviewer.com/public/weather-maps.json";
 // RainViewer's free tiles are served up to zoom 7; Leaflet upscales beyond.
@@ -53,7 +52,6 @@ class WsfcRadar extends LitElement {
   static styles = [
     panelStyles,
     pausedStyles,
-    unsafeCSS(leafletCss),
     css`
       .map { position: relative; flex: 1; min-height: 240px; border-radius: 12px; overflow: hidden; background: #1b1f24; }
       .map > div { position: absolute; inset: 0; }
@@ -78,6 +76,12 @@ class WsfcRadar extends LitElement {
 
   get _radarOn() {
     return this.config?.radar !== false;
+  }
+
+  // The map doesn't show sensor states: skip redraws caused by other entities
+  // (theme, locale and location changes still come through).
+  shouldUpdate(changed) {
+    return !onlyOtherStates(changed, this.hass, [...configEntities(this.config)]);
   }
 
   render() {
@@ -112,6 +116,12 @@ class WsfcRadar extends LitElement {
   async _initMap() {
     try {
       await loadLeaflet();
+      // Leaflet's stylesheet comes with it (wsfc-leaflet.js): add it to this panel once.
+      if (L.leafletCss && !this.__leafletCss) {
+        this.__leafletCss = true;
+        const sheet = (WsfcRadar.__lcss ||= (() => { const c = new CSSStyleSheet(); c.replaceSync(L.leafletCss); return c; })());
+        this.renderRoot.adoptedStyleSheets = [...this.renderRoot.adoptedStyleSheets, sheet];
+      }
     } catch (e) {
       this._error = String(e?.message || e);
       this.requestUpdate();

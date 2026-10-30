@@ -10,7 +10,7 @@ https://github.com/Ltek/weather-station-flex-card
 
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Ltek&repository=weather-station-flex-card&category=plugin)
 
-Current build: **v2026.10.30.88** · full history in [CHANGELOG.md](CHANGELOG.md)
+Current build: **v2026.10.30.89** · full history in [CHANGELOG.md](CHANGELOG.md)
 
 ---
 
@@ -24,7 +24,7 @@ Current build: **v2026.10.30.88** · full history in [CHANGELOG.md](CHANGELOG.md
 - **Full-screen wall display** — fills the screen and shares the height between panels, with a screen guide in the editor to design for a specific display.
 - **Animated weather background** — rain, snow, lightning, drifting clouds, the sun by day and a starry sky with the moon in its current phase by night, with adjustable speeds. Or use your own background image.
 - **Works with the best community cards** — uses the Statistics Graph Chart Card and the Wind Rose Card automatically when they're installed, filled in with your station's sensors, and falls back to built-in versions when they aren't.
-- **Fast** — pauses animations and maps while you edit, and only redraws panels whose own sensors changed.
+- **Fast** — only redraws a panel when one of its own sensors changes (not for every state change in the house), loads the editor, the radar's map library and YAML import/export only when they're used, and pauses animations and maps while you edit.
 
 ---
 
