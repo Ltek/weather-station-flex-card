@@ -53,7 +53,8 @@ With no `panels:` the card shows its default dashboard (hero, bulletin, Sky Trac
 | `background_effects` | list of: `rain` · `snow` · `lightning` · `sky` · `moon` · `sun` · `cloud` · `fog` · `hail` · `wind` · `exceptional` | `["rain","snow","lightning","sky","moon","sun","cloud","fog","hail","wind","exceptional"]` | **Animation effects** — Which effects the weather animation draws. At night it shows the dark sky and the moon instead of the sun. Rain, snow and storms get an overcast sky and cloud deck (Sky, Clouds). |
 | `background_moon_phase` | `true` / `false` | `true` | **Show moon phase** — Shade the night-time moon to the current lunar phase (off: a full moon). |
 | `anim_low_power` | `true` / `false` | `false` | **Low-power animation** — For tablets and other low-powered screens: no panel blur while the background animates, each cloud drawn once on its own, and simpler cloud edges. Smoother drift; clouds look a little softer. |
-| `anim_twinkle` | number 10–150 % | `100` | **Star twinkle** — Animation speeds (100% = normal, 50% = half as fast), for the card background and the hero's own animation. |
+| `anim_speed` | number 10–150 % | `100` | **Overall speed** — Every animation at once (100% = normal, 50% = half as fast), for the card background and the hero's own animation. Per-effect speeds below multiply it. |
+| `anim_twinkle` | number 10–150 % | `100` | **Star twinkle** |
 | `anim_clouds` | number 10–150 % | `100` | **Cloud drift** |
 | `anim_rain` | number 10–150 % | `100` | **Rain** |
 | `anim_snow` | number 10–150 % | `100` | **Snow** |
@@ -97,21 +98,6 @@ With no `panels:` the card shows its default dashboard (hero, bulletin, Sky Trac
 | `panel_glow_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Glow color** — Not set: the border color, else the theme's primary color. |
 | `panel_glow_size` | number 2–40 px | `10` | **Glow size** |
 
-### Screen fit & sizing
-
-| Option | Value | Default | What it does |
-|---|---|---|---|
-| `layout` | `auto` · `fullscreen` | `auto` | **Layout** |
-| `fit_height` | `true` / `false` | `true` | **Fit panels to the screen height** — Full screen: panels with a height share the screen height (row height is calculated). |
-| `auto_fit` | `true` / `false` | `false` | **Auto-fit to the screen** — The layout and sizes you set are the design, for the Screen guide's size (Layout Map → Screen guide). Every screen shows that design scaled to fit: rows share the screen height, the layout stays as designed until the screen is phone-narrow, and each panel's contents scale with the screen — smaller where they'd still overflow. Full screen recommended. |
-| `auto_fit_min` | number 30–100 % | `60` | **Smallest content scale** — Below this a panel scrolls instead, so text stays readable. |
-| `auto_fit_max` | number 100–250 % | `150` | **Largest content scale** — On screens bigger than the design. |
-| `fit_strict` | `true` / `false` | `false` | **Strict fit to screen dimensions** — Every panel is exactly the height you set, so the page fits the screen as the layout map shows; content taller than its panel scrolls inside the panel. Off: panels grow to fit their content (the page may scroll). |
-| `panel_overflow` | `grow` · `scroll` | `grow` | **When a panel's content doesn't fit** — For panels with a set height (Height above 0); each panel can override this. Scroll locks every panel to its size in any layout; Strict fit does the same in full screen. |
-| `layout_size` | `auto` · `wide` · `medium` · `narrow` | `auto` | **Layout size** — In a Sections view the card is only as wide as its section; widen the section or use a Panel view for the desktop layout. |
-| `row_height` | number 40–300 px |  | **Row height** — Height of one row unit (default 110). |
-| `gap` | number 0–32 px |  | **Gap** — Space between panels (default 12). |
-
 ### Alerts bar
 
 | Option | Value | Default | What it does |
@@ -120,6 +106,19 @@ With no `panels:` the card shows its default dashboard (hero, bulletin, Sky Trac
 | `alerts_watch` | `true` / `false` | `true` | **Heat and frost** |
 | `alerts_lightning` | `true` / `false` | `true` | **Lightning nearby** |
 | `alerts_entity` | entity id (`sensor.*`) |  | **Weather alerts sensor** — Optional, e.g. the NWS Alerts integration's sensor (its Alerts attribute). |
+
+### Screen fit & sizing
+
+| Option | Value | Default | What it does |
+|---|---|---|---|
+| `layout` | `auto` · `fullscreen` | `auto` | **Layout** |
+| `screen_fit` | `none` · `rows` · `strict` · `scale` | `rows` | **Screen fit** — Share and Exact apply in Full screen. Auto-fit takes the layout and sizes you set as the design for the Screen guide's size (Layout Map → Screen guide) and scales each panel's contents to every other screen, smaller where they'd still overflow. |
+| `auto_fit_min` | number 30–100 % | `60` | **Smallest content scale** — Below this a panel scrolls instead, so text stays readable. |
+| `auto_fit_max` | number 100–250 % | `150` | **Largest content scale** — On screens bigger than the design. |
+| `panel_overflow` | `grow` · `scroll` | `grow` | **When a panel's content doesn't fit** — For panels with a set height (Height above 0); each panel can override this. Scroll locks every panel to its size in any layout; Strict fit does the same in full screen. |
+| `layout_size` | `auto` · `wide` · `medium` · `narrow` | `auto` | **Layout size** — In a Sections view the card is only as wide as its section; widen the section or use a Panel view for the desktop layout. |
+| `row_height` | number 40–300 px |  | **Row height** — Height of one row unit (default 110). |
+| `gap` | number 0–32 px |  | **Gap** — Space between panels (default 12). |
 
 ### Collapsed panels
 
@@ -725,7 +724,7 @@ Default size: 6 of 12 wide, 4 rows high.
 | `rose_bins` | mapping / list |  | **Rose speed bins** — Built-in rose: speed thresholds in the sensor's unit, e.g. [1, 5, 10, 15, 25]. |
 | `windrose_preset` | `standard` · `periods` · `beaufort` · `corners` · `stats` · `playback` · `minimal` | `standard` | **Wind Rose Card preset** — Wind Rose Card starting layout; the settings below change parts of it. |
 | `wr_period` | `preset` · `-1h` · `-8h` · `-1d` · `-7d` · `-30d` | `preset` | **Default period** — Period shown first. |
-| `wr_scale` | number 30–150 % | `100` | **Size** — Wind Rose Card size within the panel. Not used while the panel fits its height (Layout → Fit): then the rose is as large as the height allows. |
+| `wr_scale` | number 30–150 % | `100` | **Size** — Wind Rose Card size within the panel. Not used while the panel fits its height (Screen fit): then the rose is as large as the height allows. |
 | `wr_arrow` | `true` / `false` | `true` | **Direction arrow** — Current direction arrow. |
 | `wr_arrow_size` | number 10–240 | `50` | **Arrow size** — Direction arrow (pointer) size. |
 | `wr_arrow_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Arrow color** — Not set: red. The Wind Rose Card uses it for the speed-bar arrows too. |
@@ -953,7 +952,7 @@ CoAgMET package: copy both files from `extras/coagmet/` (`coagmet_records.yaml` 
 
 ```yaml
 layout: fullscreen
-fit_strict: true             # every panel exactly its rows; tall content scrolls inside
+screen_fit: strict           # every panel exactly its rows; tall content scrolls inside
 layout_screen: 1280x800      # the editor's layout map shows this screen at load
 panels:
   - type: radar
