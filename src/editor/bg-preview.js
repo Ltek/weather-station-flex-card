@@ -32,7 +32,7 @@ class WsfcBgPreview extends LitElement {
     return html`<div class="box" style=${vars}>
       <wsfc-animation-provider .hass=${h} .wsfcNight=${night}
         .weatherEntity=${{ ...(ent || { entity_id: c.entity, attributes: {} }), state: cond }}
-        .config=${{ entity: c.entity, show_condition_effects: c.background_effects ?? true, show_moon_phase: c.background_moon_phase ?? true, fog_density: c.fog_density, wind_density: c.wind_density }}
+        .config=${{ entity: c.entity, show_condition_effects: c.background_effects ?? true, show_moon_phase: c.background_moon_phase ?? true, fog_density: c.fog_density, wind_density: c.wind_density, lightning_interval: c.lightning_interval, lightning_intensity: c.lightning_intensity }}
         .currentForecast=${{ wind_speed: a.wind_speed, wind_bearing: a.wind_bearing }}></wsfc-animation-provider>
       <span class="tag">${label} · ${night ? "Night" : "Day"}</span>
     </div>`;

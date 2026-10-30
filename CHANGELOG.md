@@ -1,5 +1,11 @@
 # Changelog
 
+## v2026.10.30.85
+
+- **Wind wisps stay where they are.** Each fades in at its own spot, drifts 60–150 px with the wind (under an eighth of the screen) and fades out. About half rise or sink by a few pixels, slowly; the rest stay level. Nothing crosses the screen or bounces.
+- **Lightning lights the clouds.** In storms, six glows along the cloud deck flicker at random places and strengths, each on its own irregular cycle, with an occasional faint flash over the whole card. The old single white flash is gone (it was nearly invisible behind the panels).
+- New sliders in Background → Animation: **Time between strikes** (2–90 s, default 12) and **Lightning intensity** (10–200 %). The Lightning speed slider is removed (`anim_lightning` is ignored).
+
 ## v2026.10.30.84
 
 - **Background has its own settings section** in the editor (between Weather station and Appearance), with the preview button in its title bar and three groups: Background, Animation and Image. Appearance keeps Card and Panels.

@@ -11,7 +11,6 @@ const SPEED_CSS = css`
   .cloud-track { animation-duration: calc(var(--cloud-drift-duration, 80s) * var(--wsfc-anim-clouds, 1)); }
   .raindrop, .splat { animation-duration: calc(var(--duration) * var(--wsfc-anim-rain, 1)); animation-delay: calc(var(--delay) * var(--wsfc-anim-rain, 1)); }
   .snowflake { animation-duration: calc(var(--duration) * var(--wsfc-anim-snow, 1)); animation-delay: calc(var(--delay) * var(--wsfc-anim-snow, 1)); }
-  .lightning-flash { animation-duration: calc(20s * var(--wsfc-anim-lightning, 1)); }
   .cloud { filter: var(--wsfc-cloud-filter, url(#wfc-cloud-rough)); will-change: var(--wsfc-cloud-will, auto); }
   .cloud.night { filter: var(--wsfc-cloud-filter-night, url(#wfc-cloud-rough) brightness(0.5)); }
   :host { --sun-spin-duration: calc(var(--weather-forecast-card-effects-sun-spin-duration, 100s) * var(--wsfc-anim-sun, 1)); }
@@ -34,7 +33,7 @@ if (!WeatherAnimationProvider.__wsfcSpeed) {
   // and its direction the wind's. A CSS animation whose duration or direction
   // changes jumps to a new position; keep each track where it was and carry on
   // at the new speed. Wind gusts likewise keep their progress.
-  const DRIFT = new Set(["cloud-drift", "wind-gust", "wind-gust-b"]);
+  const DRIFT = new Set(["cloud-drift", "wind-gust"]);
   const tracks = (el) => [...(el.renderRoot?.querySelectorAll?.(".cloud-track, .fog-track, .wind-path") || [])];
   const anim = (t) => t.getAnimations?.().find((a) => DRIFT.has(a.animationName));
   const where = (a, t) => {
@@ -92,7 +91,6 @@ export const ANIM_SPEEDS = [
   ["anim_rain", "--wsfc-anim-rain", "Rain"],
   ["anim_snow", "--wsfc-anim-snow", "Snow"],
   ["anim_sun", "--wsfc-anim-sun", "Sun rays"],
-  ["anim_lightning", "--wsfc-anim-lightning", "Lightning"],
   ["anim_fog", "--wsfc-anim-fog", "Fog drift"],
   ["anim_hail", "--wsfc-anim-hail", "Hail"],
   ["anim_wind", "--wsfc-anim-wind", "Wind gusts"],
