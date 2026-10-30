@@ -1,5 +1,12 @@
 # Changelog
 
+## v2026.10.30.84
+
+- **Background has its own settings section** in the editor (between Weather station and Appearance), with the preview button in its title bar and three groups: Background, Animation and Image. Appearance keeps Card and Panels.
+- **Fog density** and **Wind density** sliders (30–200 %): how many mist banks and how much they hide; how many wisps of air blow across.
+- **Softer rain splashes.** Where a drop lands, a soft ring spreads and fades and two droplets are thrown up, instead of the dotted arc. Hail uses the same splash.
+- **Wind wisps no longer move in straight lines.** Each follows one of two wave paths, rising, falling and tilting, with a slow start, a surge through the middle and an easing tail.
+
 ## v2026.10.30.83
 
 - **Fog and wind no longer jump or restart.** Their mist banks and gusts were picked again on every state update, and their speed changed with each small wind reading, so they jumped to new places. They now stay put. Speeds change only between three wind steps (calm, breezy, strong), and drifting layers keep their place when the wind speed or direction changes. This also applies to clouds and hail.

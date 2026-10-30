@@ -38,24 +38,34 @@ import { CONDITIONS } from "./bg-preview.js";
 const MAP_KEYS = ["temperature", "apparent_temperature", "dew_point", "humidity", "pressure", "wind_speed", "wind_gust_speed", "wind_bearing", "uv_index", "solar_radiation", "illuminance", "precipitation"];
 const MAP_LABELS = { wind_bearing: "Wind direction", precipitation: "Rain rate" };
 
+// Background section (its own area in the editor), in groups.
+const BACKGROUND_GROUPS = [
+  ["Background", [
+    { name: "background", selector: { select: { options: [{ value: "none", label: "None (theme)" }, { value: "animated", label: "Animated weather — the hero's animation behind the whole card" }, { value: "image", label: "Image — upload one or use a URL" }] } }, helper: "With an animated or image background, panels become see-through and the hero stops drawing its own." },
+  ]],
+  ["Animation", [
+    { name: "background_effects", label: "Animation effects", when: (d) => d.background === "animated", selector: { select: { multiple: true, options: [["rain", "Rain"], ["snow", "Snow"], ["lightning", "Lightning"], ["sky", "Sky"], ["moon", "Moon"], ["sun", "Sun"], ["cloud", "Clouds"], ["fog", "Fog"], ["hail", "Hail"], ["wind", "Wind gusts"], ["exceptional", "Unusual weather glow"]].map(([value, label]) => ({ value, label })) } }, default: ["rain", "snow", "lightning", "sky", "moon", "sun", "cloud", "fog", "hail", "wind", "exceptional"], helper: "Which effects the weather animation draws. At night it shows the dark sky and the moon instead of the sun. Rain, snow and storms get an overcast sky and cloud deck (Sky, Clouds)." },
+    { name: "background_moon_phase", label: "Show moon phase", when: (d) => d.background === "animated", selector: { boolean: {} }, default: true, helper: "Shade the night-time moon to the current lunar phase (off: a full moon)." },
+    { name: "anim_low_power", label: "Low-power animation", when: (d) => d.background !== "image", selector: { boolean: {} }, default: false, helper: "For tablets and other low-powered screens: no panel blur while the background animates, each cloud drawn once on its own, and simpler cloud edges. Smoother drift; clouds look a little softer." },
+    ...ANIM_SPEEDS.map(([name, , label], k) => ({ name, label, when: (d) => d.background !== "image", selector: { number: { min: 10, max: 150, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100,
+      helper: k === 0 ? "Animation speeds (100% = normal, 50% = half as fast), for the card background and the hero's own animation." : undefined })),
+    { name: "fog_density", label: "Fog density", when: (d) => d.background === "animated" && (d.background_effects ?? ["fog"]).includes("fog"), selector: { number: { min: 30, max: 200, step: 10, mode: "slider", unit_of_measurement: "%" } }, default: 100, helper: "How thick the fog is: the number of mist banks and how much they hide." },
+    { name: "wind_density", label: "Wind density", when: (d) => d.background === "animated" && (d.background_effects ?? ["wind"]).includes("wind"), selector: { number: { min: 30, max: 200, step: 10, mode: "slider", unit_of_measurement: "%" } }, default: 100, helper: "How many wisps of air blow across in windy weather." },
+  ]],
+  ["Image", [
+    { name: "background_image", when: (d) => d.background === "image", selector: { media: { accept: ["image/*"], image_upload: true } }, helper: "Image background: upload a PNG, JPG, WEBP… or pick one from your media." },
+    { name: "background_image_url", when: (d) => d.background === "image", selector: { text: { type: "url" } }, helper: "Image background: or an image URL (wins over the upload), e.g. /local/images/sky.jpg." },
+    { name: "background_image_fit", when: (d) => d.background === "image", selector: { select: { options: [{ value: "cover", label: "Fill (crop to fit)" }, { value: "contain", label: "Fit (whole image)" }, { value: "tile", label: "Tile" }] } }, default: "cover" },
+    { name: "background_dim", when: (d) => d.background === "image", selector: { number: { min: 0, max: 0.9, step: 0.05, mode: "slider" } }, default: 0.25, helper: "Image background: darken it so text stays readable (0 = off)." },
+  ]],
+];
+
 // Appearance section, in groups. GENERAL_SCHEMA is all of them (for reading and writing).
 const APPEARANCE_GROUPS = [
   ["Card", [
     { name: "title", selector: { text: {} }, helper: "Optional title row above the panels." },
     { name: "subtitle", selector: { text: {} } },
     { name: "icon", selector: { icon: {} } },
-  ]],
-  ["Background", [
-    { name: "background", selector: { select: { options: [{ value: "none", label: "None (theme)" }, { value: "animated", label: "Animated weather — the hero's animation behind the whole card" }, { value: "image", label: "Image — upload one or use a URL" }] } }, helper: "With an animated or image background, panels become see-through and the hero stops drawing its own." },
-    { name: "background_effects", label: "Animation effects", when: (d) => d.background === "animated", selector: { select: { multiple: true, options: [["rain", "Rain"], ["snow", "Snow"], ["lightning", "Lightning"], ["sky", "Sky"], ["moon", "Moon"], ["sun", "Sun"], ["cloud", "Clouds"], ["fog", "Fog"], ["hail", "Hail"], ["wind", "Wind gusts"], ["exceptional", "Unusual weather glow"]].map(([value, label]) => ({ value, label })) } }, default: ["rain", "snow", "lightning", "sky", "moon", "sun", "cloud", "fog", "hail", "wind", "exceptional"], helper: "Which effects the weather animation draws. At night it shows the dark sky and the moon instead of the sun. Rain, snow and storms get an overcast sky and cloud deck (Sky, Clouds)." },
-    { name: "background_moon_phase", label: "Show moon phase", when: (d) => d.background === "animated", selector: { boolean: {} }, default: true, helper: "Shade the night-time moon to the current lunar phase (off: a full moon)." },
-    { name: "anim_low_power", label: "Low-power animation", when: (d) => d.background !== "image", selector: { boolean: {} }, default: false, helper: "For tablets and other low-powered screens: no panel blur while the background animates, each cloud drawn once on its own, and simpler cloud edges. Smoother drift; clouds look a little softer." },
-    ...ANIM_SPEEDS.map(([name, , label], k) => ({ name, label, when: (d) => d.background !== "image", selector: { number: { min: 10, max: 150, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100,
-      helper: k === 0 ? "Animation speeds (100% = normal, 50% = half as fast), for the card background and the hero's own animation." : undefined })),
-    { name: "background_image", when: (d) => d.background === "image", selector: { media: { accept: ["image/*"], image_upload: true } }, helper: "Image background: upload a PNG, JPG, WEBP… or pick one from your media." },
-    { name: "background_image_url", when: (d) => d.background === "image", selector: { text: { type: "url" } }, helper: "Image background: or an image URL (wins over the upload), e.g. /local/images/sky.jpg." },
-    { name: "background_image_fit", when: (d) => d.background === "image", selector: { select: { options: [{ value: "cover", label: "Fill (crop to fit)" }, { value: "contain", label: "Fit (whole image)" }, { value: "tile", label: "Tile" }] } }, default: "cover" },
-    { name: "background_dim", when: (d) => d.background === "image", selector: { number: { min: 0, max: 0.9, step: 0.05, mode: "slider" } }, default: 0.25, helper: "Image background: darken it so text stays readable (0 = off)." },
   ]],
   ["Panels", [
     { name: "panel_opacity", selector: { number: { min: 0, max: 1, step: 0.05, mode: "slider" } }, helper: "With a card background: panel opacity (0 = fully transparent, 1 = solid). Default 0.55." },
@@ -111,7 +121,7 @@ const LAYOUT_GROUPS = [
 ];
 // In the Panel buttons section.
 const REMEMBER = [{ name: "remember", selector: { boolean: {} }, default: true, helper: "Keep which panels were shown or hidden with the panel buttons after a refresh, in each browser. Off: every load starts from the panels' Shown setting (the eye icon)." }];
-const GENERAL_SCHEMA = [...APPEARANCE_GROUPS, ...LAYOUT_GROUPS].flatMap(([, f]) => f);
+const GENERAL_SCHEMA = [...BACKGROUND_GROUPS, ...APPEARANCE_GROUPS, ...LAYOUT_GROUPS].flatMap(([, f]) => f);
 const GENERAL_DEFAULTS = { layout: "auto", panel_bar: true, remember: true, fit_height: true, layout_size: "auto", background: "none", panel_opacity: 0.55, panel_blur: 6 };
 
 const LABELS = {
@@ -375,6 +385,7 @@ class WeatherStationFlexCardEditor extends LitElement {
         </div>
         ${this._q && this._q.trim().length >= 2 ? this._searchResults(this._q.trim()) : nothing}
         ${this._section("station", "mdi:weather-cloudy-clock", "Weather station", () => this._stationEditor())}
+        ${this._section("background", "mdi:image-filter-hdr", "Background", () => this._general(BACKGROUND_GROUPS), (this._config.background || "none") === "animated" ? this._bgPreviewButton() : nothing)}
         ${this._section("general", "mdi:palette-outline", "Appearance", () => this._general(APPEARANCE_GROUPS))}
         ${this._section("buttons", "mdi:gesture-tap-button", "Panel buttons", () => this._buttonsEditor())}
         ${this._section("behavior", "mdi:tune-variant", "Layout & Behavior", () => html`${this._general(LAYOUT_GROUPS)}${this._convertBar()}`)}
@@ -388,7 +399,7 @@ class WeatherStationFlexCardEditor extends LitElement {
   _searchIndex() {
     const out = [];
     const label = (f) => f.label || LABELS[f.name] || f.name.replace(/[._]/g, " ");
-    for (const [area, title, groups] of [["general", "Appearance", APPEARANCE_GROUPS], ["behavior", "Layout & Behavior", LAYOUT_GROUPS]])
+    for (const [area, title, groups] of [["background", "Background", BACKGROUND_GROUPS], ["general", "Appearance", APPEARANCE_GROUPS], ["behavior", "Layout & Behavior", LAYOUT_GROUPS]])
       for (const [g, fields] of groups) for (const f of fields) out.push({ label: label(f), help: f.helper || "", where: `${title} › ${g}`, go: { open: area }, f });
     for (const f of REMEMBER) out.push({ label: label(f), help: f.helper || "", where: "Panel buttons", go: { open: "buttons" }, f });
     const add = (p, key, nested) => {
@@ -438,22 +449,22 @@ class WeatherStationFlexCardEditor extends LitElement {
     }
   }
 
-  _section(id, icon, title, body) {
+  _section(id, icon, title, body, extra = nothing) {
     const open = this._open === id;
     return html`<details class="panel" ?open=${open} @toggle=${(e) => {
       if (e.target.open) this._open = id;
       else if (this._open === id) this._open = null;
     }}>
-      <summary><ha-icon icon=${icon}></ha-icon><span>${title}</span></summary>
+      <summary><ha-icon icon=${icon}></ha-icon><span>${title}</span>${extra}</summary>
       ${open ? html`<div class="body">${body()}</div>` : nothing}
     </details>`;
   }
 
   // Design-system fields (checkboxes, drop-downs, sliders, color control);
   // ha-form only for selectors we don't draw (entity, device, icon, object …).
-  _form(data, schema, onChange) {
+  _form(data, schema, onChange, whenData) {
     return renderFields({
-      data, schema, onChange,
+      data, schema, onChange, whenData,
       label: (f) => f.label || LABELS[f.name] || f.name,
       helper: (f) => f.helper,
       haForm: (d, sch, cb) => this._haForm(d, sch, cb),
@@ -508,18 +519,20 @@ class WeatherStationFlexCardEditor extends LitElement {
   }
 
   _general(groups = APPEARANCE_GROUPS) {
+    // Conditions (`when`) see the whole card's settings, since the groups split them up.
+    const whole = formData(this._config, GENERAL_SCHEMA, GENERAL_DEFAULTS);
     const bg = this._config.background || "none";
     return groups.map(([title, fields]) => {
       const f = this._onlyChanged ? fields.filter((x) => isChanged(this._config, x, GENERAL_DEFAULTS)) : fields;
       if (!f.length) return nothing;
       const dot = fields.some((x) => isChanged(this._config, x, GENERAL_DEFAULTS));
-      const prev = title === "Background" && bg === "animated";
-      return html`<div class="agrp"><div class="agrp-t">${title}${dot ? html`<i class="chg" title="Has changed settings"></i>` : nothing}${prev ? this._bgPreviewButton() : nothing}</div>${prev && this._bgPrev?.open ? this._bgPreview() : nothing}${this._form(formData(this._config, f, GENERAL_DEFAULTS), f, (v) => {
+      const prev = groups === BACKGROUND_GROUPS && title === "Background" && bg === "animated" && this._bgPrev?.open;
+      return html`${prev ? this._bgPreview() : nothing}<div class="agrp"><div class="agrp-t">${title}${dot ? html`<i class="chg" title="Has changed settings"></i>` : nothing}</div>${this._form(formData(this._config, f, GENERAL_DEFAULTS), f, (v) => {
         const { panels: _p, ...rest } = this._config;
         const next = applyForm(rest, f, v, GENERAL_DEFAULTS);
         if (this._config.panels) next.panels = this._config.panels;
         this._emit(next);
-      })}</div>`;
+      }, whole)}</div>`;
     });
   }
 
@@ -528,7 +541,7 @@ class WeatherStationFlexCardEditor extends LitElement {
     const open = !!this._bgPrev?.open;
     return html`<button class="bgprev-btn ${open ? "on" : ""}" type="button" aria-pressed=${String(open)}
       title=${open ? "Hide the background preview" : "Preview the background"} aria-label="Preview the background"
-      @click=${() => { this._bgPrev = { ...(this._bgPrev || {}), open: !open }; this.requestUpdate(); }}><ha-icon icon="mdi:magnify"></ha-icon></button>`;
+      @click=${(e) => { e.preventDefault(); e.stopPropagation(); this._bgPrev = { ...(this._bgPrev || {}), open: !open }; if (!open) this._open = "background"; this.requestUpdate(); }}><ha-icon icon="mdi:magnify"></ha-icon></button>`;
   }
 
   _bgPreview() {
@@ -1076,13 +1089,12 @@ class WeatherStationFlexCardEditor extends LitElement {
     summary ha-icon { --mdc-icon-size: var(--ltek-icon-lg); color: var(--ltek-c-accent); }
     .body { padding: 0 var(--ltek-sp-5) var(--ltek-sp-5); display: flex; flex-direction: column; gap: var(--ltek-sp-3); }
     .agrp + .agrp { margin-top: var(--ltek-sp-4, 16px); }
-    .agrp-t { display: flex; align-items: center; gap: 6px; }
     .bgprev-btn { margin-left: auto; border: 0; background: transparent; cursor: pointer; padding: 4px; border-radius: 50%; line-height: 0; color: var(--secondary-text-color); }
     .bgprev-btn ha-icon { --mdc-icon-size: 20px; }
     .bgprev-btn:hover { background: rgba(127, 127, 127, 0.18); }
     .bgprev-btn.on { color: var(--ltek-c-accent); background: color-mix(in srgb, var(--ltek-c-accent) 15%, transparent); }
     .bgprev-btn:focus-visible { outline: 2px solid var(--ltek-c-accent); outline-offset: 2px; }
-    .bgprev { margin: 0 0 var(--ltek-sp-3, 12px); display: grid; gap: var(--ltek-sp-2, 8px); }
+    .bgprev { margin: 0 0 var(--ltek-sp-4, 16px); display: grid; gap: var(--ltek-sp-2, 8px); }
     .agrp-t { font-size: var(--ltek-fs-small, 12px); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ltek-c-accent); margin: 0 0 var(--ltek-sp-2, 8px); padding-bottom: 4px; border-bottom: 1px solid var(--divider-color, rgba(127,127,127,.25)); }
     .hint { margin: 0; color: var(--ltek-c-muted); font-size: var(--ltek-fs-small); line-height: 1.4; }
     .rows { display: flex; flex-direction: column; gap: var(--ltek-sp-2); }
@@ -1188,4 +1200,4 @@ customElements.get("weather-station-flex-card-editor") || customElements.define(
 // For tests.
 globalThis.__wsfcEditorHelpers = { stackWithNext, unstack, moveIntoStack };
 // For scripts/gen-config-doc.mjs (docs/CONFIGURATION.md is generated from these).
-globalThis.__wsfcSchemas = { APPEARANCE_GROUPS, LAYOUT_GROUPS, GENERAL_DEFAULTS, REMEMBER, LABELS, PANEL_TYPES, COMMON_SCHEMA, STACK_CHILD_SCHEMA };
+globalThis.__wsfcSchemas = { BACKGROUND_GROUPS, APPEARANCE_GROUPS, LAYOUT_GROUPS, GENERAL_DEFAULTS, REMEMBER, LABELS, PANEL_TYPES, COMMON_SCHEMA, STACK_CHILD_SCHEMA };

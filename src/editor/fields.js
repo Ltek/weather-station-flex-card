@@ -51,7 +51,7 @@ const hex6 = (v) => (/^#[0-9a-fA-F]{6}$/.test(v || "") ? v : null);
  * object with the edited field set (undefined = cleared). `haForm(data, schema,
  * onChange)` draws the fields we don't.
  */
-export function renderFields({ data, schema, onChange, label, helper, haForm, auto }) {
+export function renderFields({ data, schema, onChange, label, helper, haForm, auto, whenData }) {
   const out = [];
   let run = [];
   const flush = () => {
@@ -62,7 +62,7 @@ export function renderFields({ data, schema, onChange, label, helper, haForm, au
   };
   for (const f of schema) {
     // Sub-settings of a feature that's off are hidden (design system: no dead controls).
-    if (typeof f.when === "function" && !f.when(data)) continue;
+    if (typeof f.when === "function" && !f.when(whenData ? { ...whenData, ...data } : data)) continue;
     if (!nativeField(f)) { run.push(f); continue; }
     flush();
     out.push(field(f, data[f.name], (v) => onChange({ ...data, [f.name]: v }), label(f), helper(f), auto?.(f)));

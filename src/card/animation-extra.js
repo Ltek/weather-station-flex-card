@@ -22,6 +22,8 @@ const ORDER = ["sky", "exceptional", "sun", "moon", "cloud", "fog", "rain", "sno
 // Wind in three steps (calm, breezy, strong) from the provider's cloud drift, so
 // small changes between updates don't change any animation's speed.
 const windLevel = (el) => { const d = el.computeCloudDrift().duration; return d < 63 ? 2 : d < 77 ? 1 : 0; };
+// Fog / wind density (percent, 100 = normal) from the card's config.
+const density = (el, key) => Math.max(0.3, Math.min(2, (Number(el.config?.[key]) || 100) / 100));
 const rnd = (a, b) => a + Math.random() * (b - a);
 
 const EXTRA_CSS = css`
@@ -60,13 +62,34 @@ const EXTRA_CSS = css`
   /* Wind: soft, blurred wisps of air at three depths, frayed by their own turbulence
      (like the cloud edges), drifting across with a gentle rise and fall. */
   .wind-path { position: absolute; left: 0; right: 0; top: var(--y); height: var(--h); opacity: 0; will-change: transform, opacity;
-    animation: wind-gust calc(var(--duration) * var(--wsfc-anim-wind, 1)) linear infinite; animation-delay: calc(var(--delay) * var(--wsfc-anim-wind, 1)); }
+    animation: wind-gust calc(var(--duration) * var(--wsfc-anim-wind, 1)) ease-in-out infinite; animation-delay: calc(var(--delay) * var(--wsfc-anim-wind, 1)); }
+  .wind-path.wave-b { animation-name: wind-gust-b; }
   .wind-path.left { animation-direction: reverse; }
   .wind-wisp { position: absolute; left: 0; top: 0; width: var(--len); height: 100%; filter: var(--wsfc-wind-filter, url(#wfc-wind-soft)) blur(var(--blur)); }
   .wind-wisp::before, .wind-wisp::after { content: ""; position: absolute; left: 0; right: 0; border-radius: 50%; }
   .wind-wisp::before { top: 20%; height: 60%; background: radial-gradient(50% 50% at 50% 50%, var(--wind-color) 0%, color-mix(in srgb, var(--wind-color), transparent 55%) 45%, transparent 72%); }
   .wind-wisp::after { top: 58%; left: 18%; right: -8%; height: 26%; background: radial-gradient(50% 50% at 45% 50%, color-mix(in srgb, var(--wind-color), transparent 35%) 0%, transparent 70%); }
   .wind-path.left .wind-wisp { transform: scaleX(-1); }
+  /* Rain splash: a soft ring that spreads and fades where the drop lands, with two
+     droplets thrown up, instead of the dotted arc. Hail shares it. */
+  .splat { width: 18px; height: 7px; left: -9px; border: 0; border-radius: 50%; background: none; transform-origin: center;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--rain-color), #fff 45%); filter: blur(0.4px); opacity: 0; animation-name: splat-ring; }
+  .splat::before, .splat::after { content: ""; position: absolute; top: 2px; width: 2px; height: 2px; border-radius: 50%;
+    background: color-mix(in srgb, var(--rain-color), #fff 55%); opacity: 0; animation: splat-drop var(--duration) linear infinite; animation-delay: var(--delay); }
+  .splat::before { left: 4px; --dx: -4px; } .splat::after { left: 12px; --dx: 4px; --dy: 1.3; }
+  .raindrop-path .splat, .raindrop-path .splat::before, .raindrop-path .splat::after { animation-duration: calc(var(--duration) * var(--wsfc-anim-rain, 1)); animation-delay: calc(var(--delay) * var(--wsfc-anim-rain, 1)); }
+  @keyframes splat-ring {
+    0%, 74% { opacity: 0; transform: scale(0.25, 0.25); }
+    78% { opacity: 0.55; transform: scale(0.5, 0.5); }
+    100% { opacity: 0; transform: scale(1.6, 1.4); }
+  }
+  @keyframes splat-drop {
+    0%, 74% { opacity: 0; transform: translate3d(0, 0, 0); }
+    78% { opacity: 0.8; transform: translate3d(calc(var(--dx) * 0.4), calc(-6px * var(--dy, 1)), 0); }
+    90% { opacity: 0.5; transform: translate3d(var(--dx), calc(-8px * var(--dy, 1)), 0); }
+    100% { opacity: 0; transform: translate3d(calc(var(--dx) * 1.3), 0, 0); }
+  }
+
   /* Exceptional: a slow amber glow over the overcast sky. */
   .exceptional-glow { position: absolute; inset: 0; border-radius: inherit;
     background: radial-gradient(70% 60% at 50% 20%, var(--exceptional-color), transparent 70%);
@@ -80,12 +103,24 @@ const EXTRA_CSS = css`
     90% { opacity: 0.6; transform: translate3d(var(--bounce-x), calc(var(--landing-pos-y) + var(--drop-start-pos-diff-y)), 0); }
     100% { opacity: 0; transform: translate3d(var(--bounce-x), calc(var(--landing-pos-y) + var(--drop-start-pos-diff-y)), 0); }
   }
+  /* Two wave shapes, each with uneven timing: a slow start, a surge through the
+     middle (brighter, longer), and an easing tail. --amp flips the wave per wisp. */
   @keyframes wind-gust {
-    0% { opacity: 0; transform: translate3d(-45%, 0, 0) scaleX(0.85); }
-    18% { opacity: var(--op); }
-    50% { transform: translate3d(30%, var(--rise), 0) scaleX(1.05); }
-    82% { opacity: var(--op); }
-    100% { opacity: 0; transform: translate3d(105%, 0, 0) scaleX(0.9); }
+    0% { opacity: 0; transform: translate3d(-45%, 0, 0) rotate(var(--tilt)) scaleX(0.8); }
+    14% { opacity: calc(var(--op) * 0.6); transform: translate3d(-28%, calc(var(--amp) * -0.6), 0) rotate(calc(var(--tilt) * -0.5)) scaleX(0.9); }
+    32% { opacity: var(--op); transform: translate3d(-4%, var(--amp), 0) rotate(var(--tilt)) scaleX(1.15); }
+    50% { opacity: var(--op); transform: translate3d(28%, calc(var(--amp) * -0.3), 0) rotate(calc(var(--tilt) * -1)) scaleX(1.2); }
+    68% { opacity: calc(var(--op) * 0.8); transform: translate3d(54%, calc(var(--amp) * 0.7), 0) rotate(calc(var(--tilt) * 0.5)) scaleX(1.05); }
+    86% { opacity: calc(var(--op) * 0.4); transform: translate3d(82%, calc(var(--amp) * -0.4), 0) rotate(var(--tilt)) scaleX(0.95); }
+    100% { opacity: 0; transform: translate3d(105%, 0, 0) rotate(0deg) scaleX(0.85); }
+  }
+  @keyframes wind-gust-b {
+    0% { opacity: 0; transform: translate3d(-45%, 0, 0) rotate(0deg) scaleX(0.85); }
+    20% { opacity: calc(var(--op) * 0.5); transform: translate3d(-30%, var(--amp), 0) rotate(var(--tilt)) scaleX(0.95); }
+    40% { opacity: calc(var(--op) * 0.9); transform: translate3d(-8%, calc(var(--amp) * -0.8), 0) rotate(calc(var(--tilt) * -0.7)) scaleX(1.1); }
+    56% { opacity: var(--op); transform: translate3d(30%, calc(var(--amp) * 0.4), 0) rotate(calc(var(--tilt) * 0.4)) scaleX(1.25); }
+    72% { opacity: calc(var(--op) * 0.7); transform: translate3d(62%, calc(var(--amp) * -0.6), 0) rotate(calc(var(--tilt) * -1)) scaleX(1.05); }
+    100% { opacity: 0; transform: translate3d(105%, calc(var(--amp) * 0.3), 0) rotate(0deg) scaleX(0.85); }
   }
   @keyframes exceptional-pulse { from { opacity: 0.35; } to { opacity: 1; } }
 `;
@@ -161,9 +196,9 @@ if (!WeatherAnimationProvider.__wsfcExtra) {
   proto.computeParticles = function () {
     const list = compute.call(this);
     const fx = this.getActiveEffects();
-    if (fx.includes("fog")) list.push(...kept(this, "fog", `${this.isNightTime()}`, fogBanks));
+    if (fx.includes("fog")) list.push(...kept(this, "fog", `${this.isNightTime()}:${density(this, "fog_density")}`, fogBanks));
     if (fx.includes("hail")) list.push(...kept(this, "hail", `${this._containerHeight}`, hailstones));
-    if (fx.includes("wind")) list.push(...kept(this, "wind", "", gusts));
+    if (fx.includes("wind")) list.push(...kept(this, "wind", `${density(this, "wind_density")}`, gusts));
     return list;
   };
 
@@ -187,13 +222,15 @@ if (!WeatherAnimationProvider.__wsfcExtra) {
 
 // --- Fog ---------------------------------------------------------------------
 function fogBanks(el) {
-  const out = [], night = el.isNightTime();
-  // Three depths: far banks high and faint, near banks low and dense.
-  [[3, 0.22, 0.38, 0.7], [3, 0.45, 0.62, 0.85], [3, 0.7, 0.9, 0.85]].forEach(([n, y0, y1, op], layer) => {
+  const out = [], night = el.isNightTime(), k = density(el, "fog_density");
+  // Three depths: far banks high and faint, near banks low and dense. Density
+  // adds banks (up to twice as many) and makes each one hide a little more.
+  [[3, 0.22, 0.38, 0.7], [3, 0.45, 0.62, 0.85], [3, 0.7, 0.9, 0.85]].forEach(([n0, y0, y1, op], layer) => {
+    const n = Math.max(1, Math.round(n0 * Math.min(2, Math.sqrt(k))));
     for (let i = 0; i < n; i++) {
       const slot = 100 / n;
       out.push({ type: "fog", layer, night, x: (i * slot + rnd(-slot * 0.2, slot * 0.2)).toFixed(1), y: (rnd(y0, y1) * 100).toFixed(0),
-        w: rnd(55, 80).toFixed(0), h: (rnd(26, 40) + layer * 8).toFixed(0), op: (op * rnd(0.75, 0.95)).toFixed(2) });
+        w: rnd(55, 80).toFixed(0), h: (rnd(26, 40) + layer * 8).toFixed(0), op: Math.min(1, op * rnd(0.75, 0.95) * Math.min(1.25, Math.sqrt(k))).toFixed(2) });
     }
   });
   return out;
@@ -211,7 +248,7 @@ function renderFog(el) {
         <feTurbulence type="fractalNoise" baseFrequency="0.006 0.03" numOctaves="4" seed="3" stitchTiles="stitch" result="n"></feTurbulence>
         <feDisplacementMap in="SourceGraphic" in2="n" scale="60" xChannelSelector="R" yChannelSelector="G"></feDisplacementMap>
       </filter></defs></svg>
-    <div class="fog-haze"></div>
+    <div class="fog-haze" style="opacity:${Math.min(1.3, density(el, "fog_density")).toFixed(2)}"></div>
     <div class="fog-breathe">
       ${[0, 1, 2].map((layer) => {
         const set = banks.filter((b) => b.layer === layer);
@@ -245,16 +282,20 @@ function renderHail(el) {
 }
 
 // --- Wind --------------------------------------------------------------------
-function gusts() {
+function gusts(el) {
   // Far wisps: thin, faint, slow and blurrier; near ones: longer, thicker, faster.
-  const out = [];
-  [[5, 0.6, 1.6], [5, 1.0, 1.0], [3, 1.5, 0.72]].forEach(([n, size, slow], layer) => {
+  // Density sets how many. Each wisp gets its own wave (amplitude, phase, tilt), so no
+  // two follow the same path, and a surge point where it speeds up and brightens.
+  const out = [], k = density(el, "wind_density");
+  [[5, 0.6, 1.6], [5, 1.0, 1.0], [3, 1.5, 0.72]].forEach(([n0, size, slow], layer) => {
+    const n = Math.max(1, Math.round(n0 * k));
     for (let i = 0; i < n; i++) {
       const dur = rnd(5.5, 8) * slow;
       out.push({ type: "gust", layer, y: (6 + ((i + layer / 3) / n) * 84 + rnd(-4, 4)).toFixed(0), dur: dur.toFixed(2),
         // A negative delay starts each wisp part-way along, so they are spread out from the first frame.
         delay: (-rnd(0, dur)).toFixed(2), len: (rnd(260, 420) * size).toFixed(0), h: (rnd(10, 16) * size).toFixed(0),
-        blur: (layer === 0 ? 5 : layer === 1 ? 3.5 : 2.5).toFixed(1), op: (rnd(0.55, 0.8) * [0.6, 0.8, 1][layer]).toFixed(2), rise: rnd(-14, 14).toFixed(0) });
+        blur: (layer === 0 ? 5 : layer === 1 ? 3.5 : 2.5).toFixed(1), op: (rnd(0.55, 0.8) * [0.6, 0.8, 1][layer]).toFixed(2),
+        amp: rnd(10, 30).toFixed(0), phase: Math.random() < 0.5 ? 1 : -1, tilt: rnd(-4, 4).toFixed(1), wave: Math.random() < 0.5 ? "a" : "b" });
     }
   });
   return out;
@@ -271,7 +312,7 @@ function renderWind(el) {
         <feDisplacementMap in="SourceGraphic" in2="n" scale="16" xChannelSelector="R" yChannelSelector="G"></feDisplacementMap>
       </filter></defs></svg>
     ${el._particles.filter((p) => p.type === "gust").map((p) => html`
-      <div class="wind-path ${driftRight ? "" : "left"}" style="--y:${p.y}%;--h:${p.h}px;--duration:${(p.dur * k).toFixed(2)}s;--delay:${(p.delay * k).toFixed(2)}s;--op:${p.op};--rise:${p.rise}px">
+      <div class="wind-path wave-${p.wave} ${driftRight ? "" : "left"}" style="--y:${p.y}%;--h:${p.h}px;--duration:${(p.dur * k).toFixed(2)}s;--delay:${(p.delay * k).toFixed(2)}s;--op:${p.op};--amp:${p.amp * p.phase}px;--tilt:${p.tilt}deg">
         <div class="wind-wisp" style="--len:${p.len}px;--blur:${p.blur}px"></div>
       </div>`)}`;
 }

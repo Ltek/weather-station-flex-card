@@ -34,7 +34,7 @@ if (!WeatherAnimationProvider.__wsfcSpeed) {
   // and its direction the wind's. A CSS animation whose duration or direction
   // changes jumps to a new position; keep each track where it was and carry on
   // at the new speed. Wind gusts likewise keep their progress.
-  const DRIFT = new Set(["cloud-drift", "wind-gust"]);
+  const DRIFT = new Set(["cloud-drift", "wind-gust", "wind-gust-b"]);
   const tracks = (el) => [...(el.renderRoot?.querySelectorAll?.(".cloud-track, .fog-track, .wind-path") || [])];
   const anim = (t) => t.getAnimations?.().find((a) => DRIFT.has(a.animationName));
   const where = (a, t) => {

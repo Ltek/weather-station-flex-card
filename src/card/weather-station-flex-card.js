@@ -648,7 +648,7 @@ class WeatherStationFlexCard extends LitElement {
     return html`<wsfc-animation-provider class="bg"
       .hass=${this.hass}
       .weatherEntity=${stateObj}
-      .config=${{ entity: c.entity, show_condition_effects: fx, show_moon_phase: c.background_moon_phase ?? true, forecast: { show_sun_times: true } }}
+      .config=${{ entity: c.entity, show_condition_effects: fx, show_moon_phase: c.background_moon_phase ?? true, forecast: { show_sun_times: true }, fog_density: c.fog_density, wind_density: c.wind_density }}
       .currentForecast=${this._hourlyNow}
     ></wsfc-animation-provider>`;
   }

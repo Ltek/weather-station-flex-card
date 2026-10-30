@@ -93,7 +93,7 @@ With no \`panels:\` the card shows its default dashboard (hero, bulletin, Sky Tr
 | \`layout_screen\` | \`window\` or \`<width>x<height>\` | Editor only: the Layout map's screen guide. |
 | \`layout_guide\` | \`line\` · \`frame\` | Editor only: how the screen guide is drawn. |
 `);
-for (const [title, fields] of [...S.APPEARANCE_GROUPS, ...(S.LAYOUT_GROUPS || [])]) {
+for (const [title, fields] of [...(S.BACKGROUND_GROUPS || []), ...S.APPEARANCE_GROUPS, ...(S.LAYOUT_GROUPS || [])]) {
   out.push(`### ${title}\n\n${table(fields, S.GENERAL_DEFAULTS)}\n`);
 }
 out.push(`### Panel buttons\n\n${table(S.REMEMBER, S.GENERAL_DEFAULTS)}\n\nWhere the buttons go: \`panel_bar: false\` hides the bar; a Button Menu panel (\`heading\`) with \`show_bar: true\` holds them instead of the row above the panels. Which panels get a button is each panel's \`in_bar\`.\n`);
