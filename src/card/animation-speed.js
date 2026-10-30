@@ -77,6 +77,9 @@ if (!WeatherAnimationProvider.__wsfcSpeed) {
   }
 }
 
+// Low-power animation: each cloud on its own layer, no turbulence edges.
+export const LOW_POWER_VARS = "--wsfc-cloud-will:transform;--wsfc-cloud-filter:none;--wsfc-cloud-filter-night:brightness(0.5);--wsfc-fog-filter:none;--wsfc-fog-filter-night:brightness(0.55)";
+
 export const ANIM_SPEEDS = [
   ["anim_twinkle", "--wsfc-anim-twinkle", "Star twinkle"],
   ["anim_clouds", "--wsfc-anim-clouds", "Cloud drift"],

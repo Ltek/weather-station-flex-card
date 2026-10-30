@@ -107,6 +107,12 @@ if (!WeatherAnimationProvider.__wsfcExtra) {
   const asCloudy = (el) => Object.create(el, { weatherEntity: { value: { ...el.weatherEntity, state: "cloudy" } } });
   const overcast = (el) => OVERCAST.has(el.weatherEntity?.state);
 
+  // The editor's background preview picks day or night itself.
+  const night = proto.isNightTime;
+  proto.isNightTime = function () {
+    return typeof this.wsfcNight === "boolean" ? this.wsfcNight : night.call(this);
+  };
+
   const active = proto.getActiveEffects;
   proto.getActiveEffects = function () {
     const out = new Set(active.call(this));

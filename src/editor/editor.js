@@ -33,6 +33,7 @@ import { COMPACT_TYPES } from "../card/compact.js";
 import { metricSensor, entityValue, integrationOf } from "../card/resolve.js";
 import "./sources.js";
 import "./series-editor.js";
+import { CONDITIONS } from "./bg-preview.js";
 
 const MAP_KEYS = ["temperature", "apparent_temperature", "dew_point", "humidity", "pressure", "wind_speed", "wind_gust_speed", "wind_bearing", "uv_index", "solar_radiation", "illuminance", "precipitation"];
 const MAP_LABELS = { wind_bearing: "Wind direction", precipitation: "Rain rate" };
@@ -512,13 +513,36 @@ class WeatherStationFlexCardEditor extends LitElement {
       const f = this._onlyChanged ? fields.filter((x) => isChanged(this._config, x, GENERAL_DEFAULTS)) : fields;
       if (!f.length) return nothing;
       const dot = fields.some((x) => isChanged(this._config, x, GENERAL_DEFAULTS));
-      return html`<div class="agrp"><div class="agrp-t">${title}${dot ? html`<i class="chg" title="Has changed settings"></i>` : nothing}</div>${this._form(formData(this._config, f, GENERAL_DEFAULTS), f, (v) => {
+      const prev = title === "Background" && bg === "animated";
+      return html`<div class="agrp"><div class="agrp-t">${title}${dot ? html`<i class="chg" title="Has changed settings"></i>` : nothing}${prev ? this._bgPreviewButton() : nothing}</div>${prev && this._bgPrev?.open ? this._bgPreview() : nothing}${this._form(formData(this._config, f, GENERAL_DEFAULTS), f, (v) => {
         const { panels: _p, ...rest } = this._config;
         const next = applyForm(rest, f, v, GENERAL_DEFAULTS);
         if (this._config.panels) next.panels = this._config.panels;
         this._emit(next);
       })}</div>`;
     });
+  }
+
+  // Background preview (on demand): the animated background for any condition.
+  _bgPreviewButton() {
+    const open = !!this._bgPrev?.open;
+    return html`<button class="bgprev-btn ${open ? "on" : ""}" type="button" aria-pressed=${String(open)}
+      title=${open ? "Hide the background preview" : "Preview the background"} aria-label="Preview the background"
+      @click=${() => { this._bgPrev = { ...(this._bgPrev || {}), open: !open }; this.requestUpdate(); }}><ha-icon icon="mdi:magnify"></ha-icon></button>`;
+  }
+
+  _bgPreview() {
+    const st = this._bgPrev || {};
+    const now = this.hass?.states?.[this._config.entity]?.state;
+    const nowLabel = (CONDITIONS.find(([v]) => v === now) || [, now])[1];
+    const schema = [
+      { name: "condition", label: "Condition", selector: { select: { options: [{ value: "", label: now ? `Now — ${nowLabel}` : "Now" }, ...CONDITIONS.map(([value, label]) => ({ value, label }))] } } },
+      { name: "time", label: "Time of day", selector: { select: { options: [{ value: "", label: "Day (night for Clear night)" }, { value: "day", label: "Day" }, { value: "night", label: "Night" }] } } },
+    ];
+    return html`<div class="bgprev">
+      <wsfc-bg-preview .hass=${this.hass} .config=${this._config} .condition=${st.condition || ""} .time=${st.time || ""}></wsfc-bg-preview>
+      ${this._form({ condition: st.condition || "", time: st.time || "" }, schema, (v) => { this._bgPrev = { ...st, open: true, condition: v.condition || "", time: v.time || "" }; this.requestUpdate(); })}
+    </div>`;
   }
 
   _stationDevice() {
@@ -1052,6 +1076,13 @@ class WeatherStationFlexCardEditor extends LitElement {
     summary ha-icon { --mdc-icon-size: var(--ltek-icon-lg); color: var(--ltek-c-accent); }
     .body { padding: 0 var(--ltek-sp-5) var(--ltek-sp-5); display: flex; flex-direction: column; gap: var(--ltek-sp-3); }
     .agrp + .agrp { margin-top: var(--ltek-sp-4, 16px); }
+    .agrp-t { display: flex; align-items: center; gap: 6px; }
+    .bgprev-btn { margin-left: auto; border: 0; background: transparent; cursor: pointer; padding: 4px; border-radius: 50%; line-height: 0; color: var(--secondary-text-color); }
+    .bgprev-btn ha-icon { --mdc-icon-size: 20px; }
+    .bgprev-btn:hover { background: rgba(127, 127, 127, 0.18); }
+    .bgprev-btn.on { color: var(--ltek-c-accent); background: color-mix(in srgb, var(--ltek-c-accent) 15%, transparent); }
+    .bgprev-btn:focus-visible { outline: 2px solid var(--ltek-c-accent); outline-offset: 2px; }
+    .bgprev { margin: 0 0 var(--ltek-sp-3, 12px); display: grid; gap: var(--ltek-sp-2, 8px); }
     .agrp-t { font-size: var(--ltek-fs-small, 12px); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ltek-c-accent); margin: 0 0 var(--ltek-sp-2, 8px); padding-bottom: 4px; border-bottom: 1px solid var(--divider-color, rgba(127,127,127,.25)); }
     .hint { margin: 0; color: var(--ltek-c-muted); font-size: var(--ltek-fs-small); line-height: 1.4; }
     .rows { display: flex; flex-direction: column; gap: var(--ltek-sp-2); }

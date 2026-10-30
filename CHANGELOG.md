@@ -1,5 +1,9 @@
 # Changelog
 
+## v2026.10.30.82
+
+- **Background preview in the editor.** Appearance → Background has a magnifying-glass button (shown with the animated background). It opens a live preview of the card's background on demand. Pick any of the 15 weather conditions, or Now, and Day or Night. The preview uses your effects, speeds and low-power setting. Tap the button again to close it.
+
 ## v2026.10.30.81
 
 - **Animated background for every weather condition**, drawn in the same style as the existing sky, clouds, rain and snow:
