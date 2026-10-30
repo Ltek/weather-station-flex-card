@@ -15,6 +15,7 @@ import { extraMetricEntity } from "./air.js";
 import { WeatherForecastCard } from "../../vendor/weather-forecast-card/src/weather-forecast-card";
 import "../../vendor/weather-forecast-card/src/components/animation/wfc-animation-provider";
 import { animSpeedVars } from "./animation-speed.js";
+import "./animation-extra.js";
 import "../panels/flex.js";
 import "../panels/graph.js";
 import "../panels/wind.js";
@@ -568,7 +569,7 @@ class WeatherStationFlexCard extends LitElement {
       bg ? `--wsfc-panel-opacity:${c.panel_opacity ?? 0.55}` : "",
       bg ? `--wsfc-panel-blur:${c.anim_low_power ? 0 : c.panel_blur ?? 6}px` : "",
       // Low-power animation: each cloud on its own layer, no turbulence edges.
-      c.anim_low_power ? "--wsfc-cloud-will:transform;--wsfc-cloud-filter:none;--wsfc-cloud-filter-night:brightness(0.5)" : "",
+      c.anim_low_power ? "--wsfc-cloud-will:transform;--wsfc-cloud-filter:none;--wsfc-cloud-filter-night:brightness(0.5);--wsfc-fog-filter:none;--wsfc-fog-filter-night:brightness(0.55)" : "",
       ...panelStyleVars(c),
       ...animSpeedVars(c),
     ].join(";");

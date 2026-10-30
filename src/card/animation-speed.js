@@ -84,6 +84,9 @@ export const ANIM_SPEEDS = [
   ["anim_snow", "--wsfc-anim-snow", "Snow"],
   ["anim_sun", "--wsfc-anim-sun", "Sun rays"],
   ["anim_lightning", "--wsfc-anim-lightning", "Lightning"],
+  ["anim_fog", "--wsfc-anim-fog", "Fog drift"],
+  ["anim_hail", "--wsfc-anim-hail", "Hail"],
+  ["anim_wind", "--wsfc-anim-wind", "Wind gusts"],
 ];
 
 /** CSS variables for the configured speeds (percent, 100 = normal). */

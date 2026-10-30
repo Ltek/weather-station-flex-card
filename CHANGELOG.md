@@ -1,5 +1,15 @@
 # Changelog
 
+## v2026.10.30.81
+
+- **Animated background for every weather condition**, drawn in the same style as the existing sky, clouds, rain and snow:
+  - **Fog**: an overcast sky with mist banks at three depths, drifting with the wind.
+  - **Hail**: a dark storm sky and grey clouds, with hailstones that fall at the wind's angle and bounce when they land.
+  - **Windy**: sky with the sun or moon, and gusts streaking across in the wind's direction, faster in stronger wind. **Windy with clouds** adds drifting clouds.
+  - **Exceptional**: an overcast sky with a slow amber glow.
+  - Rain, pouring, snow, sleet and storms now have an overcast sky and grey cloud deck behind them (darker for storms and pouring rain) instead of a bare background.
+- Animation effects has four new choices: Fog, Hail, Wind gusts and Unusual weather glow. New speed sliders: Fog drift, Hail and Wind gusts. Low-power animation also simplifies the fog edges.
+
 ## v2026.10.29.80
 
 - **Compact rows in a vertical stack grow to fill it.** The rows share the stack's height and their tiles get larger until the widest row runs out of room, all rows at the same size, so the data is easier to read from across the room. Stack options → Spare height has a new default, **Grow compact rows to fill it**. The other choices (spread, centre, top) keep the normal size. **Largest compact size** (100–400 %, default 250 %) sets a limit.
