@@ -44,7 +44,7 @@ With no `panels:` the card shows its default dashboard (hero, bulletin, Sky Trac
 | Option | Value | Default | What it does |
 |---|---|---|---|
 | `background` | `none` · `animated` · `image` | `none` | **Card background** — With an animated or image background, panels become see-through and the hero stops drawing its own. |
-| `background_effects` | list of: `rain` · `snow` · `lightning` · `sky` · `moon` · `sun` · `cloud` | `["rain","snow","lightning","sky","moon","sun","cloud"]` | **Animation effects** — Which effects the weather animation draws. At night it shows the dark sky and the moon instead of the sun. |
+| `background_effects` | list of: `rain` · `snow` · `lightning` · `sky` · `moon` · `sun` · `cloud` · `fog` · `hail` · `wind` · `exceptional` | `["rain","snow","lightning","sky","moon","sun","cloud","fog","hail","wind","exceptional"]` | **Animation effects** — Which effects the weather animation draws. At night it shows the dark sky and the moon instead of the sun. Rain, snow and storms get an overcast sky and cloud deck (Sky, Clouds). |
 | `background_moon_phase` | `true` / `false` | `true` | **Show moon phase** — Shade the night-time moon to the current lunar phase (off: a full moon). |
 | `anim_low_power` | `true` / `false` | `false` | **Low-power animation** — For tablets and other low-powered screens: no panel blur while the background animates, each cloud drawn once on its own, and simpler cloud edges. Smoother drift; clouds look a little softer. |
 | `anim_twinkle` | number 10–150 % | `100` | **Star twinkle** — Animation speeds (100% = normal, 50% = half as fast), for the card background and the hero's own animation. |
@@ -53,6 +53,9 @@ With no `panels:` the card shows its default dashboard (hero, bulletin, Sky Trac
 | `anim_snow` | number 10–150 % | `100` | **Snow** |
 | `anim_sun` | number 10–150 % | `100` | **Sun rays** |
 | `anim_lightning` | number 10–150 % | `100` | **Lightning** |
+| `anim_fog` | number 10–150 % | `100` | **Fog drift** |
+| `anim_hail` | number 10–150 % | `100` | **Hail** |
+| `anim_wind` | number 10–150 % | `100` | **Wind gusts** |
 | `background_image` | image (uploaded through the editor) |  | **Background image** — Image background: upload a PNG, JPG, WEBP… or pick one from your media. |
 | `background_image_url` | URL |  | **Background image URL** — Image background: or an image URL (wins over the upload), e.g. /local/images/sky.jpg. |
 | `background_image_fit` | `cover` · `contain` · `tile` | `cover` | **Image fit** |
