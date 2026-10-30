@@ -30,28 +30,34 @@ if (!WeatherAnimationProvider.__wsfcSpeed) {
   // while its count and the panel height are unchanged; a real change (more
   // rain, another condition, a resize) still gets new ones.
   const proto = WeatherAnimationProvider.prototype;
-  // Cloud drift speed follows the forecast wind (and the speed slider). A CSS
-  // animation whose duration changes jumps to a new position; keep each track
-  // where it was and carry on at the new speed.
-  const tracks = (el) => [...(el.renderRoot?.querySelectorAll?.(".cloud-track") || [])];
-  const anim = (t) => t.getAnimations?.().find((a) => a.animationName === "cloud-drift");
-  const where = (a) => {
+  // Cloud and fog drift speed follows the forecast wind (and the speed slider),
+  // and its direction the wind's. A CSS animation whose duration or direction
+  // changes jumps to a new position; keep each track where it was and carry on
+  // at the new speed. Wind gusts likewise keep their progress.
+  const DRIFT = new Set(["cloud-drift", "wind-gust"]);
+  const tracks = (el) => [...(el.renderRoot?.querySelectorAll?.(".cloud-track, .fog-track, .wind-path") || [])];
+  const anim = (t) => t.getAnimations?.().find((a) => DRIFT.has(a.animationName));
+  const where = (a, t) => {
     const d = Number(a?.effect?.getComputedTiming?.().duration);
-    const t = Number(a?.currentTime);
-    return d > 0 && Number.isFinite(t) ? { d, f: (t % d) / d } : null;
+    const del = Number(a?.effect?.getTiming?.().delay) || 0;
+    const c = Number(a?.currentTime);
+    return d > 0 && Number.isFinite(c) ? { d, del, f: ((((c - del) % d) + d) % d) / d, rev: t.classList.contains("drift-right") || t.classList.contains("left") } : null;
   };
   const before = proto.willUpdate;
   proto.willUpdate = function (changed) {
-    this.__wsfcDrift = tracks(this).map((t) => where(anim(t)));
+    this.__wsfcDrift = new Map(tracks(this).map((t) => [t, where(anim(t), t)]));
     return before?.call(this, changed);
   };
   const after = proto.updated;
   proto.updated = function (changed) {
     const r = after?.call(this, changed);
-    const prev = this.__wsfcDrift || [];
-    tracks(this).forEach((t, i) => {
-      const a = anim(t), was = prev[i], now = where(a);
-      if (a && was && now && Math.abs(now.d - was.d) > 1) a.currentTime = was.f * now.d;
+    const prev = this.__wsfcDrift || new Map();
+    tracks(this).forEach((t) => {
+      const a = anim(t), was = prev.get(t), now = where(a, t);
+      if (!a || !was || !now) return;
+      // A reversed drift runs the same keyframes backwards: mirror the progress so the track stays put.
+      const f = was.rev !== now.rev ? 1 - was.f : was.f;
+      if (Math.abs(now.d - was.d) > 1 || was.rev !== now.rev) a.currentTime = now.del + f * now.d;
     });
     return r;
   };
@@ -78,7 +84,7 @@ if (!WeatherAnimationProvider.__wsfcSpeed) {
 }
 
 // Low-power animation: each cloud on its own layer, no turbulence edges.
-export const LOW_POWER_VARS = "--wsfc-cloud-will:transform;--wsfc-cloud-filter:none;--wsfc-cloud-filter-night:brightness(0.5);--wsfc-fog-filter:none;--wsfc-fog-filter-night:brightness(0.55)";
+export const LOW_POWER_VARS = "--wsfc-cloud-will:transform;--wsfc-cloud-filter:none;--wsfc-cloud-filter-night:brightness(0.5);--wsfc-fog-filter:none;--wsfc-fog-filter-night:brightness(0.55);--wsfc-wind-filter:opacity(1)";
 
 export const ANIM_SPEEDS = [
   ["anim_twinkle", "--wsfc-anim-twinkle", "Star twinkle"],

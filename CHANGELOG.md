@@ -1,5 +1,10 @@
 # Changelog
 
+## v2026.10.30.83
+
+- **Fog and wind no longer jump or restart.** Their mist banks and gusts were picked again on every state update, and their speed changed with each small wind reading, so they jumped to new places. They now stay put. Speeds change only between three wind steps (calm, breezy, strong), and drifting layers keep their place when the wind speed or direction changes. This also applies to clouds and hail.
+- **Softer, more natural wind.** The thin lines are replaced by blurred wisps of air at three depths, frayed like the cloud edges. Far wisps are fainter and slower, near ones longer and faster, and they rise and fall gently as they drift.
+
 ## v2026.10.30.82
 
 - **Background preview in the editor.** Appearance → Background has a magnifying-glass button (shown with the animated background). It opens a live preview of the card's background on demand. Pick any of the 15 weather conditions, or Now, and Day or Night. The preview uses your effects, speeds and low-power setting. Tap the button again to close it.

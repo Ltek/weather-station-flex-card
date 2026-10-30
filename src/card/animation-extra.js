@@ -3,7 +3,7 @@
 // turbulence filter, particle paths, wind-driven drift):
 //   fog            overcast sky + mist banks drifting with the wind
 //   hail           storm sky + clouds + hailstones that bounce when they land
-//   windy          clear sky + sun/moon + gust streaks blowing with the wind
+//   windy          clear sky + sun/moon + soft wisps of air blowing with the wind
 //   windy-variant  as windy, plus drifting clouds
 //   exceptional    overcast sky + a slow amber glow
 // and an overcast sky + grey cloud deck behind rain, snow and storms (the
@@ -19,16 +19,19 @@ const STORM = new Set(["pouring", "lightning", "lightning-rainy", "hail"]);
 const PRECIP = new Set(["rainy", "pouring", "snowy", "snowy-rainy", "lightning", "lightning-rainy", "hail"]);
 // Drawing order, back to front (the provider stacks its layers in DOM order).
 const ORDER = ["sky", "exceptional", "sun", "moon", "cloud", "fog", "rain", "snow", "hail", "wind", "lightning"];
+// Wind in three steps (calm, breezy, strong) from the provider's cloud drift, so
+// small changes between updates don't change any animation's speed.
+const windLevel = (el) => { const d = el.computeCloudDrift().duration; return d < 63 ? 2 : d < 77 ? 1 : 0; };
 const rnd = (a, b) => a + Math.random() * (b - a);
 
 const EXTRA_CSS = css`
   :host {
     --fog-color: var(--weather-forecast-card-effects-fog-color, var(--cloud-color));
     --hail-color: var(--weather-forecast-card-effects-hail-color, #eef4fb);
-    --wind-color: var(--weather-forecast-card-effects-wind-color, rgba(255, 255, 255, 0.55));
+    --wind-color: var(--weather-forecast-card-effects-wind-color, rgba(255, 255, 255, 0.85));
     --exceptional-color: var(--weather-forecast-card-effects-exceptional-color, rgba(255, 166, 0, 0.32));
   }
-  :host(.light) { --wind-color: var(--weather-forecast-card-effects-wind-color, rgba(255, 255, 255, 0.75)); }
+  :host(.light) { --wind-color: var(--weather-forecast-card-effects-wind-color, rgba(255, 255, 255, 0.95)); }
 
   /* Storm deck: the overcast sky, a step darker. */
   .sky.overcast.storm, .night-sky.overcast.storm { filter: brightness(0.72) saturate(0.85); }
@@ -54,15 +57,16 @@ const EXTRA_CSS = css`
     box-shadow: 0 0 2px rgba(255, 255, 255, 0.6);
     animation: hail-fall calc(var(--duration) * var(--wsfc-anim-hail, 1)) linear infinite; animation-delay: calc(var(--delay) * var(--wsfc-anim-hail, 1)); }
 
-  /* Wind: thin arcs blowing across, faded at both ends. */
-  .wind-path { position: absolute; left: 0; right: 0; top: var(--y); height: 30px; opacity: 0;
-    animation: wind-gust calc(var(--duration) * var(--wsfc-anim-wind, 1)) ease-in-out infinite; animation-delay: calc(var(--delay) * var(--wsfc-anim-wind, 1)); }
-  .wind-path.left { animation-name: wind-gust-left; }
-  .wind-streak { position: absolute; left: 0; top: 0; width: var(--len); height: 100%; border-top: var(--thick) solid var(--wind-color); border-radius: 50%;
-    -webkit-mask-image: linear-gradient(90deg, transparent, #000 30%, #000 70%, transparent); mask-image: linear-gradient(90deg, transparent, #000 30%, #000 70%, transparent); }
-  .wind-path.left .wind-streak { transform: scaleX(-1); }
-  .wind-streak.curl { border-radius: 60% 40% 50% 50% / 100% 100% 0 0; }
-
+  /* Wind: soft, blurred wisps of air at three depths, frayed by their own turbulence
+     (like the cloud edges), drifting across with a gentle rise and fall. */
+  .wind-path { position: absolute; left: 0; right: 0; top: var(--y); height: var(--h); opacity: 0; will-change: transform, opacity;
+    animation: wind-gust calc(var(--duration) * var(--wsfc-anim-wind, 1)) linear infinite; animation-delay: calc(var(--delay) * var(--wsfc-anim-wind, 1)); }
+  .wind-path.left { animation-direction: reverse; }
+  .wind-wisp { position: absolute; left: 0; top: 0; width: var(--len); height: 100%; filter: var(--wsfc-wind-filter, url(#wfc-wind-soft)) blur(var(--blur)); }
+  .wind-wisp::before, .wind-wisp::after { content: ""; position: absolute; left: 0; right: 0; border-radius: 50%; }
+  .wind-wisp::before { top: 20%; height: 60%; background: radial-gradient(50% 50% at 50% 50%, var(--wind-color) 0%, color-mix(in srgb, var(--wind-color), transparent 55%) 45%, transparent 72%); }
+  .wind-wisp::after { top: 58%; left: 18%; right: -8%; height: 26%; background: radial-gradient(50% 50% at 45% 50%, color-mix(in srgb, var(--wind-color), transparent 35%) 0%, transparent 70%); }
+  .wind-path.left .wind-wisp { transform: scaleX(-1); }
   /* Exceptional: a slow amber glow over the overcast sky. */
   .exceptional-glow { position: absolute; inset: 0; border-radius: inherit;
     background: radial-gradient(70% 60% at 50% 20%, var(--exceptional-color), transparent 70%);
@@ -77,18 +81,11 @@ const EXTRA_CSS = css`
     100% { opacity: 0; transform: translate3d(var(--bounce-x), calc(var(--landing-pos-y) + var(--drop-start-pos-diff-y)), 0); }
   }
   @keyframes wind-gust {
-    0% { opacity: 0; transform: translate3d(-35%, 0, 0); }
-    15% { opacity: var(--op); }
-    50% { transform: translate3d(35%, 6px, 0); }
-    85% { opacity: var(--op); }
-    100% { opacity: 0; transform: translate3d(110%, -4px, 0); }
-  }
-  @keyframes wind-gust-left {
-    0% { opacity: 0; transform: translate3d(110%, 0, 0); }
-    15% { opacity: var(--op); }
-    50% { transform: translate3d(35%, 6px, 0); }
-    85% { opacity: var(--op); }
-    100% { opacity: 0; transform: translate3d(-35%, -4px, 0); }
+    0% { opacity: 0; transform: translate3d(-45%, 0, 0) scaleX(0.85); }
+    18% { opacity: var(--op); }
+    50% { transform: translate3d(30%, var(--rise), 0) scaleX(1.05); }
+    82% { opacity: var(--op); }
+    100% { opacity: 0; transform: translate3d(105%, 0, 0) scaleX(0.9); }
   }
   @keyframes exceptional-pulse { from { opacity: 0.35; } to { opacity: 1; } }
 `;
@@ -153,13 +150,20 @@ if (!WeatherAnimationProvider.__wsfcExtra) {
     return this._cloudParticles;
   };
 
+  // New particles only when what they depend on changes (not on every state update),
+  // so nothing restarts or jumps to a new random place.
   const compute = proto.computeParticles;
+  const kept = (el, kind, sig, make) => {
+    const c = (el.__wsfcKept ||= {});
+    if (!c[kind] || c[kind].sig !== sig) c[kind] = { sig, list: make(el) };
+    return c[kind].list;
+  };
   proto.computeParticles = function () {
     const list = compute.call(this);
     const fx = this.getActiveEffects();
-    if (fx.includes("fog")) list.push(...fogBanks(this));
-    if (fx.includes("hail")) list.push(...hailstones(this));
-    if (fx.includes("wind")) list.push(...gusts(this));
+    if (fx.includes("fog")) list.push(...kept(this, "fog", `${this.isNightTime()}`, fogBanks));
+    if (fx.includes("hail")) list.push(...kept(this, "hail", `${this._containerHeight}`, hailstones));
+    if (fx.includes("wind")) list.push(...kept(this, "wind", "", gusts));
     return list;
   };
 
@@ -197,7 +201,8 @@ function fogBanks(el) {
 
 function renderFog(el) {
   const banks = el._particles.filter((p) => p.type === "fog");
-  const { duration, driftRight } = el.computeCloudDrift();
+  const { driftRight } = el.computeCloudDrift();
+  const base = [190, 150, 115][windLevel(el)];
   const bank = (b) => html`<div class="fog-bank ${b.night ? "night" : ""}"
     style="left:${b.x}%;top:calc(${b.y}% - ${b.h / 2}%);width:${b.w}%;height:${b.h}%;opacity:${b.op}"></div>`;
   return html`
@@ -212,7 +217,7 @@ function renderFog(el) {
         const set = banks.filter((b) => b.layer === layer);
         if (!set.length) return nothing;
         // Far banks slower, like the cloud layers; fog moves slower than cloud.
-        const d = Math.round((duration * 1.6 * [1.5, 1.0, 0.7][layer]) / 5) * 5;
+        const d = Math.round(base * [1.5, 1.0, 0.7][layer]);
         return html`<div class="fog-track ${driftRight ? "drift-right" : ""}" style="--fog-duration:${d}s">
           <div class="cloud-set">${set.map(bank)}</div><div class="cloud-set cloud-set-second">${set.map(bank)}</div>
         </div>`;
@@ -240,20 +245,33 @@ function renderHail(el) {
 }
 
 // --- Wind --------------------------------------------------------------------
-function gusts(el) {
-  const count = 12;
-  return Array.from({ length: count }, (_, i) => ({
-    type: "gust", y: (8 + (i / count) * 80 + rnd(-4, 4)).toFixed(0), delay: rnd(0, 5).toFixed(1), dur: rnd(2.6, 4.2).toFixed(2),
-    len: rnd(160, 340).toFixed(0), thick: rnd(1.2, 2.6).toFixed(1), op: rnd(0.55, 1).toFixed(2), curl: Math.random() < 0.35,
-  }));
+function gusts() {
+  // Far wisps: thin, faint, slow and blurrier; near ones: longer, thicker, faster.
+  const out = [];
+  [[5, 0.6, 1.6], [5, 1.0, 1.0], [3, 1.5, 0.72]].forEach(([n, size, slow], layer) => {
+    for (let i = 0; i < n; i++) {
+      const dur = rnd(5.5, 8) * slow;
+      out.push({ type: "gust", layer, y: (6 + ((i + layer / 3) / n) * 84 + rnd(-4, 4)).toFixed(0), dur: dur.toFixed(2),
+        // A negative delay starts each wisp part-way along, so they are spread out from the first frame.
+        delay: (-rnd(0, dur)).toFixed(2), len: (rnd(260, 420) * size).toFixed(0), h: (rnd(10, 16) * size).toFixed(0),
+        blur: (layer === 0 ? 5 : layer === 1 ? 3.5 : 2.5).toFixed(1), op: (rnd(0.55, 0.8) * [0.6, 0.8, 1][layer]).toFixed(2), rise: rnd(-14, 14).toFixed(0) });
+    }
+  });
+  return out;
 }
 
 function renderWind(el) {
-  const { duration, driftRight } = el.computeCloudDrift();
-  // Stronger wind (shorter cloud drift) blows the streaks faster: 0.7x at gale, 1.3x when calm.
-  const k = 0.7 + Math.max(0, Math.min(1, (duration - 50) / 40)) * 0.6;
-  return el._particles.filter((p) => p.type === "gust").map((p) => html`
-    <div class="wind-path ${driftRight ? "" : "left"}" style="--y:${p.y}%;--duration:${(p.dur * k).toFixed(2)}s;--delay:${p.delay}s;--op:${p.op}">
-      <div class="wind-streak ${p.curl ? "curl" : ""}" style="--len:${p.len}px;--thick:${p.thick}px"></div>
-    </div>`);
+  const { driftRight } = el.computeCloudDrift();
+  // Stronger wind blows the wisps faster.
+  const k = [1.25, 1, 0.72][windLevel(el)];
+  return html`
+    <svg class="cloud-defs" width="0" height="0" aria-hidden="true"><defs>
+      <filter id="wfc-wind-soft" x="-10%" y="-60%" width="120%" height="220%" color-interpolation-filters="sRGB">
+        <feTurbulence type="fractalNoise" baseFrequency="0.006 0.09" numOctaves="3" seed="11" stitchTiles="stitch" result="n"></feTurbulence>
+        <feDisplacementMap in="SourceGraphic" in2="n" scale="16" xChannelSelector="R" yChannelSelector="G"></feDisplacementMap>
+      </filter></defs></svg>
+    ${el._particles.filter((p) => p.type === "gust").map((p) => html`
+      <div class="wind-path ${driftRight ? "" : "left"}" style="--y:${p.y}%;--h:${p.h}px;--duration:${(p.dur * k).toFixed(2)}s;--delay:${(p.delay * k).toFixed(2)}s;--op:${p.op};--rise:${p.rise}px">
+        <div class="wind-wisp" style="--len:${p.len}px;--blur:${p.blur}px"></div>
+      </div>`)}`;
 }
