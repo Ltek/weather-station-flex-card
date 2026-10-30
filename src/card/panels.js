@@ -131,7 +131,7 @@ export const PANEL_TYPES = {
         { name: "rose_bins", selector: { object: {} }, helper: "Built-in rose: speed thresholds in the sensor's unit, e.g. [1, 5, 10, 15, 25]." },
         { name: "windrose_preset", selector: { select: { options: Object.entries(WINDROSE_PRESETS).map(([value, p]) => ({ value, label: p.label })) } }, default: "standard", helper: "Wind Rose Card starting layout; the settings below change parts of it." },
         { name: "wr_period", selector: { select: { options: opt([["preset", "From the preset"], ["-1h", "1 hour"], ["-8h", "8 hours"], ["-1d", "24 hours"], ["-7d", "7 days"], ["-30d", "30 days"]]) } }, default: "preset", helper: "Period shown first." },
-        { name: "wr_scale", selector: { number: { min: 30, max: 150, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100, helper: "Wind Rose Card size within the panel." },
+        { name: "wr_scale", selector: { number: { min: 30, max: 150, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100, helper: "Wind Rose Card size within the panel. Not used while the panel fits its height (Layout → Fit): then the rose is as large as the height allows." },
         { name: "wr_arrow", selector: { boolean: {} }, default: true, helper: "Current direction arrow." },
         { name: "wr_arrow_size", when: (d) => d.wr_arrow !== false, selector: { number: { min: 10, max: 240, step: 5, mode: "slider" } }, default: 50, helper: "Direction arrow (pointer) size." },
         { name: "wr_arrow_color", when: (d) => d.wr_arrow !== false, selector: { text: {} }, helper: "Not set: red. The Wind Rose Card uses it for the speed-bar arrows too." },
@@ -196,15 +196,27 @@ export const PANEL_TYPES = {
   },
   forecast: {
     tag: "wsfc-panel-forecast", label: "Forecast (hourly + daily)", icon: "mdi:calendar-week", span: 8, rows: 4, flex: true, flexPanels: ["Section order & visibility", "Hourly Forecast", "Daily Forecast"],
-    schema: [],
+    schema: [
+      { name: "text_scale", label: "Text size", selector: { number: { min: 50, max: 200, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100, helper: "Day and time labels, temperatures and chart figures. Separate from Scale all Panel Contents." },
+      { name: "icon_scale", label: "Icon size", selector: { number: { min: 50, max: 250, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100, helper: "The condition icons in the forecast." },
+      { name: "chart_scale", label: "Chart height", selector: { number: { min: 40, max: 200, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100, helper: "The temperature / precipitation chart under the icons." },
+    ],
   },
   hourly: {
     tag: "wsfc-panel-hourly", label: "Hourly forecast", icon: "mdi:clock-outline", span: 8, rows: 3, flex: true, flexPanels: ["Hourly Forecast"],
-    schema: [],
+    schema: [
+      { name: "text_scale", label: "Text size", selector: { number: { min: 50, max: 200, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100, helper: "Day and time labels, temperatures and chart figures. Separate from Scale all Panel Contents." },
+      { name: "icon_scale", label: "Icon size", selector: { number: { min: 50, max: 250, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100, helper: "The condition icons in the forecast." },
+      { name: "chart_scale", label: "Chart height", selector: { number: { min: 40, max: 200, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100, helper: "The temperature / precipitation chart under the icons." },
+    ],
   },
   daily: {
     tag: "wsfc-panel-daily", label: "Daily forecast", icon: "mdi:calendar-week", span: 8, rows: 3, flex: true, flexPanels: ["Daily Forecast"],
-    schema: [],
+    schema: [
+      { name: "text_scale", label: "Text size", selector: { number: { min: 50, max: 200, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100, helper: "Day and time labels, temperatures and chart figures. Separate from Scale all Panel Contents." },
+      { name: "icon_scale", label: "Icon size", selector: { number: { min: 50, max: 250, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100, helper: "The condition icons in the forecast." },
+      { name: "chart_scale", label: "Chart height", selector: { number: { min: 40, max: 200, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100, helper: "The temperature / precipitation chart under the icons." },
+    ],
   },
   sky_tracker: {
     tag: "wsfc-panel-sky-tracker", label: "Sky Tracker", icon: "mdi:sun-clock-outline", span: 4, rows: 2, rowsCompact: 0, flex: true,

@@ -984,7 +984,9 @@ class WeatherStationFlexCardEditor extends LitElement {
       return updatePanel(np, extra);
     };
     // Spacing sliders (some panels) live with the other sizes.
-    const SPACING = ["content_width", "content_height"];
+    // Spacing and size sliders that belong with Size and Scaling (the hero's own
+    // Auto scale sliders stay in its group).
+    const SPACING = ["content_width", "content_height", ...(["daily", "hourly", "forecast"].includes(p.type) ? ["text_scale", "icon_scale", "chart_scale"] : [])];
     const spacing = (m0.schema || []).filter((f) => SPACING.includes(f.name)).map((f) => ({ ...f, section: "Size and Scaling" }));
     const m = spacing.length ? { ...m0, schema: m0.schema.filter((f) => !SPACING.includes(f.name)) } : m0;
     const defs = nested ? { show_title: TITLE_WHEN_SET.has(p.type) ? !!p.title : true } : panelDefaults(p);

@@ -917,9 +917,20 @@ class WeatherStationFlexCard extends LitElement {
     const zm = Math.max(0.4, Math.min(2, z / 100)) * (this._autoFit && !popup && !this._ownFit(p) ? el.__wsfcAuto || this._autoBase() : 1);
     el.style.zoom = zm !== 1 ? String(zm) : "";
     const sx = Number(p.content_width) || 100, sy = Number(p.content_height) || 100;
+    // Forecast panels: text, icon and chart sizes on their own (CSS variables the
+    // vendored forecast chart reads), on top of the overall scale.
+    const ts = Number(p.text_scale) || 100, is = Number(p.icon_scale) || 100, cs = Number(p.chart_scale) || 100;
+    el.style.setProperty("--ha-font-size-s", ts !== 100 ? `${(12 * ts) / 100}px` : "");
+    el.style.setProperty("--ha-font-size-m", ts !== 100 ? `${(14 * ts) / 100}px` : "");
+    el.style.setProperty("--ha-font-size-l", ts !== 100 ? `${(16 * ts) / 100}px` : "");
+    el.style.setProperty("--weather-forecast-card-chart-font-size", ts !== 100 ? `${(12 * ts) / 100}px` : "");
+    el.style.setProperty("--weather-forecast-card-forecast-conditions-icon-size", is !== 100 ? `${(36 * is) / 100}px` : "");
+    el.style.setProperty("--wsfc-chart-scale", cs !== 100 ? String(cs / 100) : "");
     el.style.setProperty("--wsfc-sx", String(sx / 100));
     el.style.setProperty("--wsfc-sy", String(sy / 100));
     el.fit = !popup && (!!panelMeta(p)?.fit || (p.type === "hero" && !!p.auto_scale)) && rowsOf(p) > 0 && p.fit !== false && this._focus == null;
+    // Whether the panel's height comes from its rows or from its content.
+    el.setAttribute("sized", !popup && rowsOf(p) > 0 ? "rows" : "content");
     el.hass = this.hass;
     if (p.type === "heading") el.bar = p.show_bar && this._config.panel_bar !== false ? this._renderBar() : null;
     // A stack skips children that are toggled off or hiding themselves; the others fill the space.

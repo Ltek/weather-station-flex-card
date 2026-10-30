@@ -176,9 +176,14 @@ export class WfcForecastChart extends LitElement {
     const gaps = Math.max(count - 1, 0);
     const fontSize = this._getChartFontSize();
 
-    // Adjust chart height based on font size (base: 130px at default font size)
-    const chartHeight =
-      DEFAULT_CHART_HEIGHT + Math.max(0, fontSize - DEFAULT_CHART_FONT_SIZE);
+    // Adjust chart height based on font size (base: 130px at default font size).
+    // Weather Station Flex Card: --wsfc-chart-scale (1 = normal) scales it too.
+    const chartScale =
+      parseFloat(getComputedStyle(this).getPropertyValue("--wsfc-chart-scale")) || 1;
+    const chartHeight = Math.round(
+      (DEFAULT_CHART_HEIGHT + Math.max(0, fontSize - DEFAULT_CHART_FONT_SIZE)) *
+        chartScale
+    );
 
     const totalWidthCalc = `calc(${count} * var(--forecast-item-width) + ${gaps} * var(--forecast-item-gap))`;
 

@@ -83,6 +83,11 @@ class WsfcWind extends LitElement {
       /* The rose / dial keeps its real height (never squeezed under the chart);
          fitting narrows it until everything fits. */
       :host([fit]) .wr, :host([fit]) .top { flex-shrink: 0; }
+      /* The Wind Rose Card draws into a fixed-ratio SVG (about 1.35 : 1). In fit
+         mode it gets the whole width and is scaled to the height it has, so it is
+         never squeezed sideways. */
+      :host([fit]) .wr.byh { width: 100%; max-width: none; margin: 0; display: flex; justify-content: center; overflow: hidden; }
+      :host([fit]) .wr.byh > :first-child { flex: 0 0 auto; width: var(--wsfc-wr-w, 100%); }
       .wr > * { --ha-card-background: transparent; --ha-card-box-shadow: none; --ha-card-border-width: 0; display: block; }
     `,
   ];
@@ -146,8 +151,10 @@ class WsfcWind extends LitElement {
         if (this._wrEl) this._wrEl.hass = this.hass;
         if (this._wrNext) this._wrNext.hass = this.hass;
         const sc = Math.max(30, Math.min(150, Number(c.wr_scale ?? 100)));
-        const w = this.fit && this._fitPx ? `width:min(${sc}%, ${this._fitPx}px);margin:0 auto` : sc !== 100 ? `width:${sc}%;margin:0 auto` : "";
-        main = this._wrErr ? html`<div class="note">${this._wrErr}</div>` : html`<div class="wr fitmain" style=${w}>${this._wrEl || ""}${this._wrNext ? html`<div class="wr-stage" aria-hidden="true">${this._wrNext}</div>` : ""}</div>`;
+        // Fit mode: the rose card is as wide as the panel's height allows (its SVG
+        // keeps its ratio) and centred; the Rose size share only applies without fit.
+        const w = this.fit && this._fitPx ? `--wsfc-wr-w:${this._fitPx}px` : this.fit ? "" : sc !== 100 ? `width:${sc}%;margin:0 auto` : "";
+        main = this._wrErr ? html`<div class="note">${this._wrErr}</div>` : html`<div class="wr fitmain ${this.fit ? "byh" : ""}" style=${w}>${this._wrEl || ""}${this._wrNext ? html`<div class="wr-stage" aria-hidden="true">${this._wrNext}</div>` : ""}</div>`;
       }
     }
     if (!main) {
@@ -321,9 +328,11 @@ class WsfcWind extends LitElement {
   }
 
   _refit() {
-    const main = this.renderRoot.querySelector(".fitmain");
+    const fitmain = this.renderRoot.querySelector(".fitmain");
     const kids = [...this.renderRoot.children].filter((k) => k.getBoundingClientRect().height > 0 && getComputedStyle(k).position !== "absolute");
-    if (!main || !kids.length) return;
+    if (!fitmain || !kids.length) return;
+    // For the Wind Rose Card, size its own element (the wrapper is full width).
+    const main = fitmain.classList.contains("byh") ? fitmain.firstElementChild || fitmain : fitmain;
     const hostH = this.clientHeight;
     const mh = main.getBoundingClientRect().height, mw = main.getBoundingClientRect().width;
     if (!hostH || !mh || !mw) return;
@@ -335,7 +344,7 @@ class WsfcWind extends LitElement {
     // changing its width by Δ changes its height by about Δ × (mh / mw).
     const ratio = Math.max(0.5, mh / mw);
     let next = mw - extra / ratio;
-    const maxW = main.parentElement?.clientWidth || this.clientWidth;
+    const maxW = fitmain.classList.contains("byh") ? fitmain.clientWidth : main.parentElement?.clientWidth || this.clientWidth;
     next = Math.max(80, Math.min(maxW, next));
     if (extra < 0 && this._fitPx == null) return; // fits already at full size
     if (next >= maxW - 1) next = null; // no limit needed

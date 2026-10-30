@@ -1,5 +1,11 @@
 # Changelog
 
+## v2026.10.30.88
+
+- **Forecast panels (Daily, Hourly, Forecast): separate size sliders** in Size and Scaling, alongside Scale all Panel Contents: **Text size** (50–200 %: day and time labels, temperatures, chart figures), **Icon size** (50–250 %) and **Chart height** (40–200 %). In a fixed-height panel, where Scale all Panel Contents is held back by the height, these change the shares instead, e.g. bigger icons and a lower chart.
+- **Wind panel, Rose view with fit:** the Wind Rose Card now takes the panel's full width and is sized by the height it has, centred, instead of being narrowed to one side. The Rose size slider (`wr_scale`) no longer applies while the panel fits its height.
+- **Scaling fixes:** the Graph, Temp & Humidity and UV & Solar charts grew far too much under Scale all Panel Contents (the chart's own height and the scale compounded); the Metric tile's sparkline didn't scale in a content-sized tile. Every panel was checked at 150 %.
+
 ## v2026.10.30.87
 
 - **Condition from the station: the light sensor is calibrated to itself.** Clear days read as cloudy when a station's solar sensor reads lower than the textbook clear-sky value (shading, sensor tolerance, haze, altitude). The card now learns a correction from the sensor's last 10 days of history (its brightest readings against the clear-sky model for the sun's height at the time), refreshed every 6 hours, so the sky is judged against the station's own clear days. **Clear-sky calibration** (20–160 %) in Weather station → Current condition overrides it.

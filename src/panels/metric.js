@@ -30,6 +30,8 @@ class WsfcMetric extends LitElement {
       .val small { font-size: 15px; font-weight: 400; margin-left: 3px; color: var(--wsfc-muted); }
       .cap { font-size: 12px; color: var(--wsfc-muted); min-height: 15px; margin-top: 2px; }
       .spark { flex: 1; min-height: 36px; margin-top: 6px; }
+      /* Content-sized panel: the sparkline is a fixed strip that follows the scale (zoom). */
+      :host([sized="content"]) .spark { flex: 0 0 auto; height: 72px; }
       .spark svg { width: 100%; height: 100%; display: block; overflow: visible; }
     `,
   ];

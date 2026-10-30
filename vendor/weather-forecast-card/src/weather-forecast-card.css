@@ -416,8 +416,9 @@ wfc-animation-provider[has-clouds] ~ .wfc-container .wfc-current-secondary-icon 
 
 .wfc-forecast-slot-time {
   color: var(--secondary-text-color, #9b9b9b);
-  height: 20px;
-  line-height: 20px;
+  /* Weather Station Flex Card: rows follow the text size (20px at 14px text). */
+  height: calc(var(--ha-font-size-m, 14px) + 6px);
+  line-height: calc(var(--ha-font-size-m, 14px) + 6px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -433,8 +434,8 @@ wfc-animation-provider[has-clouds] ~ .wfc-container .wfc-current-secondary-icon 
 .wfc-forecast-slot-time-primary {
   color: var(--primary-text-color, #212121);
   font-size: var(--ha-font-size-m, 14px);
-  height: 20px;
-  line-height: 20px;
+  height: calc(var(--ha-font-size-m, 14px) + 6px);
+  line-height: calc(var(--ha-font-size-m, 14px) + 6px);
 }
 
 .wfc-forecast-slot-time-secondary {

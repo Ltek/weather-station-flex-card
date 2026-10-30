@@ -61,6 +61,9 @@ export const panelStyles = css`
   .reading .l { font-size: 12px; color: var(--wsfc-muted); display: flex; align-items: center; gap: 4px; }
   .reading .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
   .body { position: relative; flex: 1; min-height: 160px; }
+  /* The chart canvas fills the body without feeding its size back into it (under
+     a content scale, Chart.js's own height and the zoom would compound). */
+  .body > canvas { position: absolute; inset: 0; }
   .note { color: var(--wsfc-muted); font-size: 13px; padding: 8px 0; }
 `;
 
