@@ -38,6 +38,14 @@ import { CONDITIONS } from "./bg-preview.js";
 const MAP_KEYS = ["temperature", "apparent_temperature", "dew_point", "humidity", "pressure", "wind_speed", "wind_gust_speed", "wind_bearing", "uv_index", "solar_radiation", "illuminance", "precipitation"];
 const MAP_LABELS = { wind_bearing: "Wind direction", precipitation: "Rain rate" };
 
+// Weather station section: settings below the sources.
+const STATION_FIELDS = [
+  { name: "condition_source", label: "Current condition from", selector: { select: { options: [{ value: "entity", label: "The weather entity" }, { value: "station", label: "Your station's readings (the entity fills in the rest)" }] } }, default: "entity",
+    helper: "With the station: rain rate, solar radiation (or light), humidity, wind, temperature and the lightning sensor decide sunny, partly cloudy, cloudy, rain, snow, fog, windy and lightning. The hero, bulletin and background follow it. At night, and when the sun is low, the entity's view of the sky is used." },
+  { name: "station_windy_mph", label: "Windy from", when: (d) => d.condition_source === "station", selector: { number: { min: 10, max: 60, step: 1, mode: "slider", unit_of_measurement: "mph" } }, default: 25 },
+  { name: "station_pouring_inh", label: "Pouring from", when: (d) => d.condition_source === "station", selector: { number: { min: 0.1, max: 1, step: 0.05, mode: "slider", unit_of_measurement: "in/h" } }, default: 0.3 },
+];
+
 // Background section (its own area in the editor), in groups.
 const BACKGROUND_GROUPS = [
   ["Background", [
@@ -123,7 +131,7 @@ const LAYOUT_GROUPS = [
 ];
 // In the Panel buttons section.
 const REMEMBER = [{ name: "remember", selector: { boolean: {} }, default: true, helper: "Keep which panels were shown or hidden with the panel buttons after a refresh, in each browser. Off: every load starts from the panels' Shown setting (the eye icon)." }];
-const GENERAL_SCHEMA = [...BACKGROUND_GROUPS, ...APPEARANCE_GROUPS, ...LAYOUT_GROUPS].flatMap(([, f]) => f);
+const GENERAL_SCHEMA = [...STATION_FIELDS, ...[...BACKGROUND_GROUPS, ...APPEARANCE_GROUPS, ...LAYOUT_GROUPS].flatMap(([, f]) => f)];
 const GENERAL_DEFAULTS = { layout: "auto", panel_bar: true, remember: true, fit_height: true, layout_size: "auto", background: "none", panel_opacity: 0.55, panel_blur: 6 };
 
 const LABELS = {
@@ -401,7 +409,7 @@ class WeatherStationFlexCardEditor extends LitElement {
   _searchIndex() {
     const out = [];
     const label = (f) => f.label || LABELS[f.name] || f.name.replace(/[._]/g, " ");
-    for (const [area, title, groups] of [["background", "Background", BACKGROUND_GROUPS], ["general", "Appearance", APPEARANCE_GROUPS], ["behavior", "Layout & Behavior", LAYOUT_GROUPS]])
+    for (const [area, title, groups] of [["station", "Weather station", [["Current condition", STATION_FIELDS]]], ["background", "Background", BACKGROUND_GROUPS], ["general", "Appearance", APPEARANCE_GROUPS], ["behavior", "Layout & Behavior", LAYOUT_GROUPS]])
       for (const [g, fields] of groups) for (const f of fields) out.push({ label: label(f), help: f.helper || "", where: `${title} › ${g}`, go: { open: area }, f });
     for (const f of REMEMBER) out.push({ label: label(f), help: f.helper || "", where: "Panel buttons", go: { open: "buttons" }, f });
     const add = (p, key, nested) => {
@@ -586,6 +594,7 @@ class WeatherStationFlexCardEditor extends LitElement {
           else delete next.metric_sources;
           this._emit(next);
         }}></wsfc-sources-editor>
+      ${this._general([["Current condition", STATION_FIELDS]])}
       <details class="sub">
         <summary><ha-icon icon="mdi:format-list-checks"></ha-icon><span>Values used</span><span class="cnt">${found} of ${rows.length} found</span></summary>
         <div class="map">
@@ -1202,4 +1211,4 @@ customElements.get("weather-station-flex-card-editor") || customElements.define(
 // For tests.
 globalThis.__wsfcEditorHelpers = { stackWithNext, unstack, moveIntoStack };
 // For scripts/gen-config-doc.mjs (docs/CONFIGURATION.md is generated from these).
-globalThis.__wsfcSchemas = { BACKGROUND_GROUPS, APPEARANCE_GROUPS, LAYOUT_GROUPS, GENERAL_DEFAULTS, REMEMBER, LABELS, PANEL_TYPES, COMMON_SCHEMA, STACK_CHILD_SCHEMA };
+globalThis.__wsfcSchemas = { STATION_FIELDS, BACKGROUND_GROUPS, APPEARANCE_GROUPS, LAYOUT_GROUPS, GENERAL_DEFAULTS, REMEMBER, LABELS, PANEL_TYPES, COMMON_SCHEMA, STACK_CHILD_SCHEMA };

@@ -10,13 +10,14 @@ https://github.com/Ltek/weather-station-flex-card
 
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Ltek&repository=weather-station-flex-card&category=plugin)
 
-Current build: **v2026.10.30.85** · full history in [CHANGELOG.md](CHANGELOG.md)
+Current build: **v2026.10.30.86** · full history in [CHANGELOG.md](CHANGELOG.md)
 
 ---
 
 ## Key features at a glance
 
 - **Station-first readings** — every panel reads the same ordered list of **Weather Sources**: your station device first (its sensors are found automatically, outdoor before indoor), then a weather entity for the forecast and anything the station doesn't measure. One place to see and override which sensor feeds each value.
+- **Current condition from your station** — optionally, your own rain rate, solar radiation, humidity, wind, temperature and lightning sensor decide whether it's sunny, partly cloudy, cloudy, raining, snowing, foggy, windy or stormy, instead of a forecast service's guess. The hero, the bulletin and the animated background all follow.
 - **All three Ecowitt integrations** — Home Assistant's Ecowitt, Ecowitt Local and the Ecowitt Official integration, alone or combined (e.g. the core integration for readings plus Ecowitt Local for battery and signal). Diagnostics are gathered from every Ecowitt device. See [docs/ECOWITT_INTEGRATIONS.md](docs/ECOWITT_INTEGRATIONS.md).
 - **A real panel grid** — a 12-column grid with half-row heights, drag-and-drop layout map, stacks that share space (and fill in when a panel hides itself), and automatic tablet and phone layouts.
 - **Panel buttons** — show and hide panels from a button bar or a Button Menu panel, or open panels as pop-ups. Each browser remembers its own choices.

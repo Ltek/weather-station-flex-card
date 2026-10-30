@@ -1,5 +1,14 @@
 # Changelog
 
+## v2026.10.30.86
+
+- **Current condition from your station.** Weather station → Current condition → **Current condition from: Your station's readings**. Rain rate, solar radiation (or light), humidity, wind, temperature and the lightning sensor decide the condition, instead of the weather entity's guess:
+  - rain → rainy, or pouring from 0.3 in/h (**Pouring from** slider); below 32 °F snowy, 32–36 °F snow and rain; with a lightning strike in the last 15 min, lightning and rain;
+  - by day, the share of the clear-sky light the station sees (from the sun's height at your location): 70 % or more sunny, 35–70 % partly cloudy, less cloudy;
+  - humidity 97 % or more with little light and wind → fog;
+  - wind from 25 mph (**Windy from** slider) → windy, or windy with clouds.
+  The weather entity still fills in what the station can't see: night-time cloud, and the sky while the sun is low. The hero, the bulletin, the compact tiles and the animated background all follow. Default stays the weather entity.
+
 ## v2026.10.30.85
 
 - **Wind wisps stay where they are.** Each fades in at its own spot, drifts 60–150 px with the wind (under an eighth of the screen) and fades out. About half rise or sink by a few pixels, slowly; the rest stay level. Nothing crosses the screen or bounces.
