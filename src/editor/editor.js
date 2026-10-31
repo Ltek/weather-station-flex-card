@@ -36,6 +36,7 @@ import "./sources.js";
 import "./series-editor.js";
 import { CONDITIONS } from "./bg-preview.js";
 import { conditionSummary } from "../card/condition.js";
+import { arrange, toTracks, toRows } from "../card/layout.js";
 
 const MAP_KEYS = ["temperature", "apparent_temperature", "dew_point", "humidity", "pressure", "wind_speed", "wind_gust_speed", "wind_bearing", "uv_index", "solar_radiation", "illuminance", "precipitation"];
 const MAP_LABELS = { wind_bearing: "Wind direction", precipitation: "Rain rate" };
@@ -125,6 +126,8 @@ const LAYOUT_GROUPS = [
     { name: "auto_fit_min", label: "Smallest content scale", when: (d) => d.screen_fit === "scale" || !!d.panel_fill, selector: { number: { min: 30, max: 100, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 60, helper: "Below this a panel scrolls instead, so text stays readable." },
     { name: "auto_fit_max", label: "Largest content scale", when: (d) => d.screen_fit === "scale" || !!d.panel_fill, selector: { number: { min: 100, max: 250, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 150, helper: "On screens bigger than the design." },
     { name: "panel_overflow", label: "When a panel's content doesn't fit", when: (d) => !(d.layout === "fullscreen" && ["strict", "scale"].includes(d.screen_fit)), selector: { select: { options: [{ value: "grow", label: "Grow — the panel gets taller (and its row with it)" }, { value: "scroll", label: "Scroll — the panel keeps its height, with a scroll bar inside" }] } }, default: "grow", helper: "For panels with a set height (Height above 0); each panel can override this. Scroll locks every panel to its size in any layout; Strict fit does the same in full screen." },
+    { name: "layout_gaps", label: "Gaps between panels", selector: { select: { options: [{ value: "close", label: "Close up — panels move up into empty space" }, { value: "keep", label: "Keep — panels stay where they're placed" }] } }, default: "close",
+      helper: "After you move a panel in the Layout Map, or when one is hidden (by its button, or when it has nothing to show)." },
     { name: "layout_size", selector: { select: { options: [{ value: "auto", label: "Automatic (from the card's width)" }, { value: "wide", label: "Wide — desktop layout" }, { value: "medium", label: "Medium — tablet layout" }, { value: "narrow", label: "Narrow — phone layout (stacked)" }] } }, helper: "In a Sections view the card is only as wide as its section; widen the section or use a Panel view for the desktop layout." },
     { name: "row_height", selector: { number: { min: 40, max: 300, mode: "box", unit_of_measurement: "px" } }, helper: "Height of one row unit (default 110)." },
     { name: "gap", selector: { number: { min: 0, max: 32, mode: "box", unit_of_measurement: "px" } }, helper: "Space between panels (default 12)." },
@@ -603,6 +606,47 @@ class WeatherStationFlexCardEditor extends LitElement {
     </div>`;
   }
 
+  // Stack → its panels placed on the grid where the stack was: one above the
+  // other (vertical) or side by side (horizontal), sharing the stack's size.
+  _breakStack(key) {
+    let panels = this._panels;
+    const i = Number(key);
+    if (!panels[i] || panels[i].type !== "stack") return;
+    // A layout without positions: give every grid panel the place it has now, so
+    // the stack's panels can go one above the other where the stack was.
+    if (panels[i].x == null || panels[i].y == null) {
+      const grid = panels.map((p, n) => n).filter((n) => panels[n].display !== "popup");
+      const pos = arrange(grid.map((n) => ({ key: n, w: spanOf(panels[n]), h: toTracks(rowsOf(panels[n])) })), { gravity: this._config.layout_gaps !== "keep" });
+      panels = panels.map((p, n) => (pos.has(n) ? { ...p, x: pos.get(n).x, y: toRows(pos.get(n).y) } : p));
+    }
+    const st = panels[i];
+    const kids = (st.panels || []).filter(Boolean).map((k) => ({ ...k }));
+    if (!kids.length) return;
+    const span = spanOf(st), rows = rowsOf(st) || kids.length * 0.5;
+    const vertical = st.direction === "vertical";
+    const q = (v) => Math.max(0.25, Math.round(v * 4) / 4), qy = (v) => Math.max(0, Math.round(v * 4) / 4);
+    const grow = (k) => Number(k.grow ?? 1) || 1;
+    const tot = kids.reduce((a, k) => a + grow(k), 0);
+    let off = 0, used = 0;
+    const out = kids.map((k, n) => {
+      const { grow: _g, min_width: _m, ...c } = k;
+      if (vertical) {
+        const h = n === kids.length - 1 ? q(rows - used) : q((rows * grow(k)) / tot);
+        const r = { ...c, span, rows: Math.max(0.25, h), ...(st.x != null ? { x: st.x, y: qy(Number(st.y) + used) } : {}) };
+        used += h;
+        return r;
+      }
+      const w = n === kids.length - 1 ? span - off : Math.max(1, Math.round((span * grow(k)) / tot));
+      const r = { ...c, span: Math.max(1, w), rows: c.rows ?? rows, ...(st.x != null ? { x: Number(st.x) + off, y: st.y } : {}) };
+      off += w;
+      return r;
+    });
+    const next = panels.slice();
+    next.splice(i, 1, ...out);
+    this._openPanel = null;
+    this._setPanels(next);
+  }
+
   _stationDevice() {
     const src = (this._config.metric_sources?.sources || []).find((s) => !s.disabled && String(s.ref).startsWith("device:"));
     return src ? src.ref.slice(7) : undefined;
@@ -750,11 +794,11 @@ class WeatherStationFlexCardEditor extends LitElement {
     const phonePanels = () => {
       const pos = new Map((phone || []).map((e, k) => [Number(e.i), e]));
       return grid
-        .map(({ p, i }) => ({ ...p, __i: i, span: pos.get(i)?.span ?? 12, rows: pos.get(i)?.rows ?? (p.rows ?? 0), show: pos.has(i) ? pos.get(i).show !== false : p.show }))
+        .map(({ p, i }) => ({ ...p, __i: i, span: pos.get(i)?.span ?? 12, rows: pos.get(i)?.rows ?? (p.rows ?? 0), x: pos.get(i)?.x, y: pos.get(i)?.y, show: pos.has(i) ? pos.get(i).show !== false : p.show }))
         .sort((a, b) => ((phone || []).findIndex((e) => Number(e.i) === a.__i) + 1 || 1e3 + a.__i) - ((phone || []).findIndex((e) => Number(e.i) === b.__i) + 1 || 1e3 + b.__i));
     };
     // (The map drops sizes equal to the type's default, so read them back through spanOf / rowsOf.)
-    const fromPhone = (list) => list.filter((p) => p.__i != null).map((p) => ({ i: p.__i, span: spanOf(p), ...(rowsOf(p) ? { rows: rowsOf(p) } : {}), ...(p.show === false ? { show: false } : {}) }));
+    const fromPhone = (list) => list.filter((p) => p.__i != null).map((p) => ({ i: p.__i, span: spanOf(p), ...(rowsOf(p) ? { rows: rowsOf(p) } : {}), ...(p.x != null && p.y != null ? { x: p.x, y: p.y } : {}), ...(p.show === false ? { show: false } : {}) }));
     return html`
       <div class="frow"><label for="lm-for">Layout for</label>
         <select id="lm-for" class="sel" @change=${(e) => { this._mapFor = e.target.value; this.requestUpdate(); }}>
@@ -766,12 +810,12 @@ class WeatherStationFlexCardEditor extends LitElement {
             <div class="presets">${phone
               ? html`<button class="btn sm ghost" @click=${() => setPhone(null)}><ha-icon icon="mdi:delete-outline"></ha-icon>Remove the phone layout</button>`
               : html`<button class="btn sm" @click=${() => setPhone(grid.map(({ p, i }) => ({ i, span: 12, ...(p.rows ? { rows: p.rows } : {}) })))}><ha-icon icon="mdi:cellphone"></ha-icon>Create a phone layout</button>`}</div>
-            ${phone ? html`<wsfc-layout-map .panels=${phonePanels()} @layout-changed=${(e) => setPhone(fromPhone(e.detail.panels))}></wsfc-layout-map>` : nothing}`
-        : html`<p class="hint"><b>Drag</b> a panel to move it; drag its <b>right or bottom edge</b> (or the corner) to resize. Keyboard: arrows move, Shift+arrows resize. This is the main layout${phone ? "; phones use the Phone layout" : " — phones stack the panels automatically (or set a Phone layout above)"}. Dashed = hidden on load.</p>
+            ${phone ? html`<wsfc-layout-map .panels=${phonePanels()} .gravity=${this._config.layout_gaps !== "keep"} @layout-changed=${(e) => setPhone(fromPhone(e.detail.panels))}></wsfc-layout-map>` : nothing}`
+        : html`<p class="hint"><b>Drag</b> a panel to any place on the grid: panels in its way move down, nothing else moves. Drag its <b>right or bottom edge</b> (or the corner) to resize, in quarter rows. Keyboard: arrows move one cell, Shift+arrows resize. This is the main layout${phone ? "; phones use the Phone layout" : " — phones stack the panels automatically (or set a Phone layout above)"}. Dashed = hidden on load.</p>
             ${this._screenGuide()}
             ${this._guideSpec() ? html`<wsfc-layout-probe .hass=${this.hass} .config=${this._config} .guide=${this._guideSpec()}
               @probe-measured=${(e) => { this._measured = e.detail; this.requestUpdate(); }}></wsfc-layout-probe>` : nothing}
-            <wsfc-layout-map .panels=${this._panels} .guide=${this._guideSpec()} .measured=${this._guideSpec() ? this._measured : null} @layout-changed=${(e) => {
+            <wsfc-layout-map .panels=${this._panels} .gravity=${this._config.layout_gaps !== "keep"} .guide=${this._guideSpec()} .measured=${this._guideSpec() ? this._measured : null} @layout-changed=${(e) => {
               this._flexEds.clear();
               this._openPanel = null;
               this._setPanels(e.detail.panels);
@@ -1064,6 +1108,8 @@ class WeatherStationFlexCardEditor extends LitElement {
     const reset = () => update(Object.fromEntries(Object.entries(p).filter(([k]) => KEEP.includes(k))));
     return html`<div class="pbody">
       <div class="resetbar">
+        ${p.type === "stack" && !nested && (p.panels || []).length ? html`<button class="btn sm ghost" title="Put this stack's panels straight on the grid, in the stack's place, and remove the stack"
+          @click=${() => this._breakStack(key)}><ha-icon icon="mdi:arrow-split-horizontal"></ha-icon>Break apart</button>` : nothing}
         <button class="btn sm ghost" ?disabled=${!customized} title="Keeps the panel's type, position and size" @click=${() => { this._flexEds.clear(); reset(); }}>
           <ha-icon icon="mdi:restore"></ha-icon>Reset to default</button>
       </div>

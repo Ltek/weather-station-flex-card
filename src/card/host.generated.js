@@ -10,17 +10,18 @@ import * as m6 from "./constants.js";
 import * as m7 from "./core.js";
 import * as m8 from "./detected.js";
 import * as m9 from "./icons.js";
-import * as m10 from "./lazy.js";
-import * as m11 from "./metrics.js";
-import * as m12 from "./panels.js";
-import * as m13 from "./resolve.js";
-import * as m14 from "./unsaved.js";
-import * as m15 from "./weather-station-flex-card.js";
-import * as m16 from "./../panels/flex.js";
-import * as m17 from "./../panels/graph.js";
-import * as m18 from "./../panels/statistics.js";
-import * as m19 from "./../../vendor/weather-forecast-card/src/types.ts";
-import * as m20 from "./../../vendor/weather-forecast-card/src/weather-forecast-card.ts";
+import * as m10 from "./layout.js";
+import * as m11 from "./lazy.js";
+import * as m12 from "./metrics.js";
+import * as m13 from "./panels.js";
+import * as m14 from "./resolve.js";
+import * as m15 from "./unsaved.js";
+import * as m16 from "./weather-station-flex-card.js";
+import * as m17 from "./../panels/flex.js";
+import * as m18 from "./../panels/graph.js";
+import * as m19 from "./../panels/statistics.js";
+import * as m20 from "./../../vendor/weather-forecast-card/src/types.ts";
+import * as m21 from "./../../vendor/weather-forecast-card/src/weather-forecast-card.ts";
 globalThis.__wsfcHost = {
   "lit": m0,
   "lit/decorators": m1,
@@ -32,15 +33,16 @@ globalThis.__wsfcHost = {
   "src/card/core.js": m7,
   "src/card/detected.js": m8,
   "src/card/icons.js": m9,
-  "src/card/lazy.js": m10,
-  "src/card/metrics.js": m11,
-  "src/card/panels.js": m12,
-  "src/card/resolve.js": m13,
-  "src/card/unsaved.js": m14,
-  "src/card/weather-station-flex-card.js": m15,
-  "src/panels/flex.js": m16,
-  "src/panels/graph.js": m17,
-  "src/panels/statistics.js": m18,
-  "vendor/weather-forecast-card/src/types.ts": m19,
-  "vendor/weather-forecast-card/src/weather-forecast-card.ts": m20,
+  "src/card/layout.js": m10,
+  "src/card/lazy.js": m11,
+  "src/card/metrics.js": m12,
+  "src/card/panels.js": m13,
+  "src/card/resolve.js": m14,
+  "src/card/unsaved.js": m15,
+  "src/card/weather-station-flex-card.js": m16,
+  "src/panels/flex.js": m17,
+  "src/panels/graph.js": m18,
+  "src/panels/statistics.js": m19,
+  "vendor/weather-forecast-card/src/types.ts": m20,
+  "vendor/weather-forecast-card/src/weather-forecast-card.ts": m21,
 };

@@ -10,7 +10,7 @@ https://github.com/Ltek/weather-station-flex-card
 
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Ltek&repository=weather-station-flex-card&category=plugin)
 
-Current build: **v2026.10.31.97** · full history in [CHANGELOG.md](CHANGELOG.md)
+Current build: **v2026.10.31.98** · full history in [CHANGELOG.md](CHANGELOG.md)
 
 ---
 
@@ -19,7 +19,7 @@ Current build: **v2026.10.31.97** · full history in [CHANGELOG.md](CHANGELOG.md
 - **Station-first readings** — every panel reads the same ordered list of **Weather Sources**: your station device first (its sensors are found automatically, outdoor before indoor), then a weather entity for the forecast and anything the station doesn't measure. One place to see and override which sensor feeds each value.
 - **Current condition from your station** — optionally, your own rain rate, solar radiation, humidity, wind, temperature and lightning sensor decide whether it's sunny, partly cloudy, cloudy, raining, snowing, foggy, windy or stormy, instead of a forecast service's guess. The hero, the bulletin and the animated background all follow.
 - **All three Ecowitt integrations** — Home Assistant's Ecowitt, Ecowitt Local and the Ecowitt Official integration, alone or combined (e.g. the core integration for readings plus Ecowitt Local for battery and signal). Diagnostics are gathered from every Ecowitt device. See [docs/ECOWITT_INTEGRATIONS.md](docs/ECOWITT_INTEGRATIONS.md).
-- **A real panel grid** — a 12-column grid with half-row heights, drag-and-drop layout map, stacks that share space (and fill in when a panel hides itself), and automatic tablet and phone layouts.
+- **A real panel grid** — a 12-column grid with quarter-row heights and free placement: drag a panel to any spot in the Layout Map, panels in its way move down and gaps close up. Put small panels straight under each other without stacks, and use stacks to share a space between panels that hide themselves. Automatic tablet layout, and a phone layout you can place the same way.
 - **Panel buttons** — show and hide panels from a button bar or a Button Menu panel, or open panels as pop-ups. Each browser remembers its own choices.
 - **Full-screen wall display** — fills the screen and shares the height between panels, with a screen guide in the editor to design for a specific display.
 - **Animated weather background** — rain, snow, lightning, drifting clouds, the sun by day and a starry sky with the moon in its current phase by night, with adjustable speeds. Or use your own background image.

@@ -15,6 +15,7 @@ import { extraMetricEntity } from "./air.js";
 import { WeatherForecastCard } from "../../vendor/weather-forecast-card/src/weather-forecast-card";
 import "../../vendor/weather-forecast-card/src/components/animation/wfc-animation-provider";
 import { fitMode } from "./config.js";
+import { arrange, readingOrder, toTracks } from "./layout.js";
 import { animSpeedVars, LOW_POWER_VARS } from "./animation-speed.js";
 import { planFlash, boltPath, LIGHTNING_COLORS, cloudPuffs } from "./animation-extra.js";
 globalThis.__wsfcStorm = { planFlash, boltPath, LIGHTNING_COLORS, cloudPuffs };
@@ -81,6 +82,10 @@ export function panelStyleVars(c) {
   return out;
 }
 
+// A folded (or compact) panel takes half a row, or a quarter row when its height is set to 0.25.
+const foldTracks = (rows) => (Number(rows) > 0 ? Math.min(2, toTracks(rows)) : 2);
+// Fill: the scale up to which a chart / arc / bar gives up height for the text.
+const ELASTIC_UPTO = 1.25;
 // Fill: the elastic part's height while it gives up room (see _elastic).
 const ELASTIC_CSS = new CSSStyleSheet();
 ELASTIC_CSS.replaceSync(`
@@ -206,9 +211,33 @@ class WeatherStationFlexCard extends LitElement {
    * Scale each panel's content: the overall scale, then smaller where it
    * still doesn't fit its box (down to the minimum; below that it scrolls).
    */
+  // Compact panels with a height: their tiles grow or shrink (same size in every
+  // such row, 0.5–2.5×) to fill it, like a stack's compact rows.
+  _fitCompactTiles(grid) {
+    const rows = [...grid.querySelectorAll(":scope > section.tile.compact-tile.sized .compact")];
+    if (!rows.length) return;
+    const fits = (r, k) => {
+      r.style.setProperty("--ck", k);
+      const box = r.closest("section.tile"), cs = getComputedStyle(box);
+      const h = box.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+      return r.scrollHeight <= h + 1 && r.scrollWidth <= r.clientWidth + 1;
+    };
+    let k = 2.5;
+    for (const r of rows) {
+      if (fits(r, k)) continue;
+      // Down to half size when a row is shorter than the tiles (a quarter row on a small screen).
+      let lo = 0.5, hi = k;
+      for (let n = 0; n < 7; n++) { const m = (lo + hi) / 2; if (fits(r, m)) lo = m; else hi = m; }
+      k = lo;
+    }
+    k = Math.floor(k * 20) / 20;
+    rows.forEach((r) => r.style.setProperty("--ck", k));
+  }
+
   _autoFitPanels() {
     const grid = this.renderRoot?.querySelector(".grid");
     if (!grid) return;
+    this._fitCompactTiles(grid);
     if (!this._autoFit && !grid.querySelector(":scope > section.tile.fill")) { this._watchAutoFit(grid); return; }
     // Our own zoom changes resize the panels: don't let those re-trigger a pass.
     this._afBusy = true;
@@ -258,11 +287,21 @@ class WeatherStationFlexCard extends LitElement {
         const setF = (f) => { for (const q of parts) ela.core.style.setProperty(q.v, `${Math.max(0, Math.floor(q.h * f))}px`); };
         // At zoom k the elastic parts take share × box on screen: factor share × box / (k × E).
         const fOf = (k) => Math.max(0.3, Math.min(1, ((ela?.share || 0) * boxH) / (k * Math.max(1, E))));
-        const fitsE = (k) => { if (E) setF(fOf(k)); return fits(k); };
-        let lo = min, hi = max, k, over = false;
-        if (fitsE(hi)) k = hi;
-        else if (!fitsE(lo)) { k = lo; over = true; }
-        else { for (let n = 0; n < 8; n++) { const m = (lo + hi) / 2; if (fitsE(m)) lo = m; else hi = m; } k = lo; }
+        const search = (test) => {
+          let lo = min, hi = max;
+          if (test(hi)) return { k: hi, over: false };
+          if (!test(lo)) return { k: lo, over: true };
+          for (let n = 0; n < 8; n++) { const m = (lo + hi) / 2; if (test(m)) lo = m; else hi = m; }
+          return { k: lo, over: false };
+        };
+        // First with the elastic parts at full height. They only give up height
+        // when that leaves text and icons under ELASTIC_UPTO (1.25×): then the
+        // scale goes up to that (or as far as fits), and no further.
+        let { k, over } = search((k) => { if (E) setF(1); return fits(k); });
+        if (E && k < ELASTIC_UPTO) {
+          const e = search((k) => { setF(fOf(k)); return fits(k); });
+          if (e.k > k) { k = Math.min(e.k, ELASTIC_UPTO); over = e.over && k <= min; }
+        }
         k = Math.floor(k * 100) / 100;
         if (E) {
           // Give the leftover height back to the elastic parts (up to their own height).
@@ -283,9 +322,10 @@ class WeatherStationFlexCard extends LitElement {
         continue;
       }
       if (!this._autoFit) continue;
-      if (tile.classList.contains("collapsed")) { el.__wsfcAuto = base; el.style.zoom = String(manual * base); continue; }
+      const z1 = (v) => (Math.abs(v - 1) < 1e-6 ? "" : String(v));
+      if (tile.classList.contains("collapsed")) { el.__wsfcAuto = base; el.style.zoom = z1(manual * base); continue; }
       let k = base;
-      el.style.zoom = String(manual * k);
+      el.style.zoom = z1(manual * k);
       // Fixed-height panels shrink until their content fits (reading the size forces layout).
       if (tile.classList.contains("strict") || tile.classList.contains("fit")) {
         for (let n = 0; n < 6; n++) {
@@ -403,7 +443,7 @@ class WeatherStationFlexCard extends LitElement {
     return v === "compact" ? "compact" : "minimal";
   }
 
-  _renderCompact(p, i, span, cls) {
+  _renderCompact(p, i, span, cls, place = `grid-column: span ${span};grid-row: span 2;`) {
     const el = NEEDS_PANEL.has(p.type) ? this._panelEl(p, i) : null;
     const tiles = compactTiles(p, this.hass, this._station, el);
     // Data loaded by the hidden panel shows up a moment later.
@@ -414,7 +454,7 @@ class WeatherStationFlexCard extends LitElement {
     const showTitle = p.compact_title !== false;
     // Tiles that open their sensors: the fold button opens the full panel.
     const ownBtn = p.compact_expand === false;
-    return html`<section class="tile ${p.type} compact-tile ${ownBtn ? "own-btn" : ""} ${cls}" style=${`grid-column: span ${span};grid-row: span 1;${this._foldColors(p, true)}`} data-i=${i}>
+    return html`<section class="tile ${p.type} compact-tile ${ownBtn ? "own-btn" : ""} ${cls}" style=${`${place}${this._foldColors(p, true)}`} data-i=${i}>
       ${ownBtn ? html`<button class="collapse" type="button" @click=${() => this._toggleCollapse(p, i)} aria-label=${`Expand ${title}`} title="Show"><ha-icon icon=${this._foldIcon(p, true)}></ha-icon></button>` : nothing}
       <div class="cwrap" style=${z !== 1 ? `zoom:${z}` : ""}>${compactRow(tiles, {
         icon: p.show_icon === false || p.compact_icon === false ? null : p.icon || meta.icon,
@@ -579,8 +619,16 @@ class WeatherStationFlexCard extends LitElement {
       const c = this._config || {};
       const size = w < (c.narrow_width || NARROW_PX) ? "narrow" : w < (c.medium_width || MEDIUM_PX) ? "medium" : "wide";
       if (size !== this._size) this._size = size;
+      // Refit when the width changes, or the height in full screen (there it's the
+      // screen's). A content-sized card's own height follows its panels: refitting
+      // on that made every update re-measure and re-zoom the panels (the editor's
+      // preview looked like it kept refreshing).
+      const h = e.contentRect.height;
+      const widthChanged = Math.abs(w - (this._width ?? -1)) > 0.5;
+      const heightChanged = this._full && Math.abs(h - (this._roH ?? -1)) > 0.5;
       this._width = w;
-      this._scheduleFit();
+      this._roH = h;
+      if (widthChanged || heightChanged) this._scheduleFit();
     });
     this._ro.observe(this);
     this._onKey = (e) => {
@@ -927,6 +975,31 @@ class WeatherStationFlexCard extends LitElement {
     }
   }
 
+  /**
+   * Grid positions for the shown panels: { pos: Map i → { x, y, w, h }, order }.
+   * Null when no panel has a position in this layout (plain flow, as before).
+   */
+  _placement(idx, size, phone) {
+    const panels = this._config.panels;
+    const ph = (i) => phone?.find((e) => Number(e.i) === i);
+    const own = (i) => (phone ? ph(i) : size === "wide" ? panels[i] : null);
+    const hasPos = (o) => o && o.x != null && o.y != null;
+    const anyWide = idx.some((i) => hasPos(panels[i]));
+    if (!idx.some((i) => hasPos(own(i)))) {
+      // Medium (and a phone layout without positions): flow in the wide layout's reading order.
+      if (!anyWide || size === "wide" || phone) return null;
+      const wide = arrange(idx.map((i) => ({ key: i, w: layoutOf(panels[i], "wide").span, h: toTracks(rowsOf(panels[i])), x: panels[i].x, y: panels[i].y == null ? null : panels[i].y * 4 })), { gravity: this._config.layout_gaps !== "keep" });
+      return { pos: null, order: readingOrder(wide).filter((i) => idx.includes(i)) };
+    }
+    const items = idx.map((i) => {
+      const o = own(i), lay = phone ? { span: Math.max(1, Math.min(12, Number(o?.span ?? 12))), rows: Math.max(0, Number(o?.rows ?? rowsOf(panels[i]))) } : layoutOf(panels[i], size);
+      const collapsed = this._canCollapse(panels[i]) && this._isCollapsed(panels[i], i);
+      return { key: i, w: lay.span, h: collapsed ? foldTracks(lay.rows) : toTracks(lay.rows), x: hasPos(o) ? Number(o.x) : null, y: hasPos(o) ? Number(o.y) * 4 : null };
+    });
+    const pos = arrange(items, { gravity: this._config.layout_gaps !== "keep" });
+    return { pos, order: readingOrder(pos) };
+  }
+
   _renderPanels() {
     const panels = this._config.panels;
     let idx = panels.map((p, i) => i).filter((i) => panels[i].display !== "popup" && !this._isHidden(panels[i], i) && !this._isEmpty(panels[i], i));
@@ -940,6 +1013,12 @@ class WeatherStationFlexCard extends LitElement {
     if (this._focus != null) idx = [this._focus];
     if (!idx.length) return html`<div class="empty">All panels are hidden — use the panel buttons to show one.</div>`;
     const size = this._layoutSize;
+    // Placement: panels with a position (x, y) in this layout keep it, the rest
+    // flow in reading order; hidden panels leave no gap (panels below move up).
+    // Wide uses the panels' own positions, the phone layout its own; medium
+    // flows in the wide layout's reading order.
+    const placed = this._focus == null ? this._placement(idx, size, phone) : null;
+    if (placed?.order) idx = placed.order;
     return idx.map((i) => {
       const p = panels[i];
       const meta = panelMeta(p);
@@ -965,14 +1044,20 @@ class WeatherStationFlexCard extends LitElement {
       // Title colours: collapsed and expanded each have an icon and a text colour.
       const heads = collapsible ? this._foldColors(p, collapsed) : "";
       const h = `calc(${rows} * var(--wsfc-row) + ${rows - 1} * var(--wsfc-gap))`;
+      // Tracks are quarter rows: a 1-row panel spans 4, a folded one 2 (half a row).
+      const at = placed?.pos?.get(i);
+      const col = at ? `${at.x + 1} / span ${at.w}` : `span ${span}`;
+      const tr = collapsed ? foldTracks(rows) : toTracks(rows);
+      const row = at ? `${at.y + 1} / span ${at.h}` : `span ${tr}`;
       const style = heads + (collapsed
-        ? `grid-column: span ${span};grid-row: span 1;`
-        : `grid-column: span ${span};grid-row: span ${rows ? Math.max(1, Math.round(rows * 2)) : 2};${rows ? `min-height:${h};` : ""}${strict ? `height:${h};` : ""}`);
+        ? `grid-column: ${col};grid-row: ${row};`
+        : `grid-column: ${col};grid-row: ${row};${rows ? `min-height:${h};` : ""}${strict ? `height:${h};` : ""}`);
       const bare = meta.bare || p.type === "hero";
       const tapToOpen = p.display === "tile_popup";
       const expandable = !bare && !tapToOpen && !["metric", "stack", "clock", "chips"].includes(p.type) && size !== "narrow";
       const bg = p.tile_background && p.tile_background !== "default" ? `bg-${p.tile_background}` : "";
-      if (collapsed && this._viewOf(p) === "compact") return this._renderCompact(p, i, span, `${bg} ${tileFx(p)}`);
+      // A compact panel with a height fills it: its tiles grow (see _fitCompactTiles).
+      if (collapsed && this._viewOf(p) === "compact") return this._renderCompact(p, i, span, `${bg} ${tileFx(p)} ${rows > 0 ? "sized" : ""}`, `grid-column: ${col};grid-row: ${row};${rows > 0 ? `min-height:${h};height:${h};` : ""}`);
       return html`<section class="tile ${p.type} ${meta.bare ? "bare" : ""} ${bg} ${tileFx(p)} ${rows ? "" : "auto"} ${(fit || strict) && !collapsed ? "fit" : ""} ${strict && !fit && !collapsed ? "strict" : ""} ${fill && !collapsed ? "fill" : ""} ${collapsed ? "collapsed" : ""} ${tapToOpen && !collapsed ? "tap" : ""} ${collapsible ? "can-collapse" : ""} ${titleTap ? "title-tap" : ""}" style=${style} data-i=${i}
           @click=${titleTap ? (e) => this._titleTap(e, p, i) : nothing}>
         ${collapsible
@@ -994,7 +1079,7 @@ class WeatherStationFlexCard extends LitElement {
               <ha-icon icon=${this._focus == null ? this._iconFull : "mdi:arrow-collapse"}></ha-icon>
             </button>`
           : nothing}
-        ${this._panelEl(p, i)}
+        ${this._panelEl(p, i, false, fill && !collapsed)}
       </section>`;
     });
   }
@@ -1044,7 +1129,8 @@ class WeatherStationFlexCard extends LitElement {
 
   // Panel elements are cached by position + config, so toggling or a hass
   // update never rebuilds charts/maps, while an edited panel is rebuilt.
-  _panelEl(p, i, popup = false) {
+  // fill: whether the tile fills (decided by the grid from the panel's rows in the current layout).
+  _panelEl(p, i, popup = false, fill = false) {
     this._els ||= new Map();
     // Most panels get a fresh element when their settings change. Wind keeps
     // its element, so a hosted Wind Rose Card stays drawn while it reloads.
@@ -1066,7 +1152,7 @@ class WeatherStationFlexCard extends LitElement {
     this._foldDecorate(el, p, i, folded, !popup);
     // Content size (zoom) and, for panels that use them, horizontal / vertical spacing.
     const z = Number(p.content_scale) || 100;
-    const fillNow = !popup && this._fillOn(p) && this._focus == null;
+    const fillNow = !popup && fill;
     const zm = fillNow ? el.__wsfcAuto || 1 : Math.max(0.4, Math.min(2, z / 100)) * (this._autoFit && !popup && !this._ownFit(p) ? el.__wsfcAuto || this._autoBase() : 1);
     el.style.zoom = zm !== 1 ? String(zm) : "";
     const sx = Number(p.content_width) || 100, sy = Number(p.content_height) || 100;
@@ -1120,6 +1206,8 @@ class WeatherStationFlexCard extends LitElement {
       box-shadow: 0 10px 32px rgba(0, 0, 0, 0.55); border: 1px solid var(--divider-color, rgba(127, 127, 127, 0.35)); padding: 12px 14px; }
     .ov > .close { position: sticky; top: 0; margin-left: auto; margin-bottom: -32px; }
     .tile.compact-tile { min-height: 0; height: auto; padding-top: 8px; padding-bottom: 8px; justify-content: center; }
+    .tile.compact-tile.sized { padding-top: 4px; padding-bottom: 4px; overflow: hidden; }
+    .tile.compact-tile.sized .compact { flex-wrap: wrap; overflow: hidden; row-gap: calc(6px * var(--ck, 1)); }
     .tile.compact-tile .cwrap { min-width: 0; }
     .tile.compact-tile .chide { display: none; }
     .tile.compact-tile.own-btn .cwrap { padding-right: 36px; }

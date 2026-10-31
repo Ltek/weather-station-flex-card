@@ -1,5 +1,25 @@
 # Changelog
 
+## v2026.10.31.98
+
+**Free placement and quarter rows**
+
+- **Every panel can have its own place on the grid** (`x`: column 0–11, `y`: rows from the top, in quarter steps). Panels without a place still flow in list order exactly as before, so existing dashboards look the same. This was checked with three layouts at four screen sizes, panel by panel.
+- **New Layout Map:**
+  - Drag a panel to any cell. A cell grid shows while you drag. The panels in its way move down; nothing moves sideways or reorders elsewhere. It works on where the pointer is, not on which panel is under it, so the target doesn't jump around as the layout changes.
+  - Resize from the right edge, the bottom edge or the corner, in columns and quarter rows.
+  - Keyboard: arrows move one cell, Shift+arrows resize.
+  - The first change stores a place for every panel. The panel list then follows the layout's reading order.
+- **Quarter rows:** heights in 0.25 steps (Height slider, Layout Map, YAML). A compact panel with a height of 0.25 or 0.5 fills it: its tiles grow or shrink to fit, all such rows at the same size. Four compact panels now fit beside one full-row panel without a stack.
+- **Gaps between panels** (Screen fit & layout, `layout_gaps`): **Close up** (default) moves panels up into empty space, including when a panel is hidden. **Keep** leaves panels where they're placed.
+- **Phone layout** uses the same placement in the Layout Map's Phone tab.
+- **Stacks → Break apart** puts a stack's panels straight on the grid in the stack's place, one above the other or side by side, sharing its size.
+
+**Fixes**
+
+- **The editor preview kept refreshing.** In Home Assistant's narrow preview the card re-measured and re-zoomed its panels after every state update: 12 full refits in 30 s with no edits. It treated its own height changing as a reason to refit. It now refits only when its width changes, or the screen height in full screen: 0 refits in 30 s.
+- **Fill: the Daily chart on large screens.** The chart now gives up height only while that brings text and icons up to 1.25×. On a PC-sized panel it keeps its full height (2000×1200: text 1.41×, full 130 px chart). On the tablet it still makes room (1333×800: labels 25 px, icons 50 px). There's now room for Text size there: at 130 % the labels go from 25 to 30 px.
+
 ## v2026.10.31.97
 
 - **Fill the panel: charts, arcs and bars give up height first.** Filled panels used to scale everything together, so in a short panel the forecast chart kept its full height and the text and icons were shrunk to fit around it. Now the Daily / Hourly / Forecast chart, and the Sky Tracker's sun arc and sky bar, shrink first (to at least 30 % of their height). Text and icons then get as large as fits, and any height left over goes back to the chart, arc or bar.

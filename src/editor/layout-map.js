@@ -1,11 +1,15 @@
-// Layout map for the editor: a scaled-down copy of the card's 12-column grid.
-//   - drag a block to move it (drop before/after another block)
+// Layout map for the editor: a scaled-down copy of the card's 12-column grid
+// with free placement (quarter-row steps).
+//   - drag a block to any cell: the panels in its way move down; nothing else moves
+//     (a cell grid and a drop outline show where it lands)
 //   - drag its right edge / bottom edge / corner to change width / height
-//   - keyboard: focus a block, ←/→ move it, Shift+←/→ width, Shift+↑/↓ height
-// Fires "layout-changed" with { panels } once per finished gesture.
+//   - keyboard: focus a block, arrows move it one cell, Shift+arrows resize it
+// Fires "layout-changed" with { panels } once per finished gesture: every grid
+// panel gets its x / y, in reading order.
 import { LitElement, html, css, nothing } from "lit";
 import { panelMeta, spanOf, rowsOf } from "../card/panels.js";
 import { METRICS } from "../card/metrics.js";
+import { arrange, pushDown, readingOrder, toTracks, toRows, Q } from "../card/layout.js";
 
 const MAP_ROW = 30; // px per row unit in the map
 const MAP_GAP = 4;
@@ -23,7 +27,8 @@ const iconOf = (p) => p.icon || (p.type === "metric" && METRICS[p.metric]?.icon)
 class WsfcLayoutMap extends LitElement {
   static properties = {
     panels: { attribute: false },
-    _order: { state: true }, // grid panel indexes in display order while dragging
+    _preview: { state: true }, // Map i → { x, y, w, h } while dragging or resizing
+    gravity: { attribute: false }, // close gaps upward (the card's layout_gaps)
     _size: { state: true }, // { index, span, rows } while resizing
     _drag: { state: true },
     // Screen guide: { w, h } of the browser window, chrome (px above/around the
@@ -62,7 +67,7 @@ class WsfcLayoutMap extends LitElement {
     // Full screen + fit: rows share the screen height, like the card does.
     let fits = false;
     if (g.fit && this._tracks) {
-      const rows = this._tracks / 2;
+      const rows = this._tracks / Q;
       const want = (avail + (g.gap ?? 12)) / rows - (g.gap ?? 12);
       rowPx = Math.max(60, Math.min(400, want));
       fits = want >= 60; // below the minimum the rows stop shrinking and the grid runs off screen
@@ -71,13 +76,18 @@ class WsfcLayoutMap extends LitElement {
     return { row: Math.max(8, rowPx * k), gap, line: avail * k, rowPx: Math.round(rowPx), fits };
   }
 
-  updated() {
-    // Count the half-row tracks of the panels shown on load (for the
+  updated(changed) {
+    if (changed.has("panels") && this._focusNext != null) {
+      const n = this._focusNext;
+      this._focusNext = null;
+      this.renderRoot.querySelector(`.blk[data-i="${n}"]`)?.focus();
+    }
+    // Count the quarter-row tracks of the panels shown on load (for the
     // fit-to-screen scale), from a hidden copy of the grid without the hidden panels.
     const g = this.renderRoot.querySelector(".grid.measure");
     if (!g || !this.guide?.fit) return;
     const { row, gap } = this._scale();
-    const tracks = Math.max(2, Math.round((g.clientHeight - 12 + gap) / ((row - gap) / 2 + gap)));
+    const tracks = Math.max(Q, Math.round((g.clientHeight - 12 + gap) / ((row - 3 * gap) / Q + gap)));
     if (tracks !== this._tracks) this._tracks = tracks;
   }
 
@@ -86,20 +96,33 @@ class WsfcLayoutMap extends LitElement {
     return (this.panels || []).map((p, i) => i).filter((i) => this.panels[i].display !== "popup");
   }
 
+  // Items for placement: every grid panel with its size and position (tracks).
+  _items(panels = this.panels || []) {
+    return this._gridIdx().map((i) => {
+      const p = panels[i];
+      return { key: i, w: spanOf(p), h: toTracks(rowsOf(p)), x: p.x ?? null, y: p.y == null ? null : Number(p.y) * Q };
+    });
+  }
+
+  _positions() {
+    return this._preview || arrange(this._items(), { gravity: this.gravity !== false });
+  }
+
   render() {
     const panels = this.panels || [];
-    const order = this._order || this._gridIdx();
+    this._pos = this._positions();
+    const order = readingOrder(this._pos);
     const popups = panels.map((p, i) => i).filter((i) => panels[i].display === "popup");
     const sc = this._scale();
     this._mr = sc.row; this._mg = sc.gap;
     const mode = this.guide?.mode || "line";
     return html`
       <div class="wrap">
-        <div class="grid" style=${`--row:${sc.row}px;--gap:${sc.gap}px`}>
+        <div class="grid ${this._drag?.moved || this._size ? "editing" : ""}" style=${`--row:${sc.row}px;--gap:${sc.gap}px`}>
           ${order.map((i) => this._block(panels[i], i))}
         </div>
         ${this.guide?.fit ? html`<div class="grid measure" aria-hidden="true" style=${`--row:${sc.row}px;--gap:${sc.gap}px`}>
-          ${order.filter((i) => panels[i].show !== false).map((i) => html`<div style=${this._place(panels[i])}></div>`)}</div>` : nothing}
+          ${this._measureBlocks(panels)}</div>` : nothing}
         ${sc.line == null || this.measured
           ? nothing
           : sc.fits
@@ -140,25 +163,31 @@ class WsfcLayoutMap extends LitElement {
         : nothing}`;
   }
 
-  // Half-row tracks: a 1-row panel spans 2, a half-height panel 1.
-  _place(p, sz) {
-    const span = sz ? sz.span : spanOf(p);
-    const rows = sz ? sz.rows : rowsOf(p);
-    return `grid-column: span ${span}; grid-row: span ${rows ? Math.max(1, Math.round(rows * 2)) : 2};`;
+  // Quarter-row tracks at their placed cell.
+  _place(r) {
+    return `grid-column: ${r.x + 1} / span ${r.w}; grid-row: ${r.y + 1} / span ${r.h};`;
+  }
+
+  // The panels shown on load (for the fit-to-screen scale), placed as the card places them.
+  _measureBlocks(panels) {
+    const shown = this._items().filter((it) => panels[it.key].show !== false);
+    const pos = arrange(shown, { gravity: this.gravity !== false });
+    return [...pos.values()].map((r) => html`<div style=${this._place(r)}></div>`);
   }
 
   _block(p, i) {
     const sz = this._size?.index === i ? this._size : null;
-    const span = sz ? sz.span : spanOf(p);
+    const r = this._pos.get(i);
+    const span = r.w;
     const rows = sz ? sz.rows : rowsOf(p);
-    const style = this._place(p, sz);
+    const style = this._place(r);
     const m = !sz && this.measured?.tiles?.find((t) => t.i === i);
     // Rows this panel really takes on that screen (content can make it taller).
-    const real = m && !m.collapsed ? Math.round(((m.h + this.measured.gap) / (this.measured.row + this.measured.gap)) * 2) / 2 : null;
+    const real = m && !m.collapsed ? Math.round(((m.h + this.measured.gap) / (this.measured.row + this.measured.gap)) * Q) / Q : null;
     const grows = real != null && rows > 0 && real > rows + 0.25;
     const cls = ["blk", p.show === false ? "hidden" : "", this._drag?.index === i ? "dragging" : "", sz ? "sizing" : "", p.type, m ? `at-${m.where}` : "", grows ? "grows" : "", m?.collapsed ? "folded" : ""].join(" ");
     return html`<div class=${cls} style=${style} data-i=${i} tabindex="0" role="button"
-        aria-label=${`${nameOf(p)}, width ${span} of 12, height ${rows || "auto"}. Arrow keys move; Shift+arrows resize.`}
+        aria-label=${`${nameOf(p)}, column ${r.x + 1}, row ${toRows(r.y) + 1}, width ${span} of 12, height ${rows || "auto"}. Arrow keys move; Shift+arrows resize.`}
         @pointerdown=${(e) => this._startMove(e, i)} @keydown=${(e) => this._key(e, i)}>
       <ha-icon icon=${iconOf(p)}></ha-icon>
       <span class="nm">${nameOf(p)}</span>
@@ -170,23 +199,30 @@ class WsfcLayoutMap extends LitElement {
   }
 
   /* ---------------------------------------------------------------- move */
+  // The grid cell (column, track) under a point, from the map's own geometry.
+  _cell(e) {
+    const g = this.renderRoot.querySelector(".grid");
+    const r = g.getBoundingClientRect();
+    const gap = this._mg || MAP_GAP, colW = (g.clientWidth - 12 - 11 * gap) / 12, trackH = ((this._mr || MAP_ROW) - 3 * gap) / Q;
+    return { x: Math.floor((e.clientX - r.left - 6) / (colW + gap)), y: Math.floor((e.clientY - r.top - 6) / (trackH + gap)) };
+  }
+
   _startMove(e, i) {
     if (e.button !== 0 || e.target.classList.contains("rz")) return;
     e.preventDefault();
     const el = e.currentTarget;
     el.setPointerCapture(e.pointerId);
-    this._order = this._gridIdx();
-    this._drag = { index: i, x0: e.clientX, y0: e.clientY, moved: false };
+    const at = this._pos.get(i), c = this._cell(e);
+    this._drag = { index: i, x0: e.clientX, y0: e.clientY, moved: false, dx: c.x - at.x, dy: c.y - at.y, at: { x: at.x, y: at.y } };
     const move = (ev) => this._onMove(ev);
     const up = () => {
       el.removeEventListener("pointermove", move);
       el.removeEventListener("pointerup", up);
       el.removeEventListener("pointercancel", up);
-      const changed = this._drag?.moved && this._order.join() !== this._gridIdx().join();
-      const order = this._order;
+      const d = this._drag, pv = this._preview;
       this._drag = null;
-      this._order = null;
-      if (changed) this._commitOrder(order);
+      this._preview = null;
+      if (d?.moved && pv && (d.to.x !== d.at.x || d.to.y !== d.at.y)) this._commit(pv);
     };
     el.addEventListener("pointermove", move);
     el.addEventListener("pointerup", up);
@@ -198,26 +234,38 @@ class WsfcLayoutMap extends LitElement {
     if (!d) return;
     if (!d.moved && Math.hypot(e.clientX - d.x0, e.clientY - d.y0) < 4) return;
     d.moved = true;
-    // Find the block under the pointer (ignoring the one being dragged).
-    const blocks = [...this.renderRoot.querySelectorAll(".blk")].filter((b) => Number(b.dataset.i) !== d.index);
-    let target = null;
-    for (const b of blocks) {
-      const r = b.getBoundingClientRect();
-      if (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom) {
-        target = { i: Number(b.dataset.i), after: e.clientX > r.left + r.width / 2 };
-        break;
-      }
-    }
-    if (!target) {
-      // Past the last block: move to the end.
-      const last = blocks[blocks.length - 1]?.getBoundingClientRect();
-      if (last && e.clientY > last.bottom) target = { i: Number(blocks[blocks.length - 1].dataset.i), after: true };
-      else return;
-    }
-    const order = this._order.filter((x) => x !== d.index);
-    let pos = order.indexOf(target.i) + (target.after ? 1 : 0);
-    order.splice(pos, 0, d.index);
-    if (order.join() !== this._order.join()) this._order = order;
+    // Where the grabbed point is now, minus where it was grabbed in the panel.
+    const c = this._cell(e);
+    const me = arrange(this._items(), { gravity: this.gravity !== false }).get(d.index);
+    const to = { x: Math.max(0, Math.min(12 - me.w, c.x - d.dx)), y: Math.max(0, c.y - d.dy) };
+    if (d.to && d.to.x === to.x && d.to.y === to.y) return;
+    d.to = to;
+    this._preview = pushDown(this._items(), d.index, to, { gravity: this.gravity !== false });
+  }
+
+  // Store every grid panel's place, in reading order (pop-ups keep their slots).
+  _commit(pos, sizes = {}) {
+    const panels = this.panels;
+    const order = readingOrder(pos);
+    const queue = order.map((i) => {
+      const r = pos.get(i);
+      const p = { ...panels[i], x: r.x, y: toRows(r.y) };
+      if (sizes[i]) Object.assign(p, sizes[i]);
+      return this._tidy(p);
+    });
+    const next = panels.map((p) => (p.display === "popup" ? p : queue.shift()));
+    // Where each panel ends up in the stored list (it's re-sorted into reading order).
+    const slots = panels.map((p, k) => k).filter((k) => panels[k].display !== "popup");
+    this._moved = new Map(order.map((i, n) => [i, slots[n]]));
+    this._emit(next);
+  }
+
+  // Store only sizes that differ from the type's defaults.
+  _tidy(p) {
+    const m = panelMeta(p) || {};
+    if (p.span === m.span) delete p.span;
+    if (p.rows != null && p.rows === (m.rows ?? 0)) delete p.rows;
+    return p;
   }
 
   _commitOrder(order) {
@@ -236,28 +284,33 @@ class WsfcLayoutMap extends LitElement {
     const handle = e.currentTarget;
     handle.setPointerCapture(e.pointerId);
     const grid = this.renderRoot.querySelector(".grid");
-    const colW = (grid.clientWidth - 11 * MAP_GAP) / 12 + MAP_GAP;
+    const gap = this._mg || MAP_GAP;
+    const colW = (grid.clientWidth - 12 - 11 * gap) / 12 + gap;
+    const trackH = ((this._mr || MAP_ROW) - 3 * gap) / Q + gap;
     const p = this.panels[i];
+    const at = this._pos.get(i);
     const s0 = spanOf(p), r0 = rowsOf(p);
     this._size = { index: i, span: s0, rows: r0 };
     const x0 = e.clientX, y0 = e.clientY;
     const move = (ev) => {
-      const span = axis === "y" ? s0 : Math.max(1, Math.min(12, s0 + Math.round((ev.clientX - x0) / colW)));
-      // Rows: 0 means "fit content"; shown as one row in the map.
+      const span = axis === "y" ? s0 : Math.max(1, Math.min(12 - at.x, s0 + Math.round((ev.clientX - x0) / colW)));
+      // Rows: 0 means "fit content"; shown as one row in the map. Quarter-row steps.
       const base = r0 || 1;
-      // Half-row steps.
-      const step = (this._mr || MAP_ROW) + (this._mg || MAP_GAP);
-      let rows = axis === "x" ? r0 : Math.max(0.5, Math.min(MAX_ROWS, base + Math.round((2 * (ev.clientY - y0)) / step) / 2));
-      if (axis !== "x" && r0 === 0 && rows === 1 && Math.abs(ev.clientY - y0) < step / 4) rows = 0;
-      if (span !== this._size.span || rows !== this._size.rows) this._size = { index: i, span, rows };
+      let rows = axis === "x" ? r0 : Math.max(0.25, Math.min(MAX_ROWS, toRows(toTracks(base) + Math.round((ev.clientY - y0) / trackH))));
+      if (axis !== "x" && r0 === 0 && rows === 1 && Math.abs(ev.clientY - y0) < trackH / 2) rows = 0;
+      if (span === this._size.span && rows === this._size.rows) return;
+      this._size = { index: i, span, rows };
+      this._preview = pushDown(this._items(), i, { x: at.x, y: at.y, w: span, h: toTracks(rows) }, { gravity: this.gravity !== false });
     };
     const up = () => {
       handle.removeEventListener("pointermove", move);
       handle.removeEventListener("pointerup", up);
       handle.removeEventListener("pointercancel", up);
       const { span, rows } = this._size;
+      const pv = this._preview;
       this._size = null;
-      if (span !== s0 || rows !== r0) this._commitSize(i, span, rows);
+      this._preview = null;
+      if ((span !== s0 || rows !== r0) && pv) this._commit(pv, { [i]: { span, rows } });
     };
     handle.addEventListener("pointermove", move);
     handle.addEventListener("pointerup", up);
@@ -265,35 +318,34 @@ class WsfcLayoutMap extends LitElement {
   }
 
   _commitSize(i, span, rows) {
-    const m = panelMeta(this.panels[i]) || {};
-    const p = { ...this.panels[i], span, rows };
-    // Store only values that differ from the type's defaults.
-    if (span === m.span) delete p.span;
-    if (rows === (m.rows ?? 0)) delete p.rows;
-    const next = this.panels.slice();
-    next[i] = p;
-    this._emit(next);
+    const at = this._pos.get(i);
+    const pos = pushDown(this._items(), i, { x: at.x, y: at.y, w: span, h: toTracks(rows) }, { gravity: this.gravity !== false });
+    this._commit(pos, { [i]: { span, rows } });
   }
 
   /* ------------------------------------------------------------ keyboard */
   _key(e, i) {
-    const grid = this._gridIdx();
-    const at = grid.indexOf(i);
+    const d = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[e.key];
+    if (!d) return;
+    e.preventDefault();
+    const p = this.panels[i];
     if (e.shiftKey) {
-      const p = this.panels[i];
-      const d = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[e.key];
-      if (!d) return;
-      e.preventDefault();
-      this._commitSize(i, Math.max(1, Math.min(12, spanOf(p) + d[0])), Math.max(0, Math.min(MAX_ROWS, rowsOf(p) + d[1] / 2)));
-    } else if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
-      e.preventDefault();
-      const to = at + (e.key === "ArrowLeft" ? -1 : 1);
-      if (to < 0 || to >= grid.length) return;
-      const order = grid.slice();
-      [order[at], order[to]] = [order[to], order[at]];
-      this._commitOrder(order);
-      this.updateComplete.then(() => this.renderRoot.querySelector(`.blk[data-i="${grid[to]}"]`)?.focus());
+      // Resize: a column wider / narrower, a quarter row taller / shorter.
+      const rows = Math.max(0, Math.min(MAX_ROWS, toRows(toTracks(rowsOf(p) || 1) + d[1])));
+      this._commitSize(i, Math.max(1, Math.min(12 - this._pos.get(i).x, spanOf(p) + d[0])), rowsOf(p) === 0 && d[1] < 0 ? 0.75 : rows);
+    } else {
+      const at = this._pos.get(i);
+      const to = { x: Math.max(0, Math.min(12 - at.w, at.x + d[0])), y: Math.max(0, at.y + d[1]) };
+      // Moving up into a gap that gravity would close again: jump over the panel above.
+      let pos = pushDown(this._items(), i, to, { gravity: this.gravity !== false });
+      if (d[1] < 0 && pos.get(i).y >= at.y) {
+        const above = [...this._pos.values()].filter((r) => r.key !== i && r.y + r.h <= at.y && r.x < at.x + at.w && at.x < r.x + r.w).sort((a, b) => b.y + b.h - (a.y + a.h))[0];
+        if (above) pos = pushDown(this._items(), i, { x: at.x, y: above.y }, { gravity: this.gravity !== false });
+      }
+      this._commit(pos);
     }
+    // Keep the keyboard on the same panel once the editor sends the new layout back.
+    this._focusNext = this._moved?.get(i) ?? i;
   }
 
   _emit(panels) {
@@ -314,7 +366,7 @@ class WsfcLayoutMap extends LitElement {
     .grid {
       display: grid;
       grid-template-columns: repeat(12, minmax(0, 1fr));
-      grid-auto-rows: calc((var(--row) - var(--gap)) / 2);
+      grid-auto-rows: calc((var(--row) - 3 * var(--gap)) / 4);
       gap: var(--gap);
       padding: 6px;
       border-radius: 10px;
@@ -341,7 +393,14 @@ class WsfcLayoutMap extends LitElement {
       transition: box-shadow 0.12s;
     }
     .blk:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 1px; }
-    .blk.dragging { opacity: 0.55; cursor: grabbing; border-style: dashed; border-color: var(--primary-color); }
+    .blk.dragging { cursor: grabbing; border: 2px dashed var(--primary-color); background: color-mix(in srgb, var(--primary-color) 18%, var(--card-background-color, #222)); z-index: 4; }
+    /* While dragging or resizing: the cell grid (columns and quarter rows). */
+    .grid.editing { background-image:
+        linear-gradient(to right, color-mix(in srgb, var(--primary-color) 22%, transparent) 1px, transparent 1px),
+        linear-gradient(to bottom, color-mix(in srgb, var(--primary-color) 14%, transparent) 1px, transparent 1px);
+      background-size: calc((100% - 12px + var(--gap)) / 12) 100%, 100% calc((var(--row) - 3 * var(--gap)) / 4 + var(--gap));
+      background-position: 6px 0, 0 6px; }
+    .blk { transition: box-shadow 0.12s, transform 0.12s; }
     .blk.sizing { border-color: var(--primary-color); box-shadow: 0 0 0 1px var(--primary-color); }
     .blk.hidden { opacity: 0.45; border-style: dashed; }
     .blk.hero { background: linear-gradient(135deg, rgba(3, 169, 244, 0.25), rgba(3, 169, 244, 0.05)); }
