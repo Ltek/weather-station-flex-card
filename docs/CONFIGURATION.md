@@ -159,6 +159,9 @@ Where the buttons go: `panel_bar: false` hides the bar; a Button Menu panel (`he
 | `overflow` | `default` · `grow` · `scroll` | `default` | **When the content doesn't fit** — Scroll needs a height of at least 1 row (it is raised to 1 when you pick Scroll). |
 | `compact` | `true` / `false` | `false` | **Compact view** — Show this panel as one row of small tiles with all its data; tapping it opens the full panel (see Collapse → Opens). |
 | `fill` | `default` · `on` · `off` | `default` | **Fill the panel** — For a panel with a set height. With it on, Scale all Panel Contents is a share of the filled size (e.g. 90% leaves some room). If the contents don't fit even at the Smallest content scale, the panel scrolls. |
+| `text_scale` | number 50–200 % | `100` | **Text size** — All the panel's text, relative to its other parts. |
+| `icon_scale` | number 50–250 % | `100` | **Icon size** |
+| `chart_scale` | number 40–200 % | `100` | **Chart height** — The chart's smallest height (it grows to fill the panel). |
 | `content_scale` | number 40–200 % | `100` | **Scale all Panel Contents** — Everything inside the panel bigger or smaller (text, icons, tiles), so it fits the space. |
 | `collapsible` | `true` / `false` | `false` | **Collapse button** — Fold the panel down to its title header to save space (e.g. maps). A folded map is paused. With Remember Panel Button States, this browser remembers what you folded. |
 | `collapsed` | `true` / `false` | `false` | **Start collapsed** |
@@ -232,6 +235,20 @@ Default size: 12 of 12 wide, 3 rows high. Also takes `flex:`: Weather Flex secti
 
 | Option | Value | Default | What it does |
 |---|---|---|---|
+| `text_scale` | number 50–200 % | `100` | **Text size** — With Auto scale off: every text, relative to the pixel sizes in Text & icons. |
+| `icon_scale_all` | number 50–250 % | `100` | **Icon size** |
+| `flex.wfc.current.header_icon_size` | number 0–200 px | `0` | **Condition icon — size** — 0 = automatic. With Auto scale on, the hero sizes itself (see its scale sliders). |
+| `flex.wfc.current.header_state_size` | number 0–120 px | `0` | **Condition text — size** |
+| `flex.wfc.current.header_temp_size` | number 0–200 px | `0` | **Temperature — size** |
+| `flex.wfc.current.header_secondary_size` | number 0–80 px | `0` | **Temperature sub-header — size** |
+| `flex.wfc.details.chip_text_size` | number 0–48 px | `0` | **Chips — text size** — 0 = from the chip scale. |
+| `flex.wfc.details.chip_text_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Chips — text colour** |
+| `flex.wfc.details.chip_icon_size` | number 0–64 px | `0` | **Chips — icon size** |
+| `flex.wfc.details.chip_icon_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Chips — icon colour** |
+| `flex.wfc.details.global_text_size` | number 0–48 px | `14` | **Metric values — text size** — Metrics shown as rows (not chips); each metric can still set its own. |
+| `flex.wfc.details.global_text_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Metric values — text colour** |
+| `flex.wfc.details.global_icon_size` | number 0–64 px | `22` | **Metric values — icon size** |
+| `flex.wfc.details.global_icon_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Metric values — icon colour** |
 | `main_temperature` | `temperature` · `feels_like` | `temperature` | **Main temperature** — Feels like shows the feels-like temperature in place of the temperature (falls back to the temperature when there's no feels-like value). |
 | `auto_scale` | `true` / `false` | `false` | **Set scale to Auto** — Size the temperature, its sub-header, condition, icon, clock, date and metric chips from the panel's size. Each then has its own scale below, instead of the pixel sizes in the sections editor. |
 | `fit` | `true` / `false` | `true` | **Fit to the panel** — With a set height: everything scales so the hero fills its panel (no empty space below, nothing cut off) — a 0.5-row hero shrinks to fit; one next to a taller panel grows. Off: sizes follow the width only, and the hero sets its own height. |
@@ -580,6 +597,26 @@ Default size: 4 of 12 wide, 2 rows high. Also takes `flex:`: Weather Flex sectio
 
 | Option | Value | Default | What it does |
 |---|---|---|---|
+| `text_scale` | number 50–200 % | `100` | **Text size** — Every text on the bar and the arc: time labels, the forecast row and the sunrise / sunset times. |
+| `icon_scale` | number 50–250 % | `100` | **Icon size** — Forecast and metric icons, and the sunrise / sunset icons. |
+| `bar_scale` | number 40–200 % | `100` | **Bar height** |
+| `arc_scale` | number 40–200 % | `100` | **Arc height** |
+| `flex.wfc.sun_position.times_font_size` | number 0–40 px | `11` | **Bar time labels — size** |
+| `flex.wfc.sun_position.times_font_weight` | `300` · `400` · `500` · `600` · `700` | `400` | **Bar time labels — weight** |
+| `flex.wfc.sun_position.times_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Bar time labels — colour** |
+| `flex.wfc.sun_position.forecast_font_size` | number 0–40 px | `11` | **Forecast row — text size** — Each metric in the Sky Bar's metric list can still set its own size. |
+| `flex.wfc.sun_position.forecast_icon_size` | number 0–64 px | `22` | **Forecast row — icon size** |
+| `flex.wfc.sun_position.forecast_temp_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Forecast row — temperature colour** |
+| `flex.wfc.sun_position.forecast_icon_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Forecast row — icon colour** |
+| `flex.wfc.sun_position.forecast_extra_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Forecast row — metric text colour** |
+| `flex.wfc.sun_arc.time_font_size` | number 0–40 px | `13` | **Arc sunrise / sunset times — size** |
+| `flex.wfc.sun_arc.time_font_weight` | `300` · `400` · `500` · `600` · `700` | `400` | **Arc times — weight** |
+| `flex.wfc.sun_arc.time_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Arc times — colour** |
+| `flex.wfc.sun_arc.caption_font_size` | number 0–40 px | `11` | **Arc captions — size** |
+| `flex.wfc.sun_arc.caption_font_weight` | `300` · `400` · `500` · `600` · `700` | `400` | **Arc captions — weight** |
+| `flex.wfc.sun_arc.caption_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Arc captions — colour** |
+| `flex.wfc.sun_arc.ss_icon_size` | number 0–64 px | `20` | **Sunrise / sunset icons — size** |
+| `flex.wfc.sun_arc.ss_icon_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Sunrise / sunset icons — colour** |
 | `show_arc` | `true` / `false` | `true` | **Sun arc** — Sun arc: the sun's path, its position now, sunrise and sunset; the moon at night. |
 | `show_sky` | `true` / `false` | `true` | **Sky gradient & forecast row** — Sky gradient: daylight and cloud cover over time, with the forecast row (temperatures, icons, wind…). |
 | `timeframe` | `hours` · `day` · `sunrise_sunset` | `hours` | **Time window** — One time window for the arc and the sky. |
