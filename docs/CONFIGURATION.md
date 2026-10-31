@@ -64,6 +64,7 @@ With no `panels:` the card shows its default dashboard (hero, bulletin, Sky Trac
 | `anim_wind` | number 10–150 % | `100` | **Wind gusts** |
 | `fog_density` | number 30–200 % | `100` | **Fog density** — How thick the fog is: the number of mist banks and how much they hide. |
 | `lightning_interval` | number 2–90 s | `12` | **Time between strikes** — In storms: roughly how often the clouds light up (each strike comes at its own irregular time around this). |
+| `lightning_bolts` | number 0–100 % | `20` | **Lightning bolts** — How many of the flashes drop a visible bolt from the cloud (the others light the clouds from inside). |
 | `lightning_intensity` | number 10–200 % | `100` | **Lightning intensity** — How brightly the clouds and the sky light up. |
 | `wind_density` | number 30–200 % | `100` | **Wind density** — How many wisps of air blow across in windy weather. |
 
