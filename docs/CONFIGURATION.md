@@ -406,7 +406,7 @@ Default size: 8 of 12 wide, 3 rows high. Also takes `flex:`: Weather Flex sectio
 |---|---|---|---|
 | `text_scale` | number 50–200 % | `100` | **Text size** — Day and time labels, temperatures and chart figures. Separate from Scale all Panel Contents. |
 | `icon_scale` | number 50–250 % | `100` | **Icon size** — The condition icons in the forecast. |
-| `chart_scale` | number 40–200 % | `100` | **Chart height** — The temperature / precipitation chart under the icons. |
+| `chart_scale` | number 40–200 % | `100` | **Chart height** — The temperature / precipitation chart under the icons. With Fill the panel on, the chart gives up height first so text and icons can be larger: this sets how much of the panel it keeps (about a third at 100%). |
 
 ### Day forecast — `type: day`
 
@@ -426,7 +426,7 @@ Default size: 8 of 12 wide, 4 rows high. Also takes `flex:`: Weather Flex sectio
 |---|---|---|---|
 | `text_scale` | number 50–200 % | `100` | **Text size** — Day and time labels, temperatures and chart figures. Separate from Scale all Panel Contents. |
 | `icon_scale` | number 50–250 % | `100` | **Icon size** — The condition icons in the forecast. |
-| `chart_scale` | number 40–200 % | `100` | **Chart height** — The temperature / precipitation chart under the icons. |
+| `chart_scale` | number 40–200 % | `100` | **Chart height** — The temperature / precipitation chart under the icons. With Fill the panel on, the chart gives up height first so text and icons can be larger: this sets how much of the panel it keeps (about a third at 100%). |
 
 ### Frost & heat watch — `type: frost_watch`
 
@@ -492,7 +492,7 @@ Default size: 8 of 12 wide, 3 rows high. Also takes `flex:`: Weather Flex sectio
 |---|---|---|---|
 | `text_scale` | number 50–200 % | `100` | **Text size** — Day and time labels, temperatures and chart figures. Separate from Scale all Panel Contents. |
 | `icon_scale` | number 50–250 % | `100` | **Icon size** — The condition icons in the forecast. |
-| `chart_scale` | number 40–200 % | `100` | **Chart height** — The temperature / precipitation chart under the icons. |
+| `chart_scale` | number 40–200 % | `100` | **Chart height** — The temperature / precipitation chart under the icons. With Fill the panel on, the chart gives up height first so text and icons can be larger: this sets how much of the panel it keeps (about a third at 100%). |
 
 ### Lightning — `type: lightning`
 
@@ -599,7 +599,7 @@ Default size: 4 of 12 wide, 2 rows high. Also takes `flex:`: Weather Flex sectio
 |---|---|---|---|
 | `text_scale` | number 50–200 % | `100` | **Text size** — Every text on the bar and the arc: time labels, the forecast row and the sunrise / sunset times. |
 | `icon_scale` | number 50–250 % | `100` | **Icon size** — Forecast and metric icons, and the sunrise / sunset icons. |
-| `bar_scale` | number 40–200 % | `100` | **Bar height** |
+| `bar_scale` | number 40–200 % | `100` | **Bar height** — With Fill the panel on, the arc and the bar give up height first so text and icons can be larger; Arc and Bar height set how much of the panel they keep. |
 | `arc_scale` | number 40–200 % | `100` | **Arc height** |
 | `flex.wfc.sun_position.times_font_size` | number 0–40 px | `11` | **Bar time labels — size** |
 | `flex.wfc.sun_position.times_font_weight` | `300` · `400` · `500` · `600` · `700` | `400` | **Bar time labels — weight** |
