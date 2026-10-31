@@ -114,6 +114,7 @@ With no `panels:` the card shows its default dashboard (hero, bulletin, Sky Trac
 |---|---|---|---|
 | `layout` | `auto` · `fullscreen` | `auto` | **Layout** |
 | `screen_fit` | `none` · `rows` · `strict` · `scale` | `rows` | **Screen fit** — Share and Exact apply in Full screen. Auto-fit takes the layout and sizes you set as the design for the Screen guide's size (Layout Map → Screen guide) and scales each panel's contents to every other screen, smaller where they'd still overflow. |
+| `panel_fill` | `true` / `false` | `false` | **Panels fill their space** — Each panel with a set height scales its contents up or down to the largest size that fits the panel, between Smallest and Largest content scale. Text size, Icon size and the other size sliders then change the proportions, and the panel still fits. Each panel can turn it on or off (Size and Scaling → Fill the panel). The hero and Wind fit themselves; maps aren't scaled. |
 | `auto_fit_min` | number 30–100 % | `60` | **Smallest content scale** — Below this a panel scrolls instead, so text stays readable. |
 | `auto_fit_max` | number 100–250 % | `150` | **Largest content scale** — On screens bigger than the design. |
 | `panel_overflow` | `grow` · `scroll` | `grow` | **When a panel's content doesn't fit** — For panels with a set height (Height above 0); each panel can override this. Scroll locks every panel to its size in any layout; Strict fit does the same in full screen. |
@@ -157,6 +158,7 @@ Where the buttons go: `panel_bar: false` hides the bar; a Button Menu panel (`he
 | `rows` | number 0–10 |  | **Height** — Height in row units, in half steps (0 = fit content, 0.5 = half height). |
 | `overflow` | `default` · `grow` · `scroll` | `default` | **When the content doesn't fit** — Scroll needs a height of at least 1 row (it is raised to 1 when you pick Scroll). |
 | `compact` | `true` / `false` | `false` | **Compact view** — Show this panel as one row of small tiles with all its data; tapping it opens the full panel (see Collapse → Opens). |
+| `fill` | `default` · `on` · `off` | `default` | **Fill the panel** — For a panel with a set height. With it on, Scale all Panel Contents is a share of the filled size (e.g. 90% leaves some room). If the contents don't fit even at the Smallest content scale, the panel scrolls. |
 | `content_scale` | number 40–200 % | `100` | **Scale all Panel Contents** — Everything inside the panel bigger or smaller (text, icons, tiles), so it fits the space. |
 | `collapsible` | `true` / `false` | `false` | **Collapse button** — Fold the panel down to its title header to save space (e.g. maps). A folded map is paused. With Remember Panel Button States, this browser remembers what you folded. |
 | `collapsed` | `true` / `false` | `false` | **Start collapsed** |
