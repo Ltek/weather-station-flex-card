@@ -306,6 +306,11 @@ const patches = [
    "  edProto._wfcTextControls = function (id, prefix, title, sizeDflt) {\n    if (this.wsfcHide && this.wsfcHide.includes(`${prefix}_font_size`)) return eY;\n    const s = this._wfcState()[id] || {};\n"],
   ["  edProto._wfcGroup = function (label) {\n",
    "  edProto._wfcGroup = function (label) {\n    if (label && this.wsfcHide && this.wsfcHide.includes(\"group:\" + label)) return eY;\n"],
+  // wsfcHide: checkboxes ("check:<label>") and the Section Styles sub-panel ("group:Section Styles").
+  ["  edProto._wfcCheckbox = function (label, checked, onChange) {\n",
+   "  edProto._wfcCheckbox = function (label, checked, onChange) {\n    if (this.wsfcHide && this.wsfcHide.includes(\"check:\" + label)) return eY;\n"],
+  ["  edProto._wfcSectionStyles = function (id, s) {\n",
+   "  edProto._wfcSectionStyles = function (id, s) {\n    if (this.wsfcHide && this.wsfcHide.includes(\"group:Section Styles\")) return eY;\n"],
 ];
 for (const [from, to] of patches) {
   if (!body.includes(from)) throw new Error(`Patch target missing: ${from}`);

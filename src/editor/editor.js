@@ -654,6 +654,12 @@ class WeatherStationFlexCardEditor extends LitElement {
     if (!ed) {
       ed = document.createElement(CORE_EDITOR_TAG);
       ed.wsfcMode = "sections";
+      ed.wsfcType = p.type;
+      // A Weather Flex section opened: close this panel's own flat sections.
+      ed.addEventListener("wsfc-flat-open", (e) => {
+        for (const k of [...(this._flatOpen || new Map()).keys()]) if (k.startsWith(`${e.detail.type}|`)) this._flatOpen.set(k, false);
+        this.requestUpdate();
+      });
       ed.addEventListener("config-changed", (e) => {
         e.stopPropagation();
         ed._wsfcOnChange?.(e.detail.config);
@@ -964,7 +970,11 @@ class WeatherStationFlexCardEditor extends LitElement {
     const open = !!this._flatOpen.get(id);
     return html`<details class="flat" ?open=${open} @toggle=${(e) => {
       if (e.target !== e.currentTarget || e.target.open === !!this._flatOpen.get(id)) return;
-      if (e.target.open) for (const k of this._flatOpen.keys()) if (k.startsWith(`${p.type}|`)) this._flatOpen.set(k, false);
+      if (e.target.open) {
+        for (const k of this._flatOpen.keys()) if (k.startsWith(`${p.type}|`)) this._flatOpen.set(k, false);
+        // ... and the panel's Weather Flex sections.
+        for (const [k, ed] of this._flexEds || []) if (k.endsWith(`:${p.type}`)) ed.renderRoot?.querySelectorAll?.("details.wsfc-panel[open]").forEach((d) => (d.open = false));
+      }
       this._flatOpen.set(id, e.target.open);
       this.requestUpdate();
     }}>

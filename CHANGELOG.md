@@ -1,5 +1,10 @@
 # Changelog
 
+## v2026.10.31.96
+
+- **Weather Flex sections in the panel editor look like the card's own.** The Daily / Hourly Forecast, Sun Position and Sky Bar sections embedded in a panel's settings now use the flat style: accent label, accent border when open, no separate box or icon. Only one section of a panel is open at a time, theirs or ours.
+- **Duplicates removed.** In the Daily, Hourly and Sky Tracker panels, the Weather Flex "Show Title Row" and "Section Styles" (dividers, section background, flush) are hidden. The panel's own Title and Panel background do those jobs.
+
 ## v2026.10.31.95
 
 **Size sliders on every panel**

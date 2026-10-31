@@ -44,7 +44,10 @@ export const SKY_TEXT_ICONS = [
   tiSize("sun_arc.ss_icon_size", "Sunrise / sunset icons — size", 20, 64, onArc),
   tiColor("sun_arc.ss_icon_color", "Sunrise / sunset icons — colour", onArc),
 ];
-const SKY_HIDE = ["times_font_size", "time_font_size", "caption_font_size", "forecast_font_size", "forecast_icon_size", "ss_icon_size",
+// One-section Weather Flex panels: the panel's own Title and Panel background
+// replace the section's title row and Section Styles.
+const ONE_SECTION_HIDE = ["check:Show Title Row", "group:Section Styles"];
+const SKY_HIDE = [...ONE_SECTION_HIDE, "times_font_size", "time_font_size", "caption_font_size", "forecast_font_size", "forecast_icon_size", "ss_icon_size",
   "color:Temperature color", "color:Icon color", "color:Metric Text Color"];
 
 const noAuto = (d) => !d.auto_scale;
@@ -260,6 +263,7 @@ export const PANEL_TYPES = {
   },
   hourly: {
     tag: "wsfc-panel-hourly", label: "Hourly forecast", icon: "mdi:clock-outline", span: 8, rows: 3, flex: true, flexPanels: ["Hourly Forecast"],
+    flexHide: ONE_SECTION_HIDE,
     schema: [
       { name: "text_scale", label: "Text size", selector: { number: { min: 50, max: 200, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100, helper: "Day and time labels, temperatures and chart figures. Separate from Scale all Panel Contents." },
       { name: "icon_scale", label: "Icon size", selector: { number: { min: 50, max: 250, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100, helper: "The condition icons in the forecast." },
@@ -268,6 +272,7 @@ export const PANEL_TYPES = {
   },
   daily: {
     tag: "wsfc-panel-daily", label: "Daily forecast", icon: "mdi:calendar-week", span: 8, rows: 3, flex: true, flexPanels: ["Daily Forecast"],
+    flexHide: ONE_SECTION_HIDE,
     schema: [
       { name: "text_scale", label: "Text size", selector: { number: { min: 50, max: 200, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100, helper: "Day and time labels, temperatures and chart figures. Separate from Scale all Panel Contents." },
       { name: "icon_scale", label: "Icon size", selector: { number: { min: 50, max: 250, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100, helper: "The condition icons in the forecast." },

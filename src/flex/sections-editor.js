@@ -1751,6 +1751,7 @@ import { CURRENT_WEATHER_ATTRIBUTES as iX } from "../../vendor/weather-forecast-
 
   // Native checkbox row (seed-style) — replaces ha-switch/ha-formfield.
   edProto._wfcCheckbox = function (label, checked, onChange) {
+    if (this.wsfcHide && this.wsfcHide.includes("check:" + label)) return eY;
     return eq`
       <label class="wfc-check-row">
         <input type="checkbox" class="wfc-checkbox" .checked=${!!checked} @change=${onChange} />
@@ -1904,6 +1905,7 @@ import { CURRENT_WEATHER_ATTRIBUTES as iX } from "../../vendor/weather-forecast-
   // The shared "Section Styles" collapsible subpanel used at the bottom of
   // every section panel: flush toggles + section dividers + section background.
   edProto._wfcSectionStyles = function (id, s) {
+    if (this.wsfcHide && this.wsfcHide.includes("group:Section Styles")) return eY;
     return this._wfcSubPanel(
       "Section Styles",
       eq`

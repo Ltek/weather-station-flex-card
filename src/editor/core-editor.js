@@ -23,8 +23,32 @@ import { WeatherForecastCardEditor } from "../../vendor/weather-forecast-card/sr
     if (!this.hass || !this._config) return "";
     return html`${this._wfcEditorStyle()}${sourcesPanel.call(this)}`;
   };
+  // Embedded in a Weather Station panel: the Weather Flex panels look and behave
+  // like the card editor's own flat sections (accent label, accent border when
+  // open), and opening one closes the card editor's sections for the panel.
+  const FLAT = new CSSStyleSheet();
+  FLAT.replaceSync(`
+    details.wsfc-panel { border: 1px solid transparent; border-top-color: var(--ltek-c-border-soft, rgba(127,127,127,.25)); border-radius: 0; background: none; margin: 0; }
+    details.wsfc-panel[open] { border-color: var(--accent-color, var(--ltek-c-accent, #03a9f4)); border-radius: var(--ltek-r-ctrl, 8px); margin: 6px 0; }
+    details.wsfc-panel[open] + details.wsfc-panel { border-top-color: transparent; }
+    details.wsfc-panel > summary.wsfc-panel-summary { padding: var(--ltek-sp-3, 10px); gap: 8px; }
+    details.wsfc-panel > summary .wsfc-panel-icon { display: none; }
+    details.wsfc-panel > summary .wsfc-panel-title { font-size: var(--ltek-fs-label, 13px); font-weight: var(--ltek-fw-semibold, 600); text-transform: uppercase; letter-spacing: 0.04em; color: var(--ltek-c-accent, var(--accent-color, #03a9f4)); }
+    details.wsfc-panel > summary::after { width: 8px; height: 8px; border-right-color: var(--ltek-c-accent, var(--accent-color, #03a9f4)); border-bottom-color: var(--ltek-c-accent, var(--accent-color, #03a9f4)); }
+    .wsfc-ed-header { display: none; }
+  `);
   P.updated = function (changed) {
     updated?.call(this, changed);
+    if (this.wsfcMode === "sections" && this.renderRoot) {
+      if (!this.renderRoot.adoptedStyleSheets.includes(FLAT)) this.renderRoot.adoptedStyleSheets = [...this.renderRoot.adoptedStyleSheets, FLAT];
+      this.renderRoot.querySelectorAll("details.wsfc-panel").forEach((d) => {
+        if (d.__wsfcFlat) return;
+        d.__wsfcFlat = true;
+        d.addEventListener("toggle", () => {
+          if (d.open) this.dispatchEvent(new CustomEvent("wsfc-flat-open", { detail: { type: this.wsfcType }, bubbles: true, composed: true }));
+        });
+      });
+    }
     // wsfcPanels: only show the Weather Flex editor panels relevant to this
     // panel type (matched by their titles).
     const keep = this.wsfcPanels;
