@@ -191,7 +191,7 @@ Where the buttons go: `panel_bar: false` hides the bar; a Button Menu panel (`he
 | `tile_border` | `true` / `false` | `true` | **Disable border** (the editor shows it as a *Disable …* checkbox; `false` = disabled) |
 | `tile_glow` | `true` / `false` | `true` | **Disable glow** (the editor shows it as a *Disable …* checkbox; `false` = disabled) |
 
-Also: `type` (required), `id` (optional, keeps a panel's saved button state when you reorder panels), `span_medium` / `span_narrow` (width on tablets / phones) and `rows_compact` (height on tablets and phones). On tablets small tiles stay side by side and wide panels go full width; on phones tiles pair up and everything else is full width.
+Also: `type` (required), `x` / `y` (the panel's place: column 0–11 and rows from the top in quarter steps, e.g. `x: 8`, `y: 1.25`; set by the Layout Map — without them panels flow in list order; a phone layout entry takes them too), `id` (optional, keeps a panel's saved button state when you reorder panels), `span_medium` / `span_narrow` (width on tablets / phones) and `rows_compact` (height on tablets and phones). On tablets small tiles stay side by side and wide panels go full width; on phones tiles pair up and everything else is full width.
 
 ### Inside a stack
 
