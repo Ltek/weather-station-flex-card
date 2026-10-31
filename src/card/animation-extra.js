@@ -290,25 +290,54 @@ export function planFlash(r = Math.random, [_, li, boltShare] = [12, 1, 0.2]) {
   return { core, tint, frames, dur, peak, size: 0.55 + r() * 0.75, spread: r() < 0.3, bolt: r() < boltShare, cluster: r() < 0.3 };
 }
 
-/** A forked bolt from (x0, y0) down to the ground, as SVG path data (midpoint displacement). */
+/**
+ * A forked bolt from (x0, y0) down to y1 (midpoint displacement), as pieces
+ * [{ d, w }] where w is the core stroke width. Widths only ever stay the same or
+ * shrink along a channel: the main channel starts thick and tapers; each branch
+ * starts thinner than the main channel where it leaves it and tapers to a thread.
+ */
 export function boltPath(r, x0, y0, y1, width) {
   const seg = (ax, ay, bx, by, rough, depth, out) => {
     if (depth === 0) { out.push([bx, by]); return; }
     const mx = (ax + bx) / 2 + (r() - 0.5) * rough, my = (ay + by) / 2 + (r() - 0.5) * rough * 0.25;
     seg(ax, ay, mx, my, rough / 2, depth - 1, out); seg(mx, my, bx, by, rough / 2, depth - 1, out);
   };
+  const d = (pts) => pts.map(([x, y], i) => `${i ? "L" : "M"}${x.toFixed(1)} ${y.toFixed(1)}`).join("");
+  // Widths along a channel of n points: start w0, each step the same or thinner, ending near wEnd.
+  const taper = (n, w0, wEnd) => {
+    const out = [w0];
+    const k = Math.pow(Math.max(0.05, wEnd / w0), 1 / Math.max(1, n - 1));
+    for (let i = 1; i < n; i++) {
+      const prev = out[i - 1];
+      // Mostly steady with sudden narrowings: hold, ease, or drop.
+      const f = r() < 0.35 ? 1 : r() < 0.8 ? Math.pow(k, 1 + r()) : Math.pow(k, 3 + r() * 3);
+      out.push(Math.max(wEnd * 0.6, Math.min(prev, prev * f)));
+    }
+    return out;
+  };
+  // Pieces of `chunk` points, each drawn at the width where it starts.
+  const pieces = (pts, ws, chunk) => {
+    const out = [];
+    for (let i = 0; i < pts.length - 1; i += chunk) out.push({ d: d(pts.slice(i, Math.min(pts.length, i + chunk + 1))), w: +ws[i].toFixed(2) });
+    return out;
+  };
   const x1 = x0 + (r() - 0.5) * width * 0.25;
   const main = [[x0, y0]]; seg(x0, y0, x1, y1, (y1 - y0) * 0.35, 6, main);
-  const d = (pts) => pts.map(([x, y], i) => `${i ? "L" : "M"}${x.toFixed(1)} ${y.toFixed(1)}`).join("");
-  const branches = [];
-  const nb = Math.floor(r() * 3);
+  const w0 = 2.4 + r() * 2.6;                       // 2.4–5 px at the cloud
+  const mainW = taper(main.length, w0, w0 * (0.3 + r() * 0.35));
+  const out = { main: d(main), branches: [], pieces: pieces(main, mainW, 4) };
+  const nb = Math.floor(r() * 4);                   // 0–3 forks
   for (let i = 0; i < nb; i++) {
-    const from = main[Math.floor(main.length * (0.15 + r() * 0.5))];
-    const len = (y1 - y0) * (0.15 + r() * 0.3), dir = r() < 0.5 ? -1 : 1;
-    const pts = [from]; seg(from[0], from[1], from[0] + dir * len * (0.4 + r() * 0.6), from[1] + len, len * 0.35, 4, pts);
-    branches.push(d(pts));
+    const at = Math.floor(main.length * (0.1 + r() * 0.55));
+    const from = main[at];
+    const len = (y1 - y0) * (0.12 + r() * 0.3), dir = r() < 0.5 ? -1 : 1;
+    const pts = [from]; seg(from[0], from[1], from[0] + dir * len * (0.4 + r() * 0.7), from[1] + len, len * 0.35, 4, pts);
+    const bw0 = mainW[at] * (0.4 + r() * 0.35);     // never thicker than the main channel there
+    const bw = taper(pts.length, bw0, Math.max(0.35, bw0 * (0.15 + r() * 0.25)));
+    out.branches.push(d(pts));
+    out.pieces.push(...pieces(pts, bw, 2));
   }
-  return { main: d(main), branches };
+  return out;
 }
 
 function renderLightning(el) {
@@ -353,17 +382,17 @@ function stormFlash(el, plan, opts) {
   add(sky, plan.frames.map((f) => ({ offset: f.offset, opacity: f.opacity * (plan.bolt ? 0.55 : 0.25) })));
   if (plan.bolt) {
     const r = Math.random;
-    const { main, branches } = boltPath(r, cx, cy + h * 0.15, box.height * (0.88 + r() * 0.12), box.width);
+    const { pieces } = boltPath(r, cx, cy + h * 0.15, box.height * (0.88 + r() * 0.12), box.width);
     const svg = document.createElementNS(SVGNS, "svg");
     svg.setAttribute("class", "bolt");
     svg.setAttribute("viewBox", `0 0 ${box.width} ${box.height}`);
     svg.style.cssText = `--core:${plan.core};--tint:${plan.tint}`;
-    for (const [d, wHalo, wCore] of [[main, 7, 2.2], ...branches.map((b) => [b, 4, 1.2])]) {
-      for (const [cls, sw] of [["halo", wHalo], ["core", wCore]]) {
-        const pth = document.createElementNS(SVGNS, "path");
-        pth.setAttribute("class", cls); pth.setAttribute("d", d); pth.setAttribute("stroke-width", String(sw));
-        svg.append(pth);
-      }
+    // Halo under every piece first, then the cores, so the glow never covers a core.
+    for (const cls of ["halo", "core"]) for (const pc of pieces) {
+      const pth = document.createElementNS(SVGNS, "path");
+      pth.setAttribute("class", cls); pth.setAttribute("d", pc.d);
+      pth.setAttribute("stroke-width", String(cls === "halo" ? +(pc.w * 2.8 + 1).toFixed(2) : pc.w));
+      svg.append(pth);
     }
     // The bolt is brightest on the strongest pulse, gone before the afterglow.
     add(svg, plan.frames.map((f) => ({ offset: f.offset, opacity: Math.min(1, (f.opacity / plan.peak) * (f.offset < 0.7 ? 1 : 0.2)) })));

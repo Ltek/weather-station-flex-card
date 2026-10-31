@@ -1,5 +1,9 @@
 # Changelog
 
+## v2026.10.31.91
+
+- **Lightning bolts taper like real ones.** The main channel starts 2.4–5 px thick at the cloud and narrows on the way down to 30–65 % of that, mostly gradually with the odd sudden narrowing. Each fork leaves the main channel at 40–75 % of its thickness there and thins to a thread. A channel only ever stays the same or gets thinner as it extends. The glow around the bolt follows the thickness. Bolts have 0–3 forks.
+
 ## v2026.10.31.90
 
 - **Lightning rebuilt.** Each flash is now planned at random instead of six fixed glows repeating the same three pulses:
