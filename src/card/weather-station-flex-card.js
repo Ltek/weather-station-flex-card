@@ -250,7 +250,42 @@ class WeatherStationFlexCard extends LitElement {
 
   // Content can change size after it loads (history, forecasts): watch the
   // panels and look again at most once a second — not on every state update.
+  // Filling panels: their box doesn't change when their contents do (a forecast
+  // arriving, a chart redrawing), so look again now and then and refit when a
+  // panel no longer fills its box or overflows it: every 2 s for the first
+  // 20 s after a fit, then every 10 s. One measurement per filling panel.
+  _watchFill(grid) {
+    clearTimeout(this._fillT);
+    if (!grid.querySelector(":scope > section.tile.fill") || !this.isConnected) return;
+    const min = (Number(this._config.auto_fit_min) || 60) / 100, max = (Number(this._config.auto_fit_max) || 150) / 100;
+    const started = (this._fillFrom = this._fillFrom || Date.now());
+    const check = () => {
+      if (!this.isConnected) return;
+      const g = this.renderRoot?.querySelector(".grid");
+      if (!g) return;
+      let refit = false;
+      if (typeof document === "undefined" || !document.hidden) {
+        for (const tile of g.querySelectorAll(":scope > section.tile.fill:not(.collapsed)")) {
+          const el = [...tile.children].find((x) => x.tagName?.startsWith("WSFC-"));
+          if (!el || el.__wsfcFill == null) continue;
+          const box = el.getBoundingClientRect().height;
+          if (!box) continue;
+          const prev = [el.style.flex, el.style.height, el.style.minHeight];
+          el.style.flex = "none"; el.style.height = "auto"; el.style.minHeight = "0";
+          const nat = el.getBoundingClientRect().height;
+          [el.style.flex, el.style.height, el.style.minHeight] = prev;
+          const k = el.__wsfcFill;
+          if ((nat > box + 2 && k > min + 0.005) || (nat < box * 0.96 && k < max - 0.005)) { refit = true; break; }
+        }
+      }
+      if (refit) this._autoFitPanels();
+      else this._fillT = setTimeout(check, Date.now() - started < 20e3 ? 2000 : 10000);
+    };
+    this._fillT = setTimeout(check, 2000);
+  }
+
   _watchAutoFit(grid) {
+    this._watchFill(grid);
     if (!this._autoFit && !grid.querySelector(":scope > section.tile.fill")) { this._afRo?.disconnect(); this._afRo = null; this._afSeen = null; return; }
     this._afRo ||= new ResizeObserver(() => {
       if (this._afBusy || this._afT) return;
@@ -501,6 +536,7 @@ class WeatherStationFlexCard extends LitElement {
 
   disconnectedCallback() {
     super.disconnectedCallback();
+    clearTimeout(this._fillT);
     window.removeEventListener("wsfc-unsaved", this._onUnsaved);
     window.removeEventListener("wsfc-live", this._onLive);
     this._unwatchHourly?.();
@@ -545,6 +581,7 @@ class WeatherStationFlexCard extends LitElement {
     const key = JSON.stringify([this._config?.panels, [...(this._hidden || [])], [...(this._collapsed || [])], this._focus, this._layoutSize, this._config?.layout, this._config?.auto_fit, this._config?.layout_screen, this._config?.auto_fit_min, this._config?.auto_fit_max, this._config?.screen_fit, this._config?.panel_fill, this._config?.row_height, this._config?.gap]);
     if (key === this._fitKey) return;
     this._fitKey = key;
+    this._fillFrom = 0;
     this._scheduleFit();
     clearTimeout(this._fitLate);
     this._fitLate = setTimeout(() => this._scheduleFit(), 1500);

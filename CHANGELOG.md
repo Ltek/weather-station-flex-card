@@ -1,5 +1,9 @@
 # Changelog
 
+## v2026.10.31.94
+
+- **Fix: Fill the panel could be fitted before the forecast loaded.** On a slower device the daily forecast arrived after the fit, so the panel was scaled for an almost empty panel and then overflowed or left space. Filling panels are now checked every 2 s for the first 20 s after a layout change, then every 10 s, and refitted when they overflow or use less than 96 % of their box (one quick measurement per filling panel).
+
 ## v2026.10.31.93
 
 - **Panels fill their space** (Screen fit & layout, `panel_fill`). Each panel with a set height scales its contents up or down to the largest size that still fits the panel, between Smallest and Largest content scale (60–150 % by default). On the tablet layout the Daily forecast went from using 68 % of its panel to 100 % (1.47×), and the Sky Tracker from 89 % to 100 %.
