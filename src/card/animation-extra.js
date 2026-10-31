@@ -91,34 +91,19 @@ const EXTRA_CSS = css`
     100% { opacity: 0; transform: translate3d(calc(var(--dx) * 1.3), 0, 0); }
   }
 
-  /* Lightning: the provider's single white flash is replaced by glows that light the
-     clouds from inside at random places and strengths, plus a faint sheet flash over
-     everything. --li = intensity (1 = normal); each glow has its own cycle length. */
+  /* Lightning (see the storm scheduler below): the provider's single white
+     flash is replaced by glows that light up the clouds and occasional bolts,
+     each planned at random and drawn with the Web Animations API. */
   .lightning-flash { display: none; }
-  .bolt-glow { position: absolute; width: var(--w); height: var(--hh); left: var(--x); top: var(--y); opacity: 0; pointer-events: none; mix-blend-mode: screen;
-    background: radial-gradient(50% 50% at 50% 50%, rgba(255, 255, 255, 1) 0%, rgba(235, 240, 255, 0.75) 25%, rgba(200, 215, 255, 0.3) 55%, transparent 80%);
-    animation: cloud-flash var(--cycle) linear infinite; animation-delay: var(--delay); }
-  .sheet-flash { position: absolute; inset: 0; border-radius: inherit; background: #fff; opacity: 0; pointer-events: none; mix-blend-mode: screen;
-    animation: sheet-flash var(--cycle) linear infinite; animation-delay: var(--delay); }
-  /* A long dark pause, then two or three quick flickers of different strengths. */
-  @keyframes cloud-flash {
-    0%, 90% { opacity: 0; }
-    90.4% { opacity: calc(var(--peak) * 0.55); }
-    90.8% { opacity: calc(var(--peak) * 0.1); }
-    91.2% { opacity: var(--peak); }
-    91.6% { opacity: calc(var(--peak) * 0.35); }
-    92.2% { opacity: calc(var(--peak) * 0.7); }
-    93.4% { opacity: 0; }
-    100% { opacity: 0; }
-  }
-  @keyframes sheet-flash {
-    0%, 90.9% { opacity: 0; }
-    91.2% { opacity: var(--peak); }
-    91.5% { opacity: calc(var(--peak) * 0.15); }
-    91.8% { opacity: calc(var(--peak) * 0.5); }
-    92.6% { opacity: 0; }
-    100% { opacity: 0; }
-  }
+  .storm { position: absolute; inset: 0; pointer-events: none; overflow: hidden; border-radius: inherit; }
+  .storm > * { position: absolute; pointer-events: none; opacity: 0; will-change: opacity; }
+  .storm .glow { border-radius: 50%; mix-blend-mode: screen; filter: blur(var(--soft, 10px));
+    background: radial-gradient(50% 50% at 50% 50%, var(--core) 0%, var(--tint) 38%, color-mix(in srgb, var(--tint), transparent 70%) 62%, transparent 78%); }
+  .storm .sky-lit { inset: 0; mix-blend-mode: screen; background: radial-gradient(90% 70% at var(--cx) 15%, var(--tint), transparent 75%); }
+  .storm svg.bolt { inset: 0; width: 100%; height: 100%; overflow: visible; }
+  .storm svg.bolt path { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+  .storm svg.bolt .halo { stroke: var(--tint); filter: blur(5px); }
+  .storm svg.bolt .core { stroke: var(--core); }
 
   /* Exceptional: a slow amber glow over the overcast sky. */
   .exceptional-glow { position: absolute; inset: 0; border-radius: inherit;
@@ -217,8 +202,20 @@ if (!WeatherAnimationProvider.__wsfcExtra) {
     if (fx.includes("fog")) list.push(...kept(this, "fog", `${this.isNightTime()}:${density(this, "fog_density")}`, fogBanks));
     if (fx.includes("hail")) list.push(...kept(this, "hail", `${this._containerHeight}`, hailstones));
     if (fx.includes("wind")) list.push(...kept(this, "wind", `${density(this, "wind_density")}`, gusts));
-    if (fx.includes("lightning")) list.push(...kept(this, "lightning", `${lightningOpts(this).join()}`, bolts));
     return list;
+  };
+
+  // The storm runs while lightning is shown and the provider is on the page.
+  const upd = proto.updated;
+  proto.updated = function (changed) {
+    const r = upd?.call(this, changed);
+    if (this.isConnected && this.getActiveEffects().includes("lightning")) stormStart(this); else stormStop(this);
+    return r;
+  };
+  const disc = proto.disconnectedCallback;
+  proto.disconnectedCallback = function () {
+    stormStop(this);
+    return disc?.call(this);
   };
 
   const render = proto.render;
@@ -240,29 +237,158 @@ if (!WeatherAnimationProvider.__wsfcExtra) {
 }
 
 // --- Lightning -----------------------------------------------------------------
-// [interval in seconds between strikes, intensity 0.1–2].
-const lightningOpts = (el) => [Math.max(2, Math.min(90, Number(el.config?.lightning_interval) || 12)), Math.max(0.1, Math.min(2, (Number(el.config?.lightning_intensity) || 100) / 100))];
+// A storm scheduler per provider: at random times (around the chosen interval,
+// sometimes in quick clusters) it picks a cloud and lights it from inside in one
+// of the colours lightning really shows (white most often, blue-violet, warm
+// yellow / orange), with a flicker pattern of its own (1–5 pulses of different
+// strengths and gaps). Sometimes the glow spreads to a neighbouring cloud, and
+// now and then (Lightning bolts) a forked bolt drops from the cloud.
+// [interval s, intensity 0.1–2, bolt share 0–1].
+const lightningOpts = (el) => [
+  Math.max(2, Math.min(90, Number(el.config?.lightning_interval) || 12)),
+  Math.max(0.1, Math.min(2, (Number(el.config?.lightning_intensity) || 100) / 100)),
+  Math.max(0, Math.min(1, (el.config?.lightning_bolts ?? 20) / 100)),
+];
 
-function bolts(el) {
-  const [gap, li] = lightningOpts(el);
-  // Six glows along the cloud deck, each flickering on its own cycle (close to the
-  // chosen interval, so strikes land at irregular times) with its own strength.
-  const out = [];
-  for (let i = 0; i < 6; i++) {
-    const cycle = gap * rnd(0.75, 1.5);
-    out.push({ type: "bolt", x: (i * 16 + rnd(-6, 10)).toFixed(0), y: rnd(-14, 6).toFixed(0), w: rnd(22, 40).toFixed(0), hh: rnd(55, 95).toFixed(0),
-      cycle: cycle.toFixed(2), delay: (-rnd(0, cycle)).toFixed(2), peak: Math.min(1, rnd(0.25, 0.85) * li).toFixed(2) });
+// [core, tint, weight]: the bright centre and the surrounding glow.
+export const LIGHTNING_COLORS = [
+  ["#ffffff", "rgba(235, 240, 255, 0.85)", 4],      // white
+  ["#f4f6ff", "rgba(150, 175, 255, 0.85)", 3],      // blue-white
+  ["#efe6ff", "rgba(165, 130, 255, 0.8)", 2],       // violet
+  ["#fff8e1", "rgba(255, 214, 120, 0.85)", 3],      // warm yellow
+  ["#fff1e0", "rgba(255, 160, 80, 0.8)", 2],        // orange
+];
+const pickColor = (r) => {
+  const tot = LIGHTNING_COLORS.reduce((a, c) => a + c[2], 0);
+  let x = r() * tot;
+  for (const c of LIGHTNING_COLORS) if ((x -= c[2]) < 0) return c;
+  return LIGHTNING_COLORS[0];
+};
+
+/**
+ * One flash, planned: colour, size, flicker keyframes ({ offset, opacity }),
+ * duration (ms), whether it spreads to a neighbour cloud, and whether it drops
+ * a bolt. `r` is a random() function (tests pass a seeded one).
+ */
+export function planFlash(r = Math.random, [_, li, boltShare] = [12, 1, 0.2]) {
+  const [core, tint] = pickColor(r);
+  const pulses = 1 + Math.floor(r() * r() * 5); // mostly 1–2, sometimes up to 5
+  const frames = [{ offset: 0, opacity: 0 }];
+  let t = 0;
+  const peak = Math.min(1, (0.45 + r() * 0.55) * li);
+  for (let i = 0; i < pulses; i++) {
+    const on = 25 + r() * 70, gap = 30 + r() * 170;
+    const o = Math.min(1, peak * (i === 0 ? 0.6 + r() * 0.4 : 0.35 + r() * 0.65));
+    frames.push({ t: t + 8, opacity: o }, { t: t + on, opacity: o * (0.15 + r() * 0.35) });
+    t += on + gap;
   }
-  // The sheet flash: rarer and faint, so the whole card lights up now and then.
-  out.push({ type: "bolt", sheet: true, cycle: (gap * 1.9).toFixed(2), delay: (-rnd(0, gap)).toFixed(2), peak: Math.min(0.5, 0.18 * li).toFixed(2) });
-  return out;
+  const tail = 120 + r() * 380; // afterglow
+  frames.push({ t: t + tail, opacity: 0 });
+  const dur = t + tail;
+  for (const f of frames) if (f.t != null) { f.offset = Math.min(1, f.t / dur); delete f.t; }
+  frames.sort((a, b) => a.offset - b.offset);
+  return { core, tint, frames, dur, peak, size: 0.55 + r() * 0.75, spread: r() < 0.3, bolt: r() < boltShare, cluster: r() < 0.3 };
+}
+
+/** A forked bolt from (x0, y0) down to the ground, as SVG path data (midpoint displacement). */
+export function boltPath(r, x0, y0, y1, width) {
+  const seg = (ax, ay, bx, by, rough, depth, out) => {
+    if (depth === 0) { out.push([bx, by]); return; }
+    const mx = (ax + bx) / 2 + (r() - 0.5) * rough, my = (ay + by) / 2 + (r() - 0.5) * rough * 0.25;
+    seg(ax, ay, mx, my, rough / 2, depth - 1, out); seg(mx, my, bx, by, rough / 2, depth - 1, out);
+  };
+  const x1 = x0 + (r() - 0.5) * width * 0.25;
+  const main = [[x0, y0]]; seg(x0, y0, x1, y1, (y1 - y0) * 0.35, 6, main);
+  const d = (pts) => pts.map(([x, y], i) => `${i ? "L" : "M"}${x.toFixed(1)} ${y.toFixed(1)}`).join("");
+  const branches = [];
+  const nb = Math.floor(r() * 3);
+  for (let i = 0; i < nb; i++) {
+    const from = main[Math.floor(main.length * (0.15 + r() * 0.5))];
+    const len = (y1 - y0) * (0.15 + r() * 0.3), dir = r() < 0.5 ? -1 : 1;
+    const pts = [from]; seg(from[0], from[1], from[0] + dir * len * (0.4 + r() * 0.6), from[1] + len, len * 0.35, 4, pts);
+    branches.push(d(pts));
+  }
+  return { main: d(main), branches };
 }
 
 function renderLightning(el) {
-  return el._particles.filter((p) => p.type === "bolt").map((p) => p.sheet
-    ? html`<div class="sheet-flash" style="--cycle:${p.cycle}s;--delay:${p.delay}s;--peak:${p.peak}"></div>`
-    : html`<div class="bolt-glow" style="--x:${p.x}%;--y:${p.y}%;--w:${p.w}%;--hh:${p.hh}%;--cycle:${p.cycle}s;--delay:${p.delay}s;--peak:${p.peak}"></div>`);
+  return html`<div class="storm"></div>`;
 }
+
+const SVGNS = "http://www.w3.org/2000/svg";
+function stormFlash(el, plan, opts) {
+  const storm = el.renderRoot?.querySelector(".storm");
+  if (!storm) return;
+  const box = el.getBoundingClientRect();
+  if (!box.width || !box.height) return;
+  // A cloud on screen (the clouds drift slowly, so its place holds for the flash).
+  const clouds = [...el.renderRoot.querySelectorAll(".cloud")].map((c) => c.getBoundingClientRect())
+    .filter((b) => b.width > 20 && b.right > box.left + 10 && b.left < box.right - 10 && b.bottom > box.top);
+  const pick = clouds.length ? clouds[Math.floor(Math.random() * clouds.length)] : null;
+  const cx = pick ? (pick.left + pick.width * (0.3 + Math.random() * 0.4) - box.left) : box.width * (0.1 + Math.random() * 0.8);
+  const cy = pick ? (pick.top + pick.height * (0.35 + Math.random() * 0.3) - box.top) : box.height * (0.05 + Math.random() * 0.2);
+  const w = (pick ? pick.width : box.width * 0.3) * plan.size, h = (pick ? pick.height : box.height * 0.25) * plan.size * 1.4;
+  const add = (node, frames, delay = 0) => {
+    storm.append(node);
+    const done = () => node.remove();
+    if (node.animate) node.animate(frames, { duration: plan.dur, delay, easing: "linear", fill: "forwards" }).finished.then(done, done);
+    else setTimeout(done, plan.dur + delay);
+  };
+  const glow = (x, y, gw, gh, scale = 1, delay = 0) => {
+    const g = document.createElement("div");
+    g.className = "glow";
+    g.style.cssText = `left:${x - gw / 2}px;top:${y - gh / 2}px;width:${gw}px;height:${gh}px;--core:${plan.core};--tint:${plan.tint};--soft:${Math.round(6 + gw / 25)}px`;
+    add(g, plan.frames.map((f) => ({ offset: f.offset, opacity: f.opacity * scale })), delay);
+  };
+  glow(cx, cy, w, h);
+  // Spreads through the cloud deck: a weaker, later glow in a neighbour.
+  if (plan.spread && clouds.length > 1) {
+    const n = clouds.filter((b) => b !== pick).sort((a, b) => Math.abs(a.left - pick.left) - Math.abs(b.left - pick.left))[0];
+    glow(n.left + n.width / 2 - box.left, n.top + n.height * 0.5 - box.top, n.width * plan.size * 0.9, n.height * plan.size * 1.2, 0.6, 60 + Math.random() * 180);
+  }
+  // The sky around it lights up a little.
+  const sky = document.createElement("div");
+  sky.className = "sky-lit";
+  sky.style.cssText = `--cx:${((cx / box.width) * 100).toFixed(0)}%;--tint:${plan.tint}`;
+  add(sky, plan.frames.map((f) => ({ offset: f.offset, opacity: f.opacity * (plan.bolt ? 0.55 : 0.25) })));
+  if (plan.bolt) {
+    const r = Math.random;
+    const { main, branches } = boltPath(r, cx, cy + h * 0.15, box.height * (0.88 + r() * 0.12), box.width);
+    const svg = document.createElementNS(SVGNS, "svg");
+    svg.setAttribute("class", "bolt");
+    svg.setAttribute("viewBox", `0 0 ${box.width} ${box.height}`);
+    svg.style.cssText = `--core:${plan.core};--tint:${plan.tint}`;
+    for (const [d, wHalo, wCore] of [[main, 7, 2.2], ...branches.map((b) => [b, 4, 1.2])]) {
+      for (const [cls, sw] of [["halo", wHalo], ["core", wCore]]) {
+        const pth = document.createElementNS(SVGNS, "path");
+        pth.setAttribute("class", cls); pth.setAttribute("d", d); pth.setAttribute("stroke-width", String(sw));
+        svg.append(pth);
+      }
+    }
+    // The bolt is brightest on the strongest pulse, gone before the afterglow.
+    add(svg, plan.frames.map((f) => ({ offset: f.offset, opacity: Math.min(1, (f.opacity / plan.peak) * (f.offset < 0.7 ? 1 : 0.2)) })));
+  }
+}
+
+function stormStart(el) {
+  if (el.__wsfcStorm) return;
+  const tick = () => {
+    const opts = lightningOpts(el);
+    const visible = typeof document === "undefined" || !document.hidden;
+    const plan = planFlash(Math.random, opts);
+    if (visible) stormFlash(el, plan, opts);
+    // Next strike: around the interval (exponential-ish), or soon after in a cluster.
+    const gap = plan.cluster ? 400 + Math.random() * 1800 : opts[0] * 1000 * (0.25 + -Math.log(1 - Math.random() * 0.95) * 0.75);
+    el.__wsfcStorm = setTimeout(tick, gap);
+  };
+  el.__wsfcStorm = setTimeout(tick, 600 + Math.random() * 2500);
+}
+function stormStop(el) {
+  clearTimeout(el.__wsfcStorm);
+  el.__wsfcStorm = null;
+  el.renderRoot?.querySelectorAll?.(".storm > *").forEach((n) => n.remove());
+}
+export const __storm = { start: stormStart, stop: stormStop, flash: stormFlash };
 
 // --- Fog ---------------------------------------------------------------------
 function fogBanks(el) {

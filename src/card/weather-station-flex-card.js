@@ -16,7 +16,8 @@ import { WeatherForecastCard } from "../../vendor/weather-forecast-card/src/weat
 import "../../vendor/weather-forecast-card/src/components/animation/wfc-animation-provider";
 import { fitMode } from "./config.js";
 import { animSpeedVars, LOW_POWER_VARS } from "./animation-speed.js";
-import "./animation-extra.js";
+import { planFlash, boltPath, LIGHTNING_COLORS } from "./animation-extra.js";
+globalThis.__wsfcStorm = { planFlash, boltPath, LIGHTNING_COLORS };
 import { stationCondition, deriveHass, clearSkyRadiation, skyClearness, ensureSolarScale, conditionSummary, resetSolarScale, sunElevation } from "./condition.js";
 import { metricEntity } from "./metrics.js";
 globalThis.__wsfcCondition = { stationCondition, clearSkyRadiation, skyClearness, metricEntity, conditionSummary, resetSolarScale, sunElevation };
@@ -677,7 +678,7 @@ class WeatherStationFlexCard extends LitElement {
     return html`<wsfc-animation-provider class="bg"
       .hass=${this.hass}
       .weatherEntity=${stateObj}
-      .config=${{ entity: c.entity, show_condition_effects: fx, show_moon_phase: c.background_moon_phase ?? true, forecast: { show_sun_times: true }, fog_density: c.fog_density, wind_density: c.wind_density, lightning_interval: c.lightning_interval, lightning_intensity: c.lightning_intensity }}
+      .config=${{ entity: c.entity, show_condition_effects: fx, show_moon_phase: c.background_moon_phase ?? true, forecast: { show_sun_times: true }, fog_density: c.fog_density, wind_density: c.wind_density, lightning_interval: c.lightning_interval, lightning_intensity: c.lightning_intensity, lightning_bolts: c.lightning_bolts }}
       .currentForecast=${this._hourlyNow}
     ></wsfc-animation-provider>`;
   }

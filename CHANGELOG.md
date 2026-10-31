@@ -1,5 +1,15 @@
 # Changelog
 
+## v2026.10.31.90
+
+- **Lightning rebuilt.** Each flash is now planned at random instead of six fixed glows repeating the same three pulses:
+  - it lights up one of the clouds on screen from inside, sometimes spreading to the cloud next to it;
+  - its colour is white, blue-white, violet, warm yellow or orange;
+  - it flickers 1–5 times, with its own strengths, gaps, size and afterglow;
+  - the sky around it brightens a little;
+  - strikes come at irregular times around **Time between strikes**, sometimes in quick clusters.
+- **Lightning bolts:** some flashes drop a forked bolt from the cloud to the ground, a different shape each time. The new **Lightning bolts** slider (0–100 %, default 20 %) in Background → Animation sets how many.
+
 ## v2026.10.30.89
 
 **Performance**
