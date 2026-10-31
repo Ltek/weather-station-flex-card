@@ -30,7 +30,7 @@ class WsfcRain extends LitElement {
     statStyles,
     css`
       .cmp { margin-top: calc(10px * var(--wsfc-sy, 1)); display: grid; gap: calc(8px * var(--wsfc-sy, 1)); }
-      .cmp .l { display: flex; justify-content: space-between; font-size: 12px; color: var(--secondary-text-color); gap: 8px; }
+      .cmp .l { display: flex; justify-content: space-between; font-size: calc(12px * var(--wsfc-ts, 1)); color: var(--secondary-text-color); gap: 8px; }
       .cmp .l b { color: var(--primary-text-color); font-weight: 600; }
       .bar { position: relative; height: 8px; border-radius: 4px; background: rgba(127, 127, 127, 0.18); margin-top: 4px; overflow: hidden; }
       .bar i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 4px; background: #1e88e5; }

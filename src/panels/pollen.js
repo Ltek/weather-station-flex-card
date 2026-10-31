@@ -13,20 +13,20 @@ class WsfcPollen extends LitElement {
   static styles = [
     panelStyles,
     css`
-      .hdr { font-size: 14px; color: var(--secondary-text-color); margin: 0 0 4px; }
+      .hdr { font-size: calc(14px * var(--wsfc-ts, 1)); color: var(--secondary-text-color); margin: 0 0 4px; }
       /* One grid for all rows so the bars and chips line up. */
-      .rows { display: grid; grid-template-columns: 22px minmax(56px, max-content) minmax(calc(40px * var(--wsfc-sx, 1)), 1fr) max-content 2ch 16px; align-items: center; column-gap: calc(12px * var(--wsfc-sx, 1)); font-size: 14px; }
+      .rows { display: grid; grid-template-columns: 22px minmax(56px, max-content) minmax(calc(40px * var(--wsfc-sx, 1)), 1fr) max-content 2ch 16px; align-items: center; column-gap: calc(12px * var(--wsfc-sx, 1)); font-size: calc(14px * var(--wsfc-ts, 1)); }
       .row { display: grid; grid-template-columns: subgrid; grid-column: 1 / -1; align-items: center; cursor: pointer; padding: calc(8px * var(--wsfc-sy, 1)) 0; border-bottom: 1px solid var(--divider-color, rgba(127, 127, 127, 0.25)); }
       .row:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 2px; }
-      .row ha-icon { --mdc-icon-size: 18px; color: var(--wsfc-muted); }
+      .row ha-icon { --mdc-icon-size: calc(18px * var(--wsfc-is, 1)); color: var(--wsfc-muted); }
       .nm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
       .bar { height: 6px; border-radius: 3px; background: rgba(127, 127, 127, 0.18); overflow: hidden; }
       .bar i { display: block; height: 100%; border-radius: 3px; background: var(--c); }
-      .chip { font-size: 12px; padding: calc(2px * var(--wsfc-sy, 1)) calc(10px * var(--wsfc-sx, 1)); border-radius: 999px; white-space: nowrap; text-align: center;
+      .chip { font-size: calc(12px * var(--wsfc-ts, 1)); padding: calc(2px * var(--wsfc-sy, 1)) calc(10px * var(--wsfc-sx, 1)); border-radius: 999px; white-space: nowrap; text-align: center;
         background: color-mix(in srgb, var(--c) 22%, transparent); border: 1px solid color-mix(in srgb, var(--c) 60%, transparent); }
       .off .chip { background: rgba(127, 127, 127, 0.18); border-color: transparent; color: var(--secondary-text-color); }
       .val { text-align: right; font-weight: 500; }
-      .tr { --mdc-icon-size: 16px; }
+      .tr { --mdc-icon-size: calc(16px * var(--wsfc-is, 1)); }
       .tr.up { color: var(--error-color, #db4437); }
       .tr.down { color: var(--success-color, #43a047); }
       .none { --c: var(--wsfc-muted); }
@@ -35,9 +35,9 @@ class WsfcPollen extends LitElement {
       .high { --c: var(--error-color, #db4437); }
       .off { --c: rgba(127, 127, 127, 0.55); }
       .off .nm, .off .val { color: var(--wsfc-muted); }
-      .slabel { font-size: 13px; color: var(--secondary-text-color); margin-top: calc(12px * var(--wsfc-sy, 1)); }
+      .slabel { font-size: calc(13px * var(--wsfc-ts, 1)); color: var(--secondary-text-color); margin-top: calc(12px * var(--wsfc-sy, 1)); }
       .strip { display: grid; grid-template-columns: repeat(12, 1fr); gap: calc(4px * var(--wsfc-sx, 1)); margin-top: calc(4px * var(--wsfc-sy, 1)); }
-      .m { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 11px; color: var(--secondary-text-color); }
+      .m { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: calc(11px * var(--wsfc-ts, 1)); color: var(--secondary-text-color); }
       .m i { width: 100%; height: 10px; border-radius: 3px; background: rgba(127, 127, 127, 0.18); box-sizing: border-box; }
       .m.c1 i { background: #43a047; }
       .m.c2 i { background: #f2a81d; }

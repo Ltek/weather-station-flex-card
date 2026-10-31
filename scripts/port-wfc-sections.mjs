@@ -297,6 +297,15 @@ const patches = [
    "      .wfc-clock { display: flex; flex-direction: column; align-items: center; line-height: 1.05; flex: 0 0 auto; }\n      .wfc-clock.wfc-clock-al-left { align-items: flex-start; text-align: left; }\n      .wfc-clock.wfc-clock-al-right { align-items: flex-end; text-align: right; }\n"],
   ["                        ${this._wfcAutoSizeField(id, \"clock_date_font_size\", \"Date size\")}\n                        ${this._wfcColorField(\"Date color\", s.clock_date_color, (e) =>\n                          this._wfcSetSecField(id, \"clock_date_color\", e.target.value)\n                        )}\n                      </div>\n",
    "                        ${this._wfcAutoSizeField(id, \"clock_date_font_size\", \"Date size\")}\n                        ${this._wfcColorField(\"Date color\", s.clock_date_color, (e) =>\n                          this._wfcSetSecField(id, \"clock_date_color\", e.target.value)\n                        )}\n                      </div>\n                      ${s.clock_show_time && (s.clock_date_placement === \"with_time\" || !s.clock_date_placement)\n                        ? this._wfcSelect(id, \"clock_align\", \"Time & date alignment\", [{ value: \"left\", label: \"Left\" }, { value: \"center\", label: \"Center\" }, { value: \"right\", label: \"Right\" }], s.clock_align || \"center\", \"center\")\n                        : eY}\n"],
+  // wsfcHide also hides colour fields ("color:<label>"), a text-controls block
+  // (by its size field) and a group heading ("group:<label>"): settings the
+  // Weather Station panel shows in its own Text & icons section.
+  ["  edProto._wfcColorField = function (label, value, onChange) {\n",
+   "  edProto._wfcColorField = function (label, value, onChange) {\n    if (this.wsfcHide && this.wsfcHide.includes(\"color:\" + label)) return eY;\n"],
+  ["  edProto._wfcTextControls = function (id, prefix, title, sizeDflt) {\n    const s = this._wfcState()[id] || {};\n",
+   "  edProto._wfcTextControls = function (id, prefix, title, sizeDflt) {\n    if (this.wsfcHide && this.wsfcHide.includes(`${prefix}_font_size`)) return eY;\n    const s = this._wfcState()[id] || {};\n"],
+  ["  edProto._wfcGroup = function (label) {\n",
+   "  edProto._wfcGroup = function (label) {\n    if (label && this.wsfcHide && this.wsfcHide.includes(\"group:\" + label)) return eY;\n"],
 ];
 for (const [from, to] of patches) {
   if (!body.includes(from)) throw new Error(`Patch target missing: ${from}`);

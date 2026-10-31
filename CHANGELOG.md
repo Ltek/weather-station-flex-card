@@ -1,5 +1,25 @@
 # Changelog
 
+## v2026.10.31.95
+
+**Size sliders on every panel**
+
+- **Text size** and **Icon size** (Size and Scaling) on every panel with text and icons: metric tiles, air quality, pollen, rain, garden, lightning, records, station health, the charts, statistics, bulletin, day forecast, moon, astronomy, sun & moon, VPD, frost watch, chips and wind. All 100 text sizes and 18 icon sizes in these panels follow them, and so do the charts' axis labels. The charts also get **Chart height**.
+- **Sky Tracker:** **Text size**, **Icon size**, **Bar height** and **Arc height**. They multiply every size on the bar and the arc, whether you set it or left it at the default, including each metric's own size.
+- **Hero** with Auto scale off: **Text size** and **Icon size** multiply its header, chip and metric sizes.
+- Rule of thumb: pixel sizes for one item, percent sliders for a group. With Fill the panel on, the sliders change the proportions and the panel still fits.
+
+**Text & icons sections**
+
+- **Sky Tracker** and **Hero** each have a **Text & icons** section with all their text and icon style settings in one list: sizes in px, weights and colours.
+  - Sky Tracker: bar time labels, forecast row, arc times and captions, sunrise / sunset icons.
+  - Hero: condition icon and text, temperature and its sub-header, chips, metric values.
+- The same settings are no longer in the Sky Bar, Sun Position, Current Weather Header and Current Weather Metrics submenus, so each lives in one place. They're stored where they were, so existing configs are unchanged. Per-metric styles stay in each metric's row.
+
+**Fix**
+
+- The Sky Tracker's and other Weather Flex panels' built-in defaults could be changed in memory by the panel's own adjustments. The new scaling would have compounded on every redraw. Each panel now works on its own copy.
+
 ## v2026.10.31.94
 
 - **Fix: Fill the panel could be fitted before the forecast loaded.** On a slower device the daily forecast arrived after the fit, so the panel was scaled for an almost empty panel and then overflowed or left space. Filling panels are now checked every 2 s for the first 20 s after a layout change, then every 10 s, and refitted when they overflow or use less than 96 % of their box (one quick measurement per filling panel).

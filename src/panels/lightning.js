@@ -35,8 +35,8 @@ class WsfcLightning extends LitElement {
     panelStyles,
     statStyles,
     css`
-      .warn { display: flex; gap: 10px; align-items: center; padding: 8px 10px; margin-bottom: 8px; border-radius: 10px; background: #5b1f8f; color: #fff; font-size: 13px; font-weight: 500; }
-      .warn ha-icon { --mdc-icon-size: 26px; color: #ffc93c; flex: 0 0 auto; }
+      .warn { display: flex; gap: 10px; align-items: center; padding: 8px 10px; margin-bottom: 8px; border-radius: 10px; background: #5b1f8f; color: #fff; font-size: calc(13px * var(--wsfc-ts, 1)); font-weight: 500; }
+      .warn ha-icon { --mdc-icon-size: calc(26px * var(--wsfc-is, 1)); color: #ffc93c; flex: 0 0 auto; }
       .bolt { color: #ffc93c; }
     `,
   ];

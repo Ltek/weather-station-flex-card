@@ -22,20 +22,20 @@ class WsfcAstronomy extends LitElement {
       .chart { flex: 1 1 260px; min-width: 220px; }
       .chart svg { width: 100%; height: auto; display: block; overflow: visible; }
       .side { flex: 1 1 260px; min-width: 240px; display: flex; flex-direction: column; gap: 10px; }
-      table { border-collapse: collapse; width: 100%; font-size: 13px; }
-      th { text-align: right; font-weight: 500; color: var(--wsfc-muted); font-size: 11px; padding: 0 0 4px 8px; }
+      table { border-collapse: collapse; width: 100%; font-size: calc(13px * var(--wsfc-ts, 1)); }
+      th { text-align: right; font-weight: 500; color: var(--wsfc-muted); font-size: calc(11px * var(--wsfc-ts, 1)); padding: 0 0 4px 8px; }
       th:first-child { text-align: left; padding-left: 0; }
       td { padding: 3px 0 3px 8px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
       td:first-child { text-align: left; padding-left: 0; color: var(--wsfc-muted); white-space: normal; }
       tr + tr td { border-top: 1px solid var(--divider-color, rgba(127, 127, 127, 0.2)); }
       tr.main td { color: var(--primary-text-color); font-weight: 500; }
-      .sum { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px 14px; font-size: 13px; }
-      .sum span { display: block; font-size: 11px; color: var(--wsfc-muted); }
-      .sum .d { font-size: 11px; color: var(--wsfc-muted); margin-left: 4px; }
+      .sum { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px 14px; font-size: calc(13px * var(--wsfc-ts, 1)); }
+      .sum span { display: block; font-size: calc(11px * var(--wsfc-ts, 1)); color: var(--wsfc-muted); }
+      .sum .d { font-size: calc(11px * var(--wsfc-ts, 1)); color: var(--wsfc-muted); margin-left: 4px; }
       .moon { display: flex; gap: 10px; align-items: center; }
       .moon svg { width: 40px; height: 40px; flex: 0 0 auto; }
-      .axis { fill: var(--secondary-text-color); font-size: 9px; }
-      .lbl { font-size: 9px; font-weight: 600; }
+      .axis { fill: var(--secondary-text-color); font-size: calc(9px * var(--wsfc-ts, 1)); }
+      .lbl { font-size: calc(9px * var(--wsfc-ts, 1)); font-weight: 600; }
     `,
   ];
 

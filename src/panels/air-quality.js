@@ -93,17 +93,17 @@ class WsfcAirQuality extends LitElement {
     css`
       :host { --g: #00e400; }
       .top { display: flex; align-items: center; gap: calc(12px * var(--wsfc-sx, 1)); cursor: pointer; }
-      .aqi { font-size: 40px; font-weight: 600; line-height: 1; }
-      .cat { font-size: 15px; font-weight: 500; }
-      .sub { font-size: 12px; color: var(--wsfc-muted); }
+      .aqi { font-size: calc(40px * var(--wsfc-ts, 1)); font-weight: 600; line-height: 1; }
+      .cat { font-size: calc(15px * var(--wsfc-ts, 1)); font-weight: 500; }
+      .sub { font-size: calc(12px * var(--wsfc-ts, 1)); color: var(--wsfc-muted); }
       .scale { position: relative; display: flex; height: 8px; border-radius: 4px; overflow: hidden; margin: calc(12px * var(--wsfc-sy, 1)) 0 4px; }
       .scale span { flex: 1; opacity: 0.85; }
       .mark { position: absolute; top: -3px; width: 4px; height: 14px; margin-left: -2px; border-radius: 2px; background: var(--primary-text-color); box-shadow: 0 0 0 1px var(--card-background-color, #000); }
-      .ticks { position: relative; height: 12px; font-size: 10px; color: var(--wsfc-muted); }
+      .ticks { position: relative; height: 12px; font-size: calc(10px * var(--wsfc-ts, 1)); color: var(--wsfc-muted); }
       .ticks span { position: absolute; transform: translateX(-50%); }
       .ticks span:first-child { transform: none; }
       .ticks span:last-child { transform: translateX(-100%); }
-      small { font-size: 11px; font-weight: 400; color: var(--wsfc-muted); margin-left: 2px; }
+      small { font-size: calc(11px * var(--wsfc-ts, 1)); font-weight: 400; color: var(--wsfc-muted); margin-left: 2px; }
 
       /* tiles */
       /* Each tile as wide as what's in it (or stretched with tile_fill). */
@@ -111,28 +111,28 @@ class WsfcAirQuality extends LitElement {
       .tiles.fill { display: grid; grid-template-columns: repeat(auto-fill, minmax(calc(110px * var(--wsfc-sx, 1)), 1fr)); }
       .tile { display: flex; align-items: center; gap: calc(8px * var(--wsfc-sx, 1)); padding: calc(5px * var(--wsfc-sy, 1)) calc(10px * var(--wsfc-sx, 1)) calc(5px * var(--wsfc-sy, 1)) calc(8px * var(--wsfc-sx, 1)); border-radius: 10px; background: rgba(127, 127, 127, 0.08); cursor: pointer; flex: 0 0 auto; }
       .dot { width: 10px; height: 10px; border-radius: 50%; flex: 0 0 auto; background: var(--c, var(--wsfc-muted)); }
-      .tile .n { font-size: 11px; color: var(--wsfc-muted); }
-      .tile .v { font-size: 14px; font-weight: 500; white-space: nowrap; }
+      .tile .n { font-size: calc(11px * var(--wsfc-ts, 1)); color: var(--wsfc-muted); }
+      .tile .v { font-size: calc(14px * var(--wsfc-ts, 1)); font-weight: 500; white-space: nowrap; }
 
       /* rows */
-      .hdr { font-size: 13px; color: var(--wsfc-muted); margin: 2px 0 6px; }
+      .hdr { font-size: calc(13px * var(--wsfc-ts, 1)); color: var(--wsfc-muted); margin: 2px 0 6px; }
       .hdr b { color: var(--primary-text-color); font-weight: 500; }
       .rows { display: grid; grid-template-columns: 22px max-content minmax(40px, 1fr) max-content max-content; align-items: center; column-gap: calc(12px * var(--wsfc-sx, 1)); margin-top: 6px; }
-      .row { display: grid; grid-template-columns: subgrid; grid-column: 1 / -1; align-items: center; padding: calc(8px * var(--wsfc-sy, 1)) 0; border-bottom: 1px solid var(--divider-color, rgba(127, 127, 127, 0.25)); cursor: pointer; font-size: 14px; }
+      .row { display: grid; grid-template-columns: subgrid; grid-column: 1 / -1; align-items: center; padding: calc(8px * var(--wsfc-sy, 1)) 0; border-bottom: 1px solid var(--divider-color, rgba(127, 127, 127, 0.25)); cursor: pointer; font-size: calc(14px * var(--wsfc-ts, 1)); }
       .row:last-child { border-bottom: 0; }
-      .row ha-icon { --mdc-icon-size: 20px; color: var(--wsfc-muted); }
+      .row ha-icon { --mdc-icon-size: calc(20px * var(--wsfc-is, 1)); color: var(--wsfc-muted); }
       .track { height: 6px; border-radius: 3px; background: rgba(127, 127, 127, 0.22); overflow: hidden; }
       .track i { display: block; height: 100%; border-radius: 3px; background: var(--c, transparent); min-width: 0; }
-      .chip { font-size: 12px; padding: 2px 10px; border-radius: 999px; white-space: nowrap; text-align: center;
+      .chip { font-size: calc(12px * var(--wsfc-ts, 1)); padding: 2px 10px; border-radius: 999px; white-space: nowrap; text-align: center;
         background: color-mix(in srgb, var(--c, #888) 22%, transparent); border: 1px solid color-mix(in srgb, var(--c, #888) 60%, transparent); }
       .chip.none { --c: rgba(127, 127, 127, 0.6); color: var(--wsfc-muted); }
       .val { text-align: right; font-weight: 500; white-space: nowrap; font-variant-numeric: tabular-nums; }
 
       /* scale (pollen style) */
       .shead { display: grid; grid-template-columns: 1fr auto auto; align-items: baseline; column-gap: 10px; cursor: pointer; }
-      .shead .t { font-size: 16px; font-weight: 500; }
-      .shead .p { font-size: 13px; color: var(--secondary-text-color); }
-      .shead .n { font-size: 26px; font-weight: 600; line-height: 1.1; font-variant-numeric: tabular-nums; }
+      .shead .t { font-size: calc(16px * var(--wsfc-ts, 1)); font-weight: 500; }
+      .shead .p { font-size: calc(13px * var(--wsfc-ts, 1)); color: var(--secondary-text-color); }
+      .shead .n { font-size: calc(26px * var(--wsfc-ts, 1)); font-weight: 600; line-height: 1.1; font-variant-numeric: tabular-nums; }
       .seg { position: relative; display: flex; gap: 2px; height: 10px; margin: 6px 0 4px; }
       .seg span { flex: 1; border-radius: 2px; opacity: 0.9; }
       .seg span:first-child { border-radius: 5px 2px 2px 5px; }
@@ -143,24 +143,24 @@ class WsfcAirQuality extends LitElement {
       .seg.big .knob { width: 24px; height: 24px; margin: -12px 0 0 -12px; }
       .srows { display: grid; grid-template-columns: 22px max-content minmax(60px, 1fr) max-content; align-items: center; column-gap: calc(12px * var(--wsfc-sx, 1)); margin-top: calc(8px * var(--wsfc-sy, 1)); }
       .srow { display: grid; grid-template-columns: subgrid; grid-column: 1 / -1; align-items: center; padding: calc(8px * var(--wsfc-sy, 1)) 0; border-top: 1px solid var(--divider-color, rgba(127, 127, 127, 0.25)); cursor: pointer; }
-      .srow ha-icon { --mdc-icon-size: 20px; color: var(--wsfc-muted); }
-      .srow .nm { font-size: 14px; line-height: 1.2; }
-      .srow .nv { font-size: 12px; color: var(--secondary-text-color); white-space: nowrap; font-variant-numeric: tabular-nums; }
+      .srow ha-icon { --mdc-icon-size: calc(20px * var(--wsfc-is, 1)); color: var(--wsfc-muted); }
+      .srow .nm { font-size: calc(14px * var(--wsfc-ts, 1)); line-height: 1.2; }
+      .srow .nv { font-size: calc(12px * var(--wsfc-ts, 1)); color: var(--secondary-text-color); white-space: nowrap; font-variant-numeric: tabular-nums; }
       .srow .seg { margin: 0; height: 8px; }
       .srow .seg .knob { width: 14px; height: 14px; margin: -7px 0 0 -7px; }
-      .srow .rt { font-size: 12px; font-weight: 500; color: var(--c, var(--wsfc-muted)); min-width: 7ch; text-align: right; white-space: nowrap; }
-      .srow .plain { grid-column: 3 / -1; text-align: right; font-size: 14px; }
+      .srow .rt { font-size: calc(12px * var(--wsfc-ts, 1)); font-weight: 500; color: var(--c, var(--wsfc-muted)); min-width: 7ch; text-align: right; white-space: nowrap; }
+      .srow .plain { grid-column: 3 / -1; text-align: right; font-size: calc(14px * var(--wsfc-ts, 1)); }
 
       /* vertical bars */
       .bars { display: grid; grid-template-columns: 30px repeat(var(--n), minmax(calc(36px * var(--wsfc-sx, 1)), 1fr)); column-gap: calc(8px * var(--wsfc-sx, 1)); margin-top: calc(10px * var(--wsfc-sy, 1)); }
-      .axis { position: relative; height: var(--h); font-size: 10px; color: var(--wsfc-muted); }
+      .axis { position: relative; height: var(--h); font-size: calc(10px * var(--wsfc-ts, 1)); color: var(--wsfc-muted); }
       .axis span { position: absolute; right: 0; transform: translateY(50%); }
       .col { display: flex; flex-direction: column; align-items: center; min-width: 0; cursor: pointer; }
-      .col .bv { font-size: 13px; font-weight: 500; white-space: nowrap; margin-bottom: 4px; font-variant-numeric: tabular-nums; }
+      .col .bv { font-size: calc(13px * var(--wsfc-ts, 1)); font-weight: 500; white-space: nowrap; margin-bottom: 4px; font-variant-numeric: tabular-nums; }
       .col .bt { position: relative; width: min(100%, 44px); height: var(--h); border-radius: 6px 6px 2px 2px; background: rgba(127, 127, 127, 0.14); overflow: hidden; }
       .col .bt i { position: absolute; left: 0; right: 0; bottom: 0; border-radius: 6px 6px 2px 2px; background: var(--c, transparent); }
-      .col .bn { font-size: 12px; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
-      .col .bc { font-size: 10px; color: var(--wsfc-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+      .col .bn { font-size: calc(12px * var(--wsfc-ts, 1)); margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+      .col .bc { font-size: calc(10px * var(--wsfc-ts, 1)); color: var(--wsfc-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
       .plot { position: relative; grid-column: 2 / -1; grid-row: 1; height: var(--h); margin-top: 21px; pointer-events: none; }
       .plot hr { position: absolute; left: 0; right: 0; margin: 0; border: 0; border-top: 1px dashed rgba(127, 127, 127, 0.35); }
       .cols { display: contents; }

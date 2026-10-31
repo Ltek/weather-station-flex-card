@@ -26,9 +26,9 @@ class WsfcMoon extends LitElement {
     css`
       .wrap { display: flex; align-items: center; gap: 18px; flex: 1; flex-wrap: wrap; }
       .disc svg { width: var(--moon-size, 110px); height: var(--moon-size, 110px); display: block; }
-      .facts { display: grid; grid-template-columns: auto auto; gap: 4px 16px; font-size: 13px; }
+      .facts { display: grid; grid-template-columns: auto auto; gap: 4px 16px; font-size: calc(13px * var(--wsfc-ts, 1)); }
       .facts span:nth-child(odd) { color: var(--wsfc-muted); }
-      .name { grid-column: 1 / -1; font-size: 18px; font-weight: 600; margin-bottom: 4px; color: var(--primary-text-color) !important; }
+      .name { grid-column: 1 / -1; font-size: calc(18px * var(--wsfc-ts, 1)); font-weight: 600; margin-bottom: 4px; color: var(--primary-text-color) !important; }
     `,
   ];
   render() {

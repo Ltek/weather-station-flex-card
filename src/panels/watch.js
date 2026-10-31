@@ -72,15 +72,15 @@ class WsfcVpd extends LitElement {
       .main { display: flex; gap: calc(14px * var(--wsfc-sx, 1)); align-items: center; cursor: pointer; }
       .plant { width: 56px; height: 56px; flex: 0 0 auto; color: var(--primary-text-color); }
       .plant svg { width: 100%; height: 100%; }
-      .val { font-size: 34px; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; }
-      .val small { font-size: 14px; font-weight: 400; color: var(--wsfc-muted); margin-left: 3px; }
-      .band { font-size: 15px; font-weight: 500; margin-top: 4px; }
-      .advice { font-size: 13px; color: var(--secondary-text-color); margin-top: 2px; }
+      .val { font-size: calc(34px * var(--wsfc-ts, 1)); font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; }
+      .val small { font-size: calc(14px * var(--wsfc-ts, 1)); font-weight: 400; color: var(--wsfc-muted); margin-left: 3px; }
+      .band { font-size: calc(15px * var(--wsfc-ts, 1)); font-weight: 500; margin-top: 4px; }
+      .advice { font-size: calc(13px * var(--wsfc-ts, 1)); color: var(--secondary-text-color); margin-top: 2px; }
       .scale { position: relative; display: flex; gap: 2px; height: 8px; margin: calc(12px * var(--wsfc-sy, 1)) 0 4px; }
       .scale span { flex: 1; border-radius: 2px; }
       .mark { position: absolute; top: -4px; width: 4px; height: 16px; margin-left: -2px; border-radius: 2px; background: var(--primary-text-color); box-shadow: 0 0 0 1px var(--card-background-color, #000); }
-      .ticks { display: flex; justify-content: space-between; font-size: 10px; color: var(--wsfc-muted); }
-      .note { font-size: 12px; color: var(--wsfc-muted); line-height: 1.45; margin-top: 8px; }
+      .ticks { display: flex; justify-content: space-between; font-size: calc(10px * var(--wsfc-ts, 1)); color: var(--wsfc-muted); }
+      .note { font-size: calc(12px * var(--wsfc-ts, 1)); color: var(--wsfc-muted); line-height: 1.45; margin-top: 8px; }
     `,
   ];
 
@@ -158,9 +158,9 @@ class WsfcFrostWatch extends LitElement {
     panelStyles,
     css`
       .box { display: flex; gap: 12px; align-items: center; padding: calc(10px * var(--wsfc-sy, 1)) calc(12px * var(--wsfc-sx, 1)); border-radius: 12px; background: rgba(127, 127, 127, 0.1); }
-      .box ha-icon { --mdc-icon-size: 36px; flex: 0 0 auto; }
-      .t { font-size: 17px; font-weight: 600; }
-      .d { font-size: 13px; color: var(--secondary-text-color); margin-top: 2px; }
+      .box ha-icon { --mdc-icon-size: calc(36px * var(--wsfc-is, 1)); flex: 0 0 auto; }
+      .t { font-size: calc(17px * var(--wsfc-ts, 1)); font-weight: 600; }
+      .d { font-size: calc(13px * var(--wsfc-ts, 1)); color: var(--secondary-text-color); margin-top: 2px; }
       .danger { background: #b71c32; color: #fff; }
       .danger .d { color: rgba(255, 255, 255, 0.85); }
       .heat { background: color-mix(in srgb, #ffb347 35%, transparent); }
@@ -168,7 +168,7 @@ class WsfcFrostWatch extends LitElement {
       .frost, .tonight { background: color-mix(in srgb, #7fc3ff 28%, transparent); }
       .frost ha-icon, .tonight ha-icon { color: #4aa3ff; }
       .calm ha-icon { color: var(--success-color, #43a047); }
-      .note { font-size: 11px; color: var(--wsfc-muted); line-height: 1.4; margin-top: 8px; }
+      .note { font-size: calc(11px * var(--wsfc-ts, 1)); color: var(--wsfc-muted); line-height: 1.4; margin-top: 8px; }
     `,
   ];
 

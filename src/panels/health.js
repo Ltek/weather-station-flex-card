@@ -74,17 +74,17 @@ class WsfcHealth extends LitElement {
     panelStyles,
     css`
       .grp { margin-bottom: 8px; }
-      .dev { font-size: 12px; color: var(--wsfc-muted); margin: 6px 0 4px; }
+      .dev { font-size: calc(12px * var(--wsfc-ts, 1)); color: var(--wsfc-muted); margin: 6px 0 4px; }
       .rows { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; }
       .row { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 10px; background: rgba(127, 127, 127, 0.08); cursor: pointer; min-width: 0; }
-      .row ha-icon { --mdc-icon-size: 18px; color: var(--c, var(--wsfc-muted)); flex: 0 0 auto; }
+      .row ha-icon { --mdc-icon-size: calc(18px * var(--wsfc-is, 1)); color: var(--c, var(--wsfc-muted)); flex: 0 0 auto; }
       .row .t { min-width: 0; }
-      .row .n { font-size: 11px; color: var(--wsfc-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-      .row .v { font-size: 14px; font-weight: 500; white-space: nowrap; }
+      .row .n { font-size: calc(11px * var(--wsfc-ts, 1)); color: var(--wsfc-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .row .v { font-size: calc(14px * var(--wsfc-ts, 1)); font-weight: 500; white-space: nowrap; }
       .ok { --c: var(--success-color, #43a047); }
       .warn { --c: var(--warning-color, #ffa600); }
       .bad { --c: var(--error-color, #db4437); }
-      .last { font-size: 12px; color: var(--wsfc-muted); margin-top: 4px; }
+      .last { font-size: calc(12px * var(--wsfc-ts, 1)); color: var(--wsfc-muted); margin-top: 4px; }
       .last.warn { color: var(--warning-color, #ffa600); }
       .last.bad { color: var(--error-color, #db4437); }
     `,

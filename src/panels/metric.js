@@ -21,14 +21,14 @@ class WsfcMetric extends LitElement {
     css`
       :host { cursor: pointer; }
       .top { display: flex; align-items: flex-start; gap: 6px; }
-      .top ha-icon { --mdc-icon-size: 20px; color: var(--m-color); }
-      .name { flex: 1; font-size: 13px; font-weight: 500; line-height: 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-      .mm { font-size: 11px; line-height: 1.3; text-align: right; white-space: nowrap; }
+      .top ha-icon { --mdc-icon-size: calc(20px * var(--wsfc-is, 1)); color: var(--m-color); }
+      .name { flex: 1; font-size: calc(13px * var(--wsfc-ts, 1)); font-weight: 500; line-height: 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .mm { font-size: calc(11px * var(--wsfc-ts, 1)); line-height: 1.3; text-align: right; white-space: nowrap; }
       .mm .lo { color: var(--wsfc-cold, #42a5f5); }
       .mm .hi { color: var(--wsfc-hot, #ef5350); }
-      .val { font-size: 30px; font-weight: 600; line-height: 1.1; margin-top: 6px; white-space: nowrap; }
-      .val small { font-size: 15px; font-weight: 400; margin-left: 3px; color: var(--wsfc-muted); }
-      .cap { font-size: 12px; color: var(--wsfc-muted); min-height: 15px; margin-top: 2px; }
+      .val { font-size: calc(30px * var(--wsfc-ts, 1)); font-weight: 600; line-height: 1.1; margin-top: 6px; white-space: nowrap; }
+      .val small { font-size: calc(15px * var(--wsfc-ts, 1)); font-weight: 400; margin-left: 3px; color: var(--wsfc-muted); }
+      .cap { font-size: calc(12px * var(--wsfc-ts, 1)); color: var(--wsfc-muted); min-height: 15px; margin-top: 2px; }
       .spark { flex: 1; min-height: 36px; margin-top: 6px; }
       /* Content-sized panel: the sparkline is a fixed strip that follows the scale (zoom). */
       :host([sized="content"]) .spark { flex: 0 0 auto; height: 72px; }

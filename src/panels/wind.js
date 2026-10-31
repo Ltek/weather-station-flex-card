@@ -51,22 +51,22 @@ class WsfcWind extends LitElement {
       .dial { flex: 0 0 auto; width: min(180px, 42%); aspect-ratio: 1; }
       .dial svg { width: 100%; height: 100%; overflow: visible; }
       .side { flex: 1; min-width: 140px; display: flex; flex-direction: column; gap: 10px; }
-      .legend { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 11px; color: var(--wsfc-muted); }
+      .legend { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: calc(11px * var(--wsfc-ts, 1)); color: var(--wsfc-muted); }
       .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
       .body { min-height: 100px; margin-top: 8px; }
       .ring { fill: none; stroke: var(--divider-color, rgba(127,127,127,.35)); }
       .tick { stroke: var(--secondary-text-color); opacity: .5; }
-      .lbl { fill: var(--secondary-text-color); font-size: 11px; text-anchor: middle; dominant-baseline: central; }
+      .lbl { fill: var(--secondary-text-color); font-size: calc(11px * var(--wsfc-ts, 1)); text-anchor: middle; dominant-baseline: central; }
       .lbl.n { fill: var(--primary-text-color); font-weight: 600; }
-      .spd { fill: var(--primary-text-color); font-size: 26px; font-weight: 500; text-anchor: middle; }
-      .unit { fill: var(--secondary-text-color); font-size: 11px; text-anchor: middle; }
+      .spd { fill: var(--primary-text-color); font-size: calc(26px * var(--wsfc-ts, 1)); font-weight: 500; text-anchor: middle; }
+      .unit { fill: var(--secondary-text-color); font-size: calc(11px * var(--wsfc-ts, 1)); text-anchor: middle; }
       .ptr { fill: var(--wsfc-wind); transition: transform .8s ease; }
       .wr { min-height: 0; position: relative; }
       :host { position: relative; }
       .chart-btn { display: inline-grid; place-items: center; width: 32px; height: 32px; padding: 0; margin-left: 6px; border: 0; border-radius: 50%; cursor: pointer;
         background: rgba(127, 127, 127, 0.15); color: var(--primary-text-color); flex: 0 0 auto; }
       .chart-btn.on { background: var(--primary-color); color: var(--text-primary-color, #fff); }
-      .chart-btn ha-icon { --mdc-icon-size: 18px; }
+      .chart-btn ha-icon { --mdc-icon-size: calc(18px * var(--wsfc-is, 1)); }
       .chart-btn:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 2px; }
       /* The chart pop-over: over the panel, under its header. */
       .pop-scrim { position: absolute; inset: 0; z-index: 4; }
@@ -74,7 +74,7 @@ class WsfcWind extends LitElement {
         height: max(150px, min(var(--wsfc-wind-pop-h, 220px), calc(100% - 48px))); padding: 8px 10px 10px; box-sizing: border-box; border-radius: 12px;
         background: var(--ha-card-background, var(--card-background-color, #1c1c1c)); box-shadow: 0 8px 26px rgba(0, 0, 0, 0.5);
         border: 1px solid var(--divider-color, rgba(127, 127, 127, 0.35)); }
-      .pop-h { font-size: 12px; color: var(--wsfc-muted); }
+      .pop-h { font-size: calc(12px * var(--wsfc-ts, 1)); color: var(--wsfc-muted); }
       .pop-body { flex: 1 1 auto; min-height: 0; position: relative; }
       .pop-body canvas { position: absolute; inset: 0; }
       .wr-stage { position: absolute; inset: 0; visibility: hidden; pointer-events: none; overflow: hidden; }

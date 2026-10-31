@@ -18,6 +18,9 @@ import { fitMode } from "./config.js";
 import { animSpeedVars, LOW_POWER_VARS } from "./animation-speed.js";
 import { planFlash, boltPath, LIGHTNING_COLORS, cloudPuffs } from "./animation-extra.js";
 globalThis.__wsfcStorm = { planFlash, boltPath, LIGHTNING_COLORS, cloudPuffs };
+import { trackerConfig } from "../panels/flex.js";
+import { resolveWfc } from "./core.js";
+globalThis.__wsfcTracker = { trackerConfig, resolveWfc };
 import { stationCondition, deriveHass, clearSkyRadiation, skyClearness, ensureSolarScale, conditionSummary, resetSolarScale, sunElevation } from "./condition.js";
 import { metricEntity } from "./metrics.js";
 globalThis.__wsfcCondition = { stationCondition, clearSkyRadiation, skyClearness, metricEntity, conditionSummary, resetSolarScale, sunElevation };
@@ -1014,13 +1017,23 @@ class WeatherStationFlexCard extends LitElement {
     const sx = Number(p.content_width) || 100, sy = Number(p.content_height) || 100;
     // Forecast panels: text, icon and chart sizes on their own (CSS variables the
     // vendored forecast chart reads), on top of the overall scale.
-    const ts = Number(p.text_scale) || 100, is = Number(p.icon_scale) || 100, cs = Number(p.chart_scale) || 100;
+    // (The hero's icon_scale is its Auto scale condition icon; its group icon size is icon_scale_all.)
+    const heroAuto = p.type === "hero" && !!p.auto_scale;
+    const ts = heroAuto ? 100 : Number(p.text_scale) || 100, is = p.type === "hero" ? (heroAuto ? 100 : Number(p.icon_scale_all) || 100) : Number(p.icon_scale) || 100, cs = Number(p.chart_scale) || 100;
     el.style.setProperty("--ha-font-size-s", ts !== 100 ? `${(12 * ts) / 100}px` : "");
     el.style.setProperty("--ha-font-size-m", ts !== 100 ? `${(14 * ts) / 100}px` : "");
     el.style.setProperty("--ha-font-size-l", ts !== 100 ? `${(16 * ts) / 100}px` : "");
+    el.style.setProperty("--ha-font-size-xl", ts !== 100 ? `${(20 * ts) / 100}px` : "");
+    el.style.setProperty("--ha-font-size-2xl", ts !== 100 ? `${(24 * ts) / 100}px` : "");
+    el.style.setProperty("--ha-font-size-3xl", ts !== 100 ? `${(28 * ts) / 100}px` : "");
+    el.style.setProperty("--weather-forecast-card-current-conditions-icon-size", p.type === "hero" && is !== 100 ? `${(64 * is) / 100}px` : "");
     el.style.setProperty("--weather-forecast-card-chart-font-size", ts !== 100 ? `${(12 * ts) / 100}px` : "");
     el.style.setProperty("--weather-forecast-card-forecast-conditions-icon-size", is !== 100 ? `${(36 * is) / 100}px` : "");
     el.style.setProperty("--wsfc-chart-scale", cs !== 100 ? String(cs / 100) : "");
+    // Every panel: text, icon and chart sizes for its own styles.
+    el.style.setProperty("--wsfc-ts", ts !== 100 ? String(ts / 100) : "");
+    el.style.setProperty("--wsfc-is", is !== 100 ? String(is / 100) : "");
+    el.style.setProperty("--wsfc-cs", cs !== 100 ? String(cs / 100) : "");
     el.style.setProperty("--wsfc-sx", String(sx / 100));
     el.style.setProperty("--wsfc-sy", String(sy / 100));
     el.fit = !popup && (!!panelMeta(p)?.fit || (p.type === "hero" && !!p.auto_scale)) && rowsOf(p) > 0 && p.fit !== false && this._focus == null;

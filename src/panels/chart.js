@@ -60,6 +60,9 @@ export function tooltipTitle(rangeHours, locale) {
 /** Base options; callers add scales/datasets. */
 export function baseOptions(el, rangeHours, locale) {
   const text = getComputedStyle(el).getPropertyValue("--secondary-text-color").trim() || "#9e9e9e";
+  // Text size (the panel's text_scale) for the axis labels.
+  const ts = parseFloat(getComputedStyle(el).getPropertyValue("--wsfc-ts")) || 1;
+  const font = { size: Math.round(12 * ts) };
   const grid = "rgba(127,127,127,0.18)";
   return {
     responsive: true,
@@ -79,10 +82,11 @@ export function baseOptions(el, rangeHours, locale) {
       x: {
         type: "linear",
         grid: { color: grid },
-        ticks: { color: text, maxRotation: 0, autoSkip: true, maxTicksLimit: 8, callback: timeTick(rangeHours, locale) },
+        ticks: { color: text, font, maxRotation: 0, autoSkip: true, maxTicksLimit: 8, callback: timeTick(rangeHours, locale) },
       },
     },
     _text: text,
     _grid: grid,
+    _font: font,
   };
 }

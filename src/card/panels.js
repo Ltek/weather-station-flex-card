@@ -14,11 +14,67 @@ const METRIC_OPTS = Object.entries(METRICS).map(([value, m]) => ({ value, label:
 const ent = (domain) => ({ entity: domain ? { domain } : {} });
 
 // span: columns out of 12; rows: row units (0 = size to content).
+// --- Text & icons sections ----------------------------------------------------
+// Every text / icon style setting of a Weather Flex based panel in one list
+// (pixel sizes, weights, colours), stored where Weather Flex keeps them
+// (flex.wfc.<section>.<key>). The same settings are hidden from the embedded
+// Weather Flex submenus (meta.flexHide), so each lives in one place.
+const WEIGHTS = [["300", "Light"], ["400", "Normal"], ["500", "Medium"], ["600", "Semibold"], ["700", "Bold"]];
+const TI = "Text & icons";
+const tiSize = (path, label, dflt, max = 48, when, helper) => ({ section: TI, name: `flex.wfc.${path}`, label, when, selector: { number: { min: 0, max, step: 1, mode: "slider", unit_of_measurement: "px" } }, default: dflt, helper });
+const tiWeight = (path, label, when) => ({ section: TI, name: `flex.wfc.${path}`, label, when, selector: { select: { options: opt(WEIGHTS) } }, default: "400" });
+const tiColor = (path, label, when, helper) => ({ section: TI, name: `flex.wfc.${path}`, label, when, selector: { text: {} }, helper });
+const onBar = (d) => d.show_sky !== false, onArc = (d) => d.show_arc !== false;
+
+export const SKY_TEXT_ICONS = [
+  tiSize("sun_position.times_font_size", "Bar time labels — size", 11, 40, onBar),
+  tiWeight("sun_position.times_font_weight", "Bar time labels — weight", onBar),
+  tiColor("sun_position.times_color", "Bar time labels — colour", onBar),
+  tiSize("sun_position.forecast_font_size", "Forecast row — text size", 11, 40, onBar, "Each metric in the Sky Bar's metric list can still set its own size."),
+  tiSize("sun_position.forecast_icon_size", "Forecast row — icon size", 22, 64, onBar),
+  tiColor("sun_position.forecast_temp_color", "Forecast row — temperature colour", onBar),
+  tiColor("sun_position.forecast_icon_color", "Forecast row — icon colour", onBar),
+  tiColor("sun_position.forecast_extra_color", "Forecast row — metric text colour", onBar),
+  tiSize("sun_arc.time_font_size", "Arc sunrise / sunset times — size", 13, 40, onArc),
+  tiWeight("sun_arc.time_font_weight", "Arc times — weight", onArc),
+  tiColor("sun_arc.time_color", "Arc times — colour", onArc),
+  tiSize("sun_arc.caption_font_size", "Arc captions — size", 11, 40, onArc),
+  tiWeight("sun_arc.caption_font_weight", "Arc captions — weight", onArc),
+  tiColor("sun_arc.caption_color", "Arc captions — colour", onArc),
+  tiSize("sun_arc.ss_icon_size", "Sunrise / sunset icons — size", 20, 64, onArc),
+  tiColor("sun_arc.ss_icon_color", "Sunrise / sunset icons — colour", onArc),
+];
+const SKY_HIDE = ["times_font_size", "time_font_size", "caption_font_size", "forecast_font_size", "forecast_icon_size", "ss_icon_size",
+  "color:Temperature color", "color:Icon color", "color:Metric Text Color"];
+
+const noAuto = (d) => !d.auto_scale;
+export const HERO_TEXT_ICONS = [
+  tiSize("current.header_icon_size", "Condition icon — size", 0, 200, noAuto, "0 = automatic. With Auto scale on, the hero sizes itself (see its scale sliders)."),
+  tiSize("current.header_state_size", "Condition text — size", 0, 120, noAuto),
+  tiSize("current.header_temp_size", "Temperature — size", 0, 200, noAuto),
+  tiSize("current.header_secondary_size", "Temperature sub-header — size", 0, 80, noAuto),
+  tiSize("details.chip_text_size", "Chips — text size", 0, 48, undefined, "0 = from the chip scale."),
+  tiColor("details.chip_text_color", "Chips — text colour"),
+  tiSize("details.chip_icon_size", "Chips — icon size", 0, 64),
+  tiColor("details.chip_icon_color", "Chips — icon colour"),
+  tiSize("details.global_text_size", "Metric values — text size", 14, 48, undefined, "Metrics shown as rows (not chips); each metric can still set its own."),
+  tiColor("details.global_text_color", "Metric values — text colour"),
+  tiSize("details.global_icon_size", "Metric values — icon size", 22, 64),
+  tiColor("details.global_icon_color", "Metric values — icon colour"),
+];
+const HERO_HIDE = ["header_icon_size", "header_state_size", "header_temp_size", "header_secondary_size", "group:Header sizes",
+  "chip_text_size", "chip_icon_size", "global_icon_size", "global_text_size", "group:Global value styling",
+  "color:Chip text", "color:Icon color", "color:Text color"];
+
 export const PANEL_TYPES = {
   hero: {
     tag: "wsfc-panel-hero", label: "Hero (current conditions)", icon: "mdi:weather-partly-cloudy", span: 12, rows: 3, rowsCompact: 0, flex: true, inBar: false,
     flexPanels: ["Card Appearance", "Section order & visibility", "Current Weather Header", "Current Weather Metrics", "Clock & Date", "User Actions", "Advanced"],
+    flexHide: HERO_HIDE,
     schema: [
+      { name: "text_scale", label: "Text size", section: "Size and Scaling", when: (d) => !d.auto_scale, selector: { number: { min: 50, max: 200, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100, helper: "With Auto scale off: every text, relative to the pixel sizes in Text & icons." },
+      { name: "icon_scale_all", label: "Icon size", section: "Size and Scaling", when: (d) => !d.auto_scale, selector: { number: { min: 50, max: 250, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100 },
+      ...HERO_TEXT_ICONS,
       { name: "main_temperature", label: "Main temperature", selector: { select: { mode: "dropdown", options: [{ value: "temperature", label: "Temperature" }, { value: "feels_like", label: "Feels like" }] } }, default: "temperature", helper: "Feels like shows the feels-like temperature in place of the temperature (falls back to the temperature when there's no feels-like value)." },
       { name: "auto_scale", selector: { boolean: {} }, default: false, helper: "Size the temperature, its sub-header, condition, icon, clock, date and metric chips from the panel's size. Each then has its own scale below, instead of the pixel sizes in the sections editor." },
       { name: "fit", label: "Fit to the panel", when: (d) => !!d.auto_scale, selector: { boolean: {} }, default: true, helper: "With a set height: everything scales so the hero fills its panel (no empty space below, nothing cut off) — a 0.5-row hero shrinks to fit; one next to a taller panel grows. Off: sizes follow the width only, and the hero sets its own height." },
@@ -222,8 +278,14 @@ export const PANEL_TYPES = {
     tag: "wsfc-panel-sky-tracker", label: "Sky Tracker", icon: "mdi:sun-clock-outline", span: 4, rows: 2, rowsCompact: 0, flex: true,
     flexPanels: ["Sun Position", "Sky Bar"],
     // Set by the panel's own options, so hidden in the Weather Flex editor below.
-    flexHide: ["timeframe_mode", "timeframe_hours", "timeframe_anchor", "night_moon"],
+    flexHide: ["timeframe_mode", "timeframe_hours", "timeframe_anchor", "night_moon", ...SKY_HIDE],
     schema: [
+      { name: "text_scale", label: "Text size", section: "Size and Scaling", selector: { number: { min: 50, max: 200, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100, helper: "Every text on the bar and the arc: time labels, the forecast row and the sunrise / sunset times." },
+      { name: "icon_scale", label: "Icon size", section: "Size and Scaling", selector: { number: { min: 50, max: 250, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100, helper: "Forecast and metric icons, and the sunrise / sunset icons." },
+      { name: "bar_scale", label: "Bar height", section: "Size and Scaling", selector: { number: { min: 40, max: 200, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100 },
+      { name: "arc_scale", label: "Arc height", section: "Size and Scaling", selector: { number: { min: 40, max: 200, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100 },
+      ...SKY_TEXT_ICONS,
+
       { name: "show_arc", selector: { boolean: {} }, default: true, helper: "Sun arc: the sun's path, its position now, sunrise and sunset; the moon at night." },
       { name: "show_sky", selector: { boolean: {} }, default: true, helper: "Sky gradient: daylight and cloud cover over time, with the forecast row (temperatures, icons, wind…)." },
       { name: "timeframe", selector: { select: { options: opt([["hours", "Number of hours"], ["day", "Today (midnight to midnight)"], ["sunrise_sunset", "Sunrise to sunset"]]) } }, default: "hours", helper: "One time window for the arc and the sky." },
@@ -503,6 +565,9 @@ export const COLLAPSE_FIELDS = [
   ...COLLAPSE_COLORS.map((f) => ({ ...f, when: (d) => !!(d.collapsible || d.compact) })),
 ];
 
+// Panels with their own size sliders, or none that make sense here.
+const OWN_SIZES = new Set(["daily", "hourly", "forecast", "sky_tracker", "hero", "radar", "wind_map", "stack", "heading", "clock"]);
+const CHART_TYPES = new Set(["graph", "temp_humidity", "uv_solar", "statistics"]);
 export const COMMON_SCHEMA = [
   { section: "Size and Scaling", name: "display", label: "Location", selector: { select: { options: opt([["grid", "In the grid"], ["tile_popup", "In the grid — tap it to open larger"], ["popup", "Pop-up only (from its panel button)"]]) } } },
   { section: "Size and Scaling", name: "span", selector: { number: { min: 1, max: 12, mode: "slider" } }, helper: "Width in twelfths of the card." },
@@ -511,6 +576,10 @@ export const COMMON_SCHEMA = [
   { section: "Size and Scaling", name: "compact", label: "Compact view", selector: { boolean: {} }, default: false, helper: "Show this panel as one row of small tiles with all its data; tapping it opens the full panel (see Collapse → Opens)." },
   { section: "Size and Scaling", name: "fill", label: "Fill the panel", when: (d) => !["hero", "wind", "radar", "wind_map", "stack", "heading", "clock"].includes(d.type), selector: { select: { options: opt([["default", "Card default (Screen fit & layout)"], ["on", "On — contents scale to fill the panel"], ["off", "Off"]]) } }, default: "default",
     helper: "For a panel with a set height. With it on, Scale all Panel Contents is a share of the filled size (e.g. 90% leaves some room). If the contents don't fit even at the Smallest content scale, the panel scrolls." },
+  // Group sizes for the panels that don't have their own (forecasts, Sky Tracker).
+  { section: "Size and Scaling", name: "text_scale", label: "Text size", when: (d) => !OWN_SIZES.has(d.type), selector: { number: { min: 50, max: 200, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100, helper: "All the panel's text, relative to its other parts." },
+  { section: "Size and Scaling", name: "icon_scale", label: "Icon size", when: (d) => !OWN_SIZES.has(d.type), selector: { number: { min: 50, max: 250, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100 },
+  { section: "Size and Scaling", name: "chart_scale", label: "Chart height", when: (d) => CHART_TYPES.has(d.type), selector: { number: { min: 40, max: 200, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100, helper: "The chart's smallest height (it grows to fill the panel)." },
   { section: "Size and Scaling", name: "content_scale", label: "Scale all Panel Contents", selector: { number: { min: 40, max: 200, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100, helper: "Everything inside the panel bigger or smaller (text, icons, tiles), so it fits the space." },
   ...COLLAPSE_FIELDS.map((f) => ({ ...f, section: "Collapse" })),
   // Title, panel button and this panel's Appearance defaults.

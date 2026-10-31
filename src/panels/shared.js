@@ -21,13 +21,13 @@ export const panelStyles = css`
     margin-bottom: 8px;
     padding-right: var(--wsfc-head-pad, 0);
   }
-  .head ha-icon { --mdc-icon-size: 20px; color: var(--wsfc-head-icon, var(--wsfc-muted)); }
-  .head .title { font-size: 15px; font-weight: 500; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--wsfc-head-text, inherit); }
+  .head ha-icon { --mdc-icon-size: calc(20px * var(--wsfc-is, 1)); color: var(--wsfc-head-icon, var(--wsfc-muted)); }
+  .head .title { font-size: calc(15px * var(--wsfc-ts, 1)); font-weight: 500; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--wsfc-head-text, inherit); }
   /* Folding panels: the title header can be tapped; a hint shows while folded. */
   :host([title-tap]) .head { cursor: pointer; }
   :host([collapsed]) > :not(.head):not(style) { display: none !important; }
   :host([collapsed]) .head { margin-bottom: 0; }
-  :host([collapsed]) .head .title::after { content: var(--wsfc-collapse-hint, none); display: block; font-size: 11px; font-weight: 400; opacity: 0.85; margin-top: 1px; }
+  :host([collapsed]) .head .title::after { content: var(--wsfc-collapse-hint, none); display: block; font-size: calc(11px * var(--wsfc-ts, 1)); font-weight: 400; opacity: 0.85; margin-top: 1px; }
   /* No title: the header's controls (e.g. facts + step buttons) get the room. */
   .head .title:empty { flex: 0 0 0; }
   .seg {
@@ -38,7 +38,7 @@ export const panelStyles = css`
   }
   .seg button {
     font: inherit;
-    font-size: 12px;
+    font-size: calc(12px * var(--wsfc-ts, 1));
     color: var(--wsfc-muted);
     background: transparent;
     border: 0;
@@ -56,15 +56,15 @@ export const panelStyles = css`
     margin-bottom: 8px;
   }
   .reading { display: flex; flex-direction: column; cursor: pointer; }
-  .reading .v { font-size: 22px; font-weight: 500; line-height: 1.15; white-space: nowrap; }
-  .reading .v small { font-size: 13px; font-weight: 400; color: var(--wsfc-muted); margin-left: 2px; }
-  .reading .l { font-size: 12px; color: var(--wsfc-muted); display: flex; align-items: center; gap: 4px; }
+  .reading .v { font-size: calc(22px * var(--wsfc-ts, 1)); font-weight: 500; line-height: 1.15; white-space: nowrap; }
+  .reading .v small { font-size: calc(13px * var(--wsfc-ts, 1)); font-weight: 400; color: var(--wsfc-muted); margin-left: 2px; }
+  .reading .l { font-size: calc(12px * var(--wsfc-ts, 1)); color: var(--wsfc-muted); display: flex; align-items: center; gap: 4px; }
   .reading .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
-  .body { position: relative; flex: 1; min-height: 160px; }
+  .body { position: relative; flex: 1; min-height: calc(160px * var(--wsfc-cs, 1)); }
   /* The chart canvas fills the body without feeding its size back into it (under
      a content scale, Chart.js's own height and the zoom would compound). */
   .body > canvas { position: absolute; inset: 0; }
-  .note { color: var(--wsfc-muted); font-size: 13px; padding: 8px 0; }
+  .note { color: var(--wsfc-muted); font-size: calc(13px * var(--wsfc-ts, 1)); padding: 8px 0; }
 `;
 
 /** Panel tile look (card grid, stacks, pop-ups). */
@@ -103,15 +103,15 @@ export const tileStyles = css`
 export const chipStyles = css`
     .chip {
       display: inline-flex; align-items: center; gap: 6px;
-      font: inherit; font-size: 13px; white-space: nowrap;
+      font: inherit; font-size: calc(13px * var(--wsfc-ts, 1)); white-space: nowrap;
       padding: 6px 12px; border-radius: 999px; cursor: pointer;
       color: var(--secondary-text-color);
       background: transparent;
       border: 1px solid var(--divider-color, rgba(127, 127, 127, 0.35));
       transition: background-color 0.15s, color 0.15s, border-color 0.15s;
     }
-    .chip ha-icon { --mdc-icon-size: 18px; }
-    .chip ha-icon.open { --mdc-icon-size: 14px; opacity: 0.7; }
+    .chip ha-icon { --mdc-icon-size: calc(18px * var(--wsfc-is, 1)); }
+    .chip ha-icon.open { --mdc-icon-size: calc(14px * var(--wsfc-is, 1)); opacity: 0.7; }
     .chip.on { color: var(--text-primary-color, #fff); background: var(--primary-color); border-color: var(--primary-color); }
     .chip.popup { color: var(--primary-text-color); }
     .chip.popup.on { color: var(--text-primary-color, #fff); }
@@ -166,9 +166,9 @@ export function cssColor(el, name, fallback) {
 /** Stand-in for a live map while the dashboard is being edited. */
 export const pausedStyles = css`
   .paused { flex: 1; min-height: 120px; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
-    color: var(--wsfc-muted); font-size: 13px; text-align: center; padding: 8px;
+    color: var(--wsfc-muted); font-size: calc(13px * var(--wsfc-ts, 1)); text-align: center; padding: 8px;
     background: repeating-linear-gradient(135deg, rgba(127, 127, 127, 0.08) 0 12px, rgba(127, 127, 127, 0.14) 12px 24px); }
-  .paused ha-icon { --mdc-icon-size: 32px; opacity: 0.7; }
+  .paused ha-icon { --mdc-icon-size: calc(32px * var(--wsfc-is, 1)); opacity: 0.7; }
 `;
 export function paused(icon, what) {
   return html`<div class="paused" role="img" aria-label="${what} paused while editing"><ha-icon icon=${icon}></ha-icon><span>${what} — paused while editing</span></div>`;
@@ -178,19 +178,19 @@ export function paused(icon, what) {
 export const statStyles = css`
   .sec { margin-top: calc(10px * var(--wsfc-sy, 1)); }
   .sec:first-of-type { margin-top: 0; }
-  .sec h4 { margin: 0 0 4px; font-size: 12px; font-weight: 600; color: var(--wsfc-muted); text-transform: uppercase; letter-spacing: 0.04em; display: flex; gap: 6px; align-items: baseline; }
+  .sec h4 { margin: 0 0 4px; font-size: calc(12px * var(--wsfc-ts, 1)); font-weight: 600; color: var(--wsfc-muted); text-transform: uppercase; letter-spacing: 0.04em; display: flex; gap: 6px; align-items: baseline; }
   .sec h4 small { text-transform: none; letter-spacing: 0; font-weight: 400; }
   .row { display: grid; grid-template-columns: 1fr auto; gap: 2px calc(10px * var(--wsfc-sx, 1)); align-items: baseline; padding: calc(4px * var(--wsfc-sy, 1)) 0;
     border-bottom: 1px solid var(--divider-color, rgba(127, 127, 127, 0.2)); }
   .row:last-child { border-bottom: 0; }
-  .row > span { font-size: 13px; }
-  .row b { font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; }
-  .row small { grid-column: 2; text-align: right; font-size: 11px; color: var(--wsfc-muted); margin-top: -2px; }
+  .row > span { font-size: calc(13px * var(--wsfc-ts, 1)); }
+  .row b { font-size: calc(16px * var(--wsfc-ts, 1)); font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; }
+  .row small { grid-column: 2; text-align: right; font-size: calc(11px * var(--wsfc-ts, 1)); color: var(--wsfc-muted); margin-top: -2px; }
   .row.click { cursor: pointer; }
   .row.hot b { color: var(--wsfc-temp); }
   .row.cold b { color: var(--wsfc-hum); }
-  .src { margin-top: 8px; font-size: 11px; color: var(--wsfc-muted); line-height: 1.4; }
-  .note { font-size: 12px; color: var(--wsfc-muted); line-height: 1.45; margin-top: 6px; }
+  .src { margin-top: 8px; font-size: calc(11px * var(--wsfc-ts, 1)); color: var(--wsfc-muted); line-height: 1.4; }
+  .note { font-size: calc(12px * var(--wsfc-ts, 1)); color: var(--wsfc-muted); line-height: 1.45; margin-top: 6px; }
 `;
 
 /** A label / value row (small: a second line under the value). */

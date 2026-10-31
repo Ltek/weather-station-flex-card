@@ -32,22 +32,22 @@ class WsfcRecords extends LitElement {
     css`
       .sec { margin-top: 10px; }
       .sec:first-of-type { margin-top: 0; }
-      .sec h4 { margin: 0 0 4px; font-size: 12px; font-weight: 600; color: var(--wsfc-muted); text-transform: uppercase; letter-spacing: 0.04em; display: flex; gap: 6px; align-items: baseline; }
+      .sec h4 { margin: 0 0 4px; font-size: calc(12px * var(--wsfc-ts, 1)); font-weight: 600; color: var(--wsfc-muted); text-transform: uppercase; letter-spacing: 0.04em; display: flex; gap: 6px; align-items: baseline; }
       .sec h4 small { text-transform: none; letter-spacing: 0; font-weight: 400; }
       .row { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; align-items: baseline; padding: 4px 0; border-bottom: 1px solid var(--divider-color, rgba(127, 127, 127, 0.2)); }
       .row:last-child { border-bottom: 0; }
-      .row span { font-size: 13px; }
-      .row b { font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; }
-      .row small { grid-column: 2; text-align: right; font-size: 11px; color: var(--wsfc-muted); margin-top: -2px; }
+      .row span { font-size: calc(13px * var(--wsfc-ts, 1)); }
+      .row b { font-size: calc(16px * var(--wsfc-ts, 1)); font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; }
+      .row small { grid-column: 2; text-align: right; font-size: calc(11px * var(--wsfc-ts, 1)); color: var(--wsfc-muted); margin-top: -2px; }
       .row.hot b { color: var(--wsfc-temp); }
       .row.cold b { color: var(--wsfc-hum); }
-      .badge { display: inline-flex; gap: 6px; align-items: center; margin: 0 0 8px; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 600;
+      .badge { display: inline-flex; gap: 6px; align-items: center; margin: 0 0 8px; padding: 4px 10px; border-radius: 999px; font-size: calc(12px * var(--wsfc-ts, 1)); font-weight: 600;
         background: color-mix(in srgb, var(--wsfc-temp) 22%, transparent); }
       .badge.cold { background: color-mix(in srgb, var(--wsfc-hum) 22%, transparent); }
-      .badge ha-icon { --mdc-icon-size: 16px; }
-      .src { margin-top: 8px; font-size: 11px; color: var(--wsfc-muted); line-height: 1.4; cursor: pointer; }
-      .note { font-size: 13px; color: var(--wsfc-muted); line-height: 1.45; }
-      .note code { font-size: 12px; }
+      .badge ha-icon { --mdc-icon-size: calc(16px * var(--wsfc-is, 1)); }
+      .src { margin-top: 8px; font-size: calc(11px * var(--wsfc-ts, 1)); color: var(--wsfc-muted); line-height: 1.4; cursor: pointer; }
+      .note { font-size: calc(13px * var(--wsfc-ts, 1)); color: var(--wsfc-muted); line-height: 1.45; }
+      .note code { font-size: calc(12px * var(--wsfc-ts, 1)); }
     `,
   ];
 

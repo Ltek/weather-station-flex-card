@@ -3,7 +3,7 @@
 // (exactly what Weather Flex Card takes) deep-merged over the type's base.
 import { LitElement, html, css, nothing } from "lit";
 import { panelStyles, head, stationPanelChanged } from "./shared.js";
-import { CoreSlot, deepMerge } from "../card/core.js";
+import { CoreSlot, deepMerge, resolveWfc } from "../card/core.js";
 import { renderFacts, factStyles } from "./astro-facts.js";
 
 // Bases per panel type. The editor diffs against these, so changing a base
@@ -163,14 +163,16 @@ function fillTile(core) {
 }
 
 /** Base config (with the station's entity/sources) for a flex-based panel. */
+// A deep copy: panels adjust the merged config in place (timeframe, scaling),
+// which must never change the shared bases.
 export function flexBase(type, station) {
-  return { ...(FLEX_BASES[type] || {}), entity: station?.entity, metric_sources: station?.metric_sources };
+  return { ...structuredClone(FLEX_BASES[type] || {}), entity: station?.entity, metric_sources: station?.metric_sources };
 }
 
 const coreStyles = css`
   .core { margin: 0 -4px; flex: 1 0 auto; }
   .core > * { --ha-card-background: transparent; --card-padding: 4px; --ha-card-box-shadow: none; --ha-card-border-width: 0; }
-  .err { color: var(--error-color, #db4437); font-size: 12px; }
+  .err { color: var(--error-color, #db4437); font-size: calc(12px * var(--wsfc-ts, 1)); }
 `;
 
 class WsfcFlexPanel extends LitElement {
@@ -291,6 +293,20 @@ class WsfcHeroPanel extends WsfcFlexPanel {
         details: { chip_scale: a.chip_scale, chip_text_size: "", chip_icon_size: "", global_icon_size: Math.round(22 * a.chip_scale), global_text_size: Math.round(14 * a.chip_scale) },
       } });
     }
+    // Auto scale off: Text size and Icon size multiply the pixel sizes set in
+    // Text & icons (sizes left at automatic follow the theme sizes, which the
+    // card scales with the same sliders).
+    else {
+      const ts = (Number(this.config?.text_scale) || 100) / 100, is = (Number(this.config?.icon_scale_all) || 100) / 100;
+      if (ts !== 1 || is !== 1) {
+        const r = resolveWfc(cfg) || {}, cur = (cfg.wfc.current ||= {}), det = (cfg.wfc.details ||= {});
+        const mul = (o, from, key, f) => { const v = Number(o[key] ?? from[key]); if (v > 0 && f !== 1) o[key] = Math.round(v * f * 10) / 10; };
+        mul(cur, r.current || {}, "header_temp_size", ts); mul(cur, r.current || {}, "header_state_size", ts);
+        mul(cur, r.current || {}, "header_secondary_size", ts); mul(cur, r.current || {}, "header_icon_size", is);
+        mul(det, r.details || {}, "chip_text_size", ts); mul(det, r.details || {}, "global_text_size", ts); mul(det, r.details || {}, "global_icon_size", is);
+        cfg = chipIcons(cfg, { text_scale: ts * 100, icon_scale: is * 100 });
+      }
+    }
     // Main temperature: Feels like in place of the temperature.
     if (this.config?.main_temperature === "feels_like") cfg = deepMerge(cfg, { wfc: { current: { main_temperature: "feels_like" } } });
     // The card draws the animated background behind every panel: the hero
@@ -374,6 +390,36 @@ class WsfcDailyPanel extends WsfcFlexPanel {
  *   hours, anchor        for "hours": span and now_left | now_center
  *   moon, moon_phase     moon marker at night, drawn in its current phase
  */
+/**
+ * Sky Tracker group sizes (percent, 100 = as set): text_scale, icon_scale,
+ * bar_scale, arc_scale multiply every text / icon size and the two heights,
+ * whether set in the Text & icons section or left at their defaults. Per-metric
+ * sizes are scaled too, so a metric's own size keeps its proportion.
+ */
+export function scaleTracker(cfg, p = {}) {
+  const k = (n) => { const v = Number(p[n]); return v > 0 && v !== 100 ? Math.max(0.3, Math.min(3, v / 100)) : 1; };
+  const ts = k("text_scale"), is = k("icon_scale"), bs = k("bar_scale"), as = k("arc_scale");
+  if (ts === 1 && is === 1 && bs === 1 && as === 1) return cfg;
+  const r = resolveWfc(cfg) || {};
+  const w = cfg.wfc;
+  const sp = (w.sun_position ||= {}), sa = (w.sun_arc ||= {});
+  const R = r.sun_position || {}, A = r.sun_arc || {};
+  const mul = (o, key, from, f) => { const v = Number(o[key] ?? from[key]); if (v > 0 && f !== 1) o[key] = Math.round(v * f * 10) / 10; };
+  mul(sp, "times_font_size", R, ts); mul(sp, "forecast_font_size", R, ts); mul(sp, "forecast_icon_size", R, is); mul(sp, "height", R, bs);
+  mul(sa, "time_font_size", A, ts); mul(sa, "caption_font_size", A, ts); mul(sa, "ss_icon_size", A, is); mul(sa, "height", A, as);
+  // The arc's own bar (Sky baseline) follows the bar height too.
+  const ms = sp.forecast_metric_style || R.forecast_metric_style;
+  if (ms && (ts !== 1 || is !== 1)) {
+    sp.forecast_metric_style = Object.fromEntries(Object.entries(ms).map(([key, st]) => {
+      const o = { ...st };
+      if (o.text_size) o.text_size = Math.round(o.text_size * ts * 10) / 10;
+      if (o.icon_size) o.icon_size = Math.round(o.icon_size * is * 10) / 10;
+      return [key, o];
+    }));
+  }
+  return cfg;
+}
+
 export function trackerConfig(p, station, offsetHours = 0) {
   const cfg = deepMerge(flexBase("sky_tracker", station), p?.flex || {});
   const w = cfg.wfc;
@@ -390,6 +436,7 @@ export function trackerConfig(p, station, offsetHours = 0) {
   if (offsetHours) sa.timeframe_offset_hours = sp.timeframe_offset_hours = offsetHours;
   if (p?.moon_phase === false) { if (sa.moon_icon === "phase") sa.moon_icon = "mdi:weather-night"; }
   else sa.moon_icon = "phase";
+  scaleTracker(cfg, p);
   if (arc) {
     w.order = ["sun_arc"];
     sa.show = true;
@@ -403,8 +450,24 @@ export function trackerConfig(p, station, offsetHours = 0) {
   return cfg;
 }
 
+// Chip icons follow the chip text unless they have their own size: with Icon
+// size set, give them one (the text-derived default × the icon scale).
+function chipIcons(cfg, p) {
+  const is = Number(p?.icon_scale) || 100, ts = Number(p?.text_scale) || 100;
+  if (is === 100) return cfg;
+  const d = (cfg.wfc.details ||= {});
+  const r = resolveWfc(cfg)?.details || {};
+  const scale = Number(d.chip_scale ?? r.chip_scale) || 1;
+  const own = Number(d.chip_icon_size ?? r.chip_icon_size);
+  d.chip_icon_size = Math.round((own > 0 ? own : 14 * (ts / 100) * 1.1 * scale) * (is / 100) * 10) / 10;
+  return cfg;
+}
+
 class WsfcChipsPanel extends WsfcFlexPanel {
   type = "chips";
+  _coreConfig() {
+    return chipIcons(super._coreConfig(), this.config);
+  }
   defaultTitle = "Current Weather Metrics";
   defaultIcon = "mdi:format-list-bulleted-square";
   titleOnlyWhenSet = true;
@@ -419,10 +482,10 @@ class WsfcSkyTracker extends WsfcFlexPanel {
     .headfacts { flex: 1; min-width: 0; margin-right: 8px; }
     .head:has(.headfacts) .steps { margin-left: auto; }
     .headfacts .facts { margin: 0; }
-    .steps .when { font-size: 12px; color: var(--secondary-text-color); margin-right: 6px; white-space: nowrap; }
-    .steps button { display: inline-grid; place-items: center; min-width: 28px; height: 28px; padding: 0 8px; border-radius: 999px; cursor: pointer; font: inherit; font-size: 12px;
+    .steps .when { font-size: calc(12px * var(--wsfc-ts, 1)); color: var(--secondary-text-color); margin-right: 6px; white-space: nowrap; }
+    .steps button { display: inline-grid; place-items: center; min-width: 28px; height: 28px; padding: 0 8px; border-radius: 999px; cursor: pointer; font: inherit; font-size: calc(12px * var(--wsfc-ts, 1));
       border: 1px solid var(--divider-color, rgba(127,127,127,.35)); background: transparent; color: var(--primary-text-color); }
-    .steps button ha-icon { --mdc-icon-size: 18px; }
+    .steps button ha-icon { --mdc-icon-size: calc(18px * var(--wsfc-is, 1)); }
     .steps button:disabled { opacity: 0.35; cursor: default; }
     .steps button:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 2px; }
   `];

@@ -1529,6 +1529,7 @@ import { CURRENT_WEATHER_ATTRIBUTES as iX } from "../../vendor/weather-forecast-
   // the theme/default by firing onChange with an empty value (callers read
   // e.target.value, so a synthetic event with value:"" is enough).
   edProto._wfcColorField = function (label, value, onChange) {
+    if (this.wsfcHide && this.wsfcHide.includes("color:" + label)) return eY;
     // Weather Station: the four-mode color control (design system §3) —
     // Not set / Theme color / Custom swatch / CSS. Sky Bar day and night
     // colors are blended in JS, so they stay hex swatches (the one exception).
@@ -1760,6 +1761,7 @@ import { CURRENT_WEATHER_ATTRIBUTES as iX } from "../../vendor/weather-forecast-
 
   // A visual divider between logical setting groups. Optional heading label.
   edProto._wfcGroup = function (label) {
+    if (label && this.wsfcHide && this.wsfcHide.includes("group:" + label)) return eY;
     return label
       ? eq`<div class="wfc-group-div"><span class="wfc-group-label">${label}</span></div>`
       : eq`<div class="wfc-group-div"></div>`;
@@ -1794,6 +1796,7 @@ import { CURRENT_WEATHER_ATTRIBUTES as iX } from "../../vendor/weather-forecast-
 
   // Text-styling trio (size / weight / color) for a group of fields on a section.
   edProto._wfcTextControls = function (id, prefix, title, sizeDflt) {
+    if (this.wsfcHide && this.wsfcHide.includes(`${prefix}_font_size`)) return eY;
     const s = this._wfcState()[id] || {};
     return eq`
       <div class="wfc-sub-title">${title}</div>

@@ -32,14 +32,14 @@ class WsfcBulletin extends LitElement {
   static styles = [
     panelStyles,
     css`
-      .summary { font-size: 16px; line-height: 1.45; margin-bottom: 10px; }
-      .text { font-size: 13px; line-height: 1.45; color: var(--secondary-text-color); margin-bottom: 10px; white-space: pre-line; }
+      .summary { font-size: calc(16px * var(--wsfc-ts, 1)); line-height: 1.45; margin-bottom: 10px; }
+      .text { font-size: calc(13px * var(--wsfc-ts, 1)); line-height: 1.45; color: var(--secondary-text-color); margin-bottom: 10px; white-space: pre-line; }
       .astro { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; border-top: 1px solid var(--divider-color); padding-top: 10px; }
-      .astro h4 { margin: 0 0 4px; font-size: 13px; font-weight: 600; display: flex; gap: 6px; align-items: center; }
-      .astro h4 ha-icon { --mdc-icon-size: 18px; color: var(--wsfc-muted); }
+      .astro h4 { margin: 0 0 4px; font-size: calc(13px * var(--wsfc-ts, 1)); font-weight: 600; display: flex; gap: 6px; align-items: center; }
+      .astro h4 ha-icon { --mdc-icon-size: calc(18px * var(--wsfc-is, 1)); color: var(--wsfc-muted); }
       .astro h4 svg { width: 18px; height: 18px; }
-      .astro p { margin: 0; font-size: 12px; color: var(--secondary-text-color); line-height: 1.5; }
-      .alert { border-left: 3px solid var(--warning-color, #ffa600); padding: 6px 10px; margin-bottom: 10px; border-radius: 4px; background: rgba(255, 166, 0, 0.1); font-size: 13px; cursor: pointer; }
+      .astro p { margin: 0; font-size: calc(12px * var(--wsfc-ts, 1)); color: var(--secondary-text-color); line-height: 1.5; }
+      .alert { border-left: 3px solid var(--warning-color, #ffa600); padding: 6px 10px; margin-bottom: 10px; border-radius: 4px; background: rgba(255, 166, 0, 0.1); font-size: calc(13px * var(--wsfc-ts, 1)); cursor: pointer; }
       .alert.severe { border-color: var(--error-color, #db4437); background: rgba(219, 68, 55, 0.12); }
       .alert b { display: block; }
     `,
@@ -132,11 +132,11 @@ class WsfcDay extends LitElement {
     iconFills,
     css`
       .main { display: flex; align-items: center; gap: 14px; margin: 4px 0 10px; }
-      .temps { font-size: 30px; font-weight: 600; }
+      .temps { font-size: calc(30px * var(--wsfc-ts, 1)); font-weight: 600; }
       .temps .lo { color: var(--wsfc-cold, #42a5f5); }
       .temps .hi { color: var(--wsfc-hot, #ef5350); }
-      .cond { font-size: 14px; color: var(--secondary-text-color); }
-      .rows { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; font-size: 13px; border-top: 1px solid var(--divider-color); padding-top: 8px; }
+      .cond { font-size: calc(14px * var(--wsfc-ts, 1)); color: var(--secondary-text-color); }
+      .rows { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; font-size: calc(13px * var(--wsfc-ts, 1)); border-top: 1px solid var(--divider-color); padding-top: 8px; }
       .rows span:nth-child(odd) { color: var(--secondary-text-color); }
     `,
   ];
@@ -200,10 +200,10 @@ class WsfcHeading extends LitElement {
   static properties = { hass: { attribute: false }, config: { attribute: false }, station: { attribute: false }, bar: { attribute: false } };
   static styles = [chipStyles, css`
     :host { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; min-height: 40px; color: var(--primary-text-color); }
-    .lead { --mdc-icon-size: 24px; color: var(--primary-color); }
+    .lead { --mdc-icon-size: calc(24px * var(--wsfc-is, 1)); color: var(--primary-color); }
     .t { font-size: var(--wsfc-heading-size, 20px); font-weight: 600; }
-    .sub { font-size: 12px; color: var(--secondary-text-color); }
-    .status { font-size: 12px; color: var(--secondary-text-color); display: inline-flex; align-items: center; gap: 5px; }
+    .sub { font-size: calc(12px * var(--wsfc-ts, 1)); color: var(--secondary-text-color); }
+    .status { font-size: calc(12px * var(--wsfc-ts, 1)); color: var(--secondary-text-color); display: inline-flex; align-items: center; gap: 5px; }
     .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--c); }
     .grow { flex: 1; }
     .bar { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }

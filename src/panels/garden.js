@@ -44,14 +44,14 @@ class WsfcGarden extends LitElement {
     statStyles,
     css`
       .nights { display: grid; grid-template-columns: repeat(auto-fit, minmax(calc(44px * var(--wsfc-sx, 1)), 1fr)); gap: calc(4px * var(--wsfc-sx, 1)); margin-bottom: 4px; }
-      .n { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: calc(4px * var(--wsfc-sy, 1)) 2px; border-radius: 8px; background: rgba(127, 127, 127, 0.08); font-size: 11px; color: var(--secondary-text-color); }
-      .n b { font-size: 14px; color: var(--primary-text-color); font-variant-numeric: tabular-nums; }
+      .n { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: calc(4px * var(--wsfc-sy, 1)) 2px; border-radius: 8px; background: rgba(127, 127, 127, 0.08); font-size: calc(11px * var(--wsfc-ts, 1)); color: var(--secondary-text-color); }
+      .n b { font-size: calc(14px * var(--wsfc-ts, 1)); color: var(--primary-text-color); font-variant-numeric: tabular-nums; }
       .n.frost { background: color-mix(in srgb, #4aa3ff 26%, transparent); }
       .n.freeze { background: color-mix(in srgb, #4aa3ff 45%, transparent); }
       .n.frost b, .n.freeze b { color: #9fd0ff; }
-      .n ha-icon { --mdc-icon-size: 14px; color: #7fc3ff; }
-      .hint { font-size: 12px; color: var(--secondary-text-color); margin-top: 2px; }
-      .bal { font-size: 13px; margin-top: 4px; }
+      .n ha-icon { --mdc-icon-size: calc(14px * var(--wsfc-is, 1)); color: #7fc3ff; }
+      .hint { font-size: calc(12px * var(--wsfc-ts, 1)); color: var(--secondary-text-color); margin-top: 2px; }
+      .bal { font-size: calc(13px * var(--wsfc-ts, 1)); margin-top: 4px; }
       .bal.dry b { color: var(--warning-color, #ffa600); }
       .bal.wet b { color: var(--success-color, #43a047); }
     `,
