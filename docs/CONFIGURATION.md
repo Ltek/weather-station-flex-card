@@ -118,6 +118,7 @@ With no `panels:` the card shows its default dashboard (hero, bulletin, Sky Trac
 | `auto_fit_min` | number 30–100 % | `60` | **Smallest content scale** — Below this a panel scrolls instead, so text stays readable. |
 | `auto_fit_max` | number 100–250 % | `150` | **Largest content scale** — On screens bigger than the design. |
 | `panel_overflow` | `grow` · `scroll` | `grow` | **When a panel's content doesn't fit** — For panels with a set height (Height above 0); each panel can override this. Scroll locks every panel to its size in any layout; Strict fit does the same in full screen. |
+| `layout_gaps` | `close` · `keep` | `close` | **Gaps between panels** — After you move a panel in the Layout Map, or when one is hidden (by its button, or when it has nothing to show). |
 | `layout_size` | `auto` · `wide` · `medium` · `narrow` | `auto` | **Layout size** — In a Sections view the card is only as wide as its section; widen the section or use a Panel view for the desktop layout. |
 | `row_height` | number 40–300 px |  | **Row height** — Height of one row unit (default 110). |
 | `gap` | number 0–32 px |  | **Gap** — Space between panels (default 12). |
@@ -155,7 +156,7 @@ Where the buttons go: `panel_bar: false` hides the bar; a Button Menu panel (`he
 |---|---|---|---|
 | `display` | `grid` · `tile_popup` · `popup` |  | **Location** |
 | `span` | number 1–12 |  | **Width** — Width in twelfths of the card. |
-| `rows` | number 0–10 |  | **Height** — Height in row units, in half steps (0 = fit content, 0.5 = half height). |
+| `rows` | number 0–10 |  | **Height** — Height in row units, in quarter steps (0 = fit content, 0.5 = half height). |
 | `overflow` | `default` · `grow` · `scroll` | `default` | **When the content doesn't fit** — Scroll needs a height of at least 1 row (it is raised to 1 when you pick Scroll). |
 | `compact` | `true` / `false` | `false` | **Compact view** — Show this panel as one row of small tiles with all its data; tapping it opens the full panel (see Collapse → Opens). |
 | `fill` | `default` · `on` · `off` | `default` | **Fill the panel** — For a panel with a set height. With it on, Scale all Panel Contents is a share of the filled size (e.g. 90% leaves some room). If the contents don't fit even at the Smallest content scale, the panel scrolls. |
@@ -200,7 +201,7 @@ Panels inside a `stack` have no grid place of their own; they take:
 |---|---|---|---|
 | `grow` | number 0–6 |  | **Share of the stack** — How much of the stack's space this panel takes, compared with the others. Side-by-side stack: its share of the width (default 1; 2 = twice as wide as a 1). Stack one above the other: its share of the leftover height (0 = only as tall as its content; default 1 when it has a height or the stack fills its panel, else 0). Panels hidden by their buttons give their share to the others. |
 | `min_width` | number 80–800 px |  | **Narrowest width** — Side-by-side stack: the narrowest this panel gets before the stack wraps it onto a new line (default 180 px). |
-| `rows` | number 0–10 |  | **Height** — Vertical: minimum height in row units (half steps allowed). |
+| `rows` | number 0–10 |  | **Height** — Vertical: minimum height in row units (quarter steps allowed). |
 | `compact` | `true` / `false` | `false` | **Compact view** — Show this panel as one row of small tiles with all its data; tapping it opens the full panel. |
 | `collapsible` | `true` / `false` | `false` | **Collapse button** — Fold the panel down to its title header to save space (e.g. maps). A folded map is paused. With Remember Panel Button States, this browser remembers what you folded. |
 | `collapsed` | `true` / `false` | `false` | **Start collapsed** |
