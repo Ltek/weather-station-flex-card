@@ -81,6 +81,14 @@ export function panelStyleVars(c) {
   return out;
 }
 
+// Fill: the elastic part's height while it gives up room (see _elastic).
+const ELASTIC_CSS = new CSSStyleSheet();
+ELASTIC_CSS.replaceSync(`
+  :host([elastic]) .wsfc-forecast-chart { height: var(--wsfc-elastic-c) !important; }
+  :host([elastic]) .wsfc-sunarc-svg-wrap { height: var(--wsfc-elastic-a) !important; }
+  :host([elastic]) .wsfc-sunpos-bar { height: var(--wsfc-elastic-b) !important; }
+`);
+
 class WeatherStationFlexCard extends LitElement {
   static properties = {
     hass: { attribute: false },
@@ -173,6 +181,22 @@ class WeatherStationFlexCard extends LitElement {
     return own === "on" || own === true ? true : own === "off" || own === false ? false : !!this._config?.panel_fill;
   }
 
+  // The part of a filling panel that gives up height first: { core, share }.
+  // share = its height as a part of the panel when the text and icons need the room
+  // (Chart height / Arc height scale it). The core's stylesheet applies the height.
+  _elastic(p, el) {
+    const forecast = ["daily", "hourly", "forecast"].includes(p.type), sky = p.type === "sky_tracker";
+    if (!forecast && !sky) return null;
+    const core = el.shadowRoot?.querySelector(".core > *");
+    if (!core?.shadowRoot) return null;
+    const parts = forecast ? [[".wsfc-forecast-chart", "--wsfc-elastic-c"]] : [[".wsfc-sunarc-svg-wrap", "--wsfc-elastic-a"], [".wsfc-sunpos-bar", "--wsfc-elastic-b"]];
+    if (!parts.some(([sel]) => core.shadowRoot.querySelector(sel))) return null;
+    if (!core.shadowRoot.adoptedStyleSheets.includes(ELASTIC_CSS)) core.shadowRoot.adoptedStyleSheets = [...core.shadowRoot.adoptedStyleSheets, ELASTIC_CSS];
+    const pct = (n) => (Number(p[n]) || 100) / 100;
+    const share = forecast ? 0.35 * pct("chart_scale") : 0.3 * Math.sqrt(pct("arc_scale") * pct("bar_scale"));
+    return { core, parts, share: Math.max(0.1, Math.min(0.8, share)) };
+  }
+
   // Panels that size their own content (or can't be scaled: live maps).
   _ownFit(p) {
     return p.type === "hero" || p.type === "radar" || p.type === "wind_map" || (p.type === "wind" && p.fit !== false);
@@ -214,11 +238,42 @@ class WeatherStationFlexCard extends LitElement {
           const wide = el.scrollWidth - el.clientWidth > 6 || el.getBoundingClientRect().width > boxW + 1;
           return h <= boxH + 1 && !wide;
         };
+        // Elastic parts (a forecast chart; the sun arc and the sky bar): they give
+        // up height first. Text and icons get as large as fits with the elastic
+        // parts at their share of the panel (Chart / Arc / Bar height), then any
+        // height left goes back to them. Each keeps at least 30% of its height.
+        const ela = this._elastic(p, el);
+        let E = 0;
+        const parts = [];
+        if (ela) {
+          ela.core.removeAttribute("elastic");
+          el.style.zoom = "1"; el.style.flex = "none"; el.style.height = "auto"; el.style.minHeight = "0";
+          const n0 = el.getBoundingClientRect().height;
+          for (const [sel, v] of ela.parts) { const n = ela.core.shadowRoot.querySelector(sel); if (n) parts.push({ v, h: n.getBoundingClientRect().height }); }
+          ela.core.setAttribute("elastic", "");
+          for (const q of parts) ela.core.style.setProperty(q.v, "0px");
+          E = Math.max(0, n0 - el.getBoundingClientRect().height);
+          if (E < 8) { ela.core.removeAttribute("elastic"); E = 0; }
+        }
+        const setF = (f) => { for (const q of parts) ela.core.style.setProperty(q.v, `${Math.max(0, Math.floor(q.h * f))}px`); };
+        // At zoom k the elastic parts take share × box on screen: factor share × box / (k × E).
+        const fOf = (k) => Math.max(0.3, Math.min(1, ((ela?.share || 0) * boxH) / (k * Math.max(1, E))));
+        const fitsE = (k) => { if (E) setF(fOf(k)); return fits(k); };
         let lo = min, hi = max, k, over = false;
-        if (fits(hi)) k = hi;
-        else if (!fits(lo)) { k = lo; over = true; }
-        else { for (let n = 0; n < 8; n++) { const m = (lo + hi) / 2; if (fits(m)) lo = m; else hi = m; } k = lo; }
+        if (fitsE(hi)) k = hi;
+        else if (!fitsE(lo)) { k = lo; over = true; }
+        else { for (let n = 0; n < 8; n++) { const m = (lo + hi) / 2; if (fitsE(m)) lo = m; else hi = m; } k = lo; }
         k = Math.floor(k * 100) / 100;
+        if (E) {
+          // Give the leftover height back to the elastic parts (up to their own height).
+          let fa = fOf(k), fb = 1;
+          setF(fa); fits(k);
+          setF(1);
+          if (fits(k)) fa = 1;
+          else for (let n = 0; n < 7; n++) { const m = (fa + fb) / 2; setF(m); if (fits(k)) fa = m; else fb = m; }
+          setF(fa);
+          if (fa >= 0.995) ela.core.removeAttribute("elastic");
+        }
         [el.style.flex, el.style.height, el.style.minHeight] = prev;
         // Still too much at the smallest scale: scroll inside the panel instead of clipping.
         tile.classList.toggle("fill-over", over);

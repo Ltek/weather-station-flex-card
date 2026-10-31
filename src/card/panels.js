@@ -258,7 +258,7 @@ export const PANEL_TYPES = {
     schema: [
       { name: "text_scale", label: "Text size", selector: { number: { min: 50, max: 200, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100, helper: "Day and time labels, temperatures and chart figures. Separate from Scale all Panel Contents." },
       { name: "icon_scale", label: "Icon size", selector: { number: { min: 50, max: 250, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100, helper: "The condition icons in the forecast." },
-      { name: "chart_scale", label: "Chart height", selector: { number: { min: 40, max: 200, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100, helper: "The temperature / precipitation chart under the icons." },
+      { name: "chart_scale", label: "Chart height", selector: { number: { min: 40, max: 200, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100, helper: "The temperature / precipitation chart under the icons. With Fill the panel on, the chart gives up height first so text and icons can be larger: this sets how much of the panel it keeps (about a third at 100%)." },
     ],
   },
   hourly: {
@@ -267,7 +267,7 @@ export const PANEL_TYPES = {
     schema: [
       { name: "text_scale", label: "Text size", selector: { number: { min: 50, max: 200, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100, helper: "Day and time labels, temperatures and chart figures. Separate from Scale all Panel Contents." },
       { name: "icon_scale", label: "Icon size", selector: { number: { min: 50, max: 250, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100, helper: "The condition icons in the forecast." },
-      { name: "chart_scale", label: "Chart height", selector: { number: { min: 40, max: 200, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100, helper: "The temperature / precipitation chart under the icons." },
+      { name: "chart_scale", label: "Chart height", selector: { number: { min: 40, max: 200, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100, helper: "The temperature / precipitation chart under the icons. With Fill the panel on, the chart gives up height first so text and icons can be larger: this sets how much of the panel it keeps (about a third at 100%)." },
     ],
   },
   daily: {
@@ -276,7 +276,7 @@ export const PANEL_TYPES = {
     schema: [
       { name: "text_scale", label: "Text size", selector: { number: { min: 50, max: 200, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100, helper: "Day and time labels, temperatures and chart figures. Separate from Scale all Panel Contents." },
       { name: "icon_scale", label: "Icon size", selector: { number: { min: 50, max: 250, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100, helper: "The condition icons in the forecast." },
-      { name: "chart_scale", label: "Chart height", selector: { number: { min: 40, max: 200, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100, helper: "The temperature / precipitation chart under the icons." },
+      { name: "chart_scale", label: "Chart height", selector: { number: { min: 40, max: 200, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100, helper: "The temperature / precipitation chart under the icons. With Fill the panel on, the chart gives up height first so text and icons can be larger: this sets how much of the panel it keeps (about a third at 100%)." },
     ],
   },
   sky_tracker: {
@@ -287,7 +287,7 @@ export const PANEL_TYPES = {
     schema: [
       { name: "text_scale", label: "Text size", section: "Size and Scaling", selector: { number: { min: 50, max: 200, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100, helper: "Every text on the bar and the arc: time labels, the forecast row and the sunrise / sunset times." },
       { name: "icon_scale", label: "Icon size", section: "Size and Scaling", selector: { number: { min: 50, max: 250, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100, helper: "Forecast and metric icons, and the sunrise / sunset icons." },
-      { name: "bar_scale", label: "Bar height", section: "Size and Scaling", selector: { number: { min: 40, max: 200, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100 },
+      { name: "bar_scale", label: "Bar height", section: "Size and Scaling", selector: { number: { min: 40, max: 200, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100, helper: "With Fill the panel on, the arc and the bar give up height first so text and icons can be larger; Arc and Bar height set how much of the panel they keep." },
       { name: "arc_scale", label: "Arc height", section: "Size and Scaling", selector: { number: { min: 40, max: 200, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100 },
       ...SKY_TEXT_ICONS,
 

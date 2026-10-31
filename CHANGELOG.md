@@ -1,5 +1,11 @@
 # Changelog
 
+## v2026.10.31.97
+
+- **Fill the panel: charts, arcs and bars give up height first.** Filled panels used to scale everything together, so in a short panel the forecast chart kept its full height and the text and icons were shrunk to fit around it. Now the Daily / Hourly / Forecast chart, and the Sky Tracker's sun arc and sky bar, shrink first (to at least 30 % of their height). Text and icons then get as large as fits, and any height left over goes back to the chart, arc or bar.
+  - Chart height, Arc height and Bar height set how much of the panel they keep (about a third at 100 %).
+  - Measured with your layout on a 1333×800 tablet screen: Daily forecast day labels 17 → 30 px, icons 30 → 60 px. Sky Tracker forecast text 14 px and icons 20 px, up from the size it had at 0.69× scale.
+
 ## v2026.10.31.96
 
 - **Weather Flex sections in the panel editor look like the card's own.** The Daily / Hourly Forecast, Sun Position and Sky Bar sections embedded in a panel's settings now use the flat style: accent label, accent border when open, no separate box or icon. Only one section of a panel is open at a time, theirs or ours.

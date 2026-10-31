@@ -10,7 +10,7 @@ https://github.com/Ltek/weather-station-flex-card
 
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Ltek&repository=weather-station-flex-card&category=plugin)
 
-Current build: **v2026.10.31.96** · full history in [CHANGELOG.md](CHANGELOG.md)
+Current build: **v2026.10.31.97** · full history in [CHANGELOG.md](CHANGELOG.md)
 
 ---
 
