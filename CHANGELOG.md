@@ -1,5 +1,15 @@
 # Changelog
 
+## v2026.10.31.93
+
+- **Panels fill their space** (Screen fit & layout, `panel_fill`). Each panel with a set height scales its contents up or down to the largest size that still fits the panel, between Smallest and Largest content scale (60–150 % by default). On the tablet layout the Daily forecast went from using 68 % of its panel to 100 % (1.47×), and the Sky Tracker from 89 % to 100 %.
+  - Each panel can override it: Size and Scaling → **Fill the panel** (Card default / On / Off).
+  - Text size, Icon size, Chart height and the per-item sizes change the proportions, and the panel still fits.
+  - With Fill on, Scale all Panel Contents is a share of the filled size (90 % leaves some room).
+  - Contents that don't fit even at the smallest scale scroll inside the panel instead of being cut off.
+  - The hero and Wind already fit themselves, the clock sizes itself, and radar and wind map aren't scaled, so they don't have the setting. Panels inside stacks don't fill yet.
+  - Off by default.
+
 ## v2026.10.31.92
 
 - **Every cloud has its own shape.** Clouds were drawn from five shared silhouettes, each with the same smooth, rounded base. Now each cloud gets its own: 3–7 billows along the top at different sizes and heights (some heaped, some low banks), and a base of 3–6 overlapping lumps at different depths, so no bottom is a smooth arc. Shading and highlight sit at each cloud's own angle.

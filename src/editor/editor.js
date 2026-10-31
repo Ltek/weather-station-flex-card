@@ -120,8 +120,10 @@ const LAYOUT_GROUPS = [
         { value: "scale", label: "Auto-fit — exact heights, and the contents scale to the screen" },
       ] } }, default: "rows",
       helper: "Share and Exact apply in Full screen. Auto-fit takes the layout and sizes you set as the design for the Screen guide's size (Layout Map → Screen guide) and scales each panel's contents to every other screen, smaller where they'd still overflow." },
-    { name: "auto_fit_min", label: "Smallest content scale", when: (d) => d.screen_fit === "scale", selector: { number: { min: 30, max: 100, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 60, helper: "Below this a panel scrolls instead, so text stays readable." },
-    { name: "auto_fit_max", label: "Largest content scale", when: (d) => d.screen_fit === "scale", selector: { number: { min: 100, max: 250, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 150, helper: "On screens bigger than the design." },
+    { name: "panel_fill", label: "Panels fill their space", selector: { boolean: {} }, default: false,
+      helper: "Each panel with a set height scales its contents up or down to the largest size that fits the panel, between Smallest and Largest content scale. Text size, Icon size and the other size sliders then change the proportions, and the panel still fits. Each panel can turn it on or off (Size and Scaling → Fill the panel). The hero and Wind fit themselves; maps aren't scaled." },
+    { name: "auto_fit_min", label: "Smallest content scale", when: (d) => d.screen_fit === "scale" || !!d.panel_fill, selector: { number: { min: 30, max: 100, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 60, helper: "Below this a panel scrolls instead, so text stays readable." },
+    { name: "auto_fit_max", label: "Largest content scale", when: (d) => d.screen_fit === "scale" || !!d.panel_fill, selector: { number: { min: 100, max: 250, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 150, helper: "On screens bigger than the design." },
     { name: "panel_overflow", label: "When a panel's content doesn't fit", when: (d) => !(d.layout === "fullscreen" && ["strict", "scale"].includes(d.screen_fit)), selector: { select: { options: [{ value: "grow", label: "Grow — the panel gets taller (and its row with it)" }, { value: "scroll", label: "Scroll — the panel keeps its height, with a scroll bar inside" }] } }, default: "grow", helper: "For panels with a set height (Height above 0); each panel can override this. Scroll locks every panel to its size in any layout; Strict fit does the same in full screen." },
     { name: "layout_size", selector: { select: { options: [{ value: "auto", label: "Automatic (from the card's width)" }, { value: "wide", label: "Wide — desktop layout" }, { value: "medium", label: "Medium — tablet layout" }, { value: "narrow", label: "Narrow — phone layout (stacked)" }] } }, helper: "In a Sections view the card is only as wide as its section; widen the section or use a Panel view for the desktop layout." },
     { name: "row_height", selector: { number: { min: 40, max: 300, mode: "box", unit_of_measurement: "px" } }, helper: "Height of one row unit (default 110)." },
@@ -981,7 +983,8 @@ class WeatherStationFlexCardEditor extends LitElement {
       if (!part) parts.push((part = { k, f: [] }));
       part.f.push(f);
     }
-    const form = (f) => this._form(formData(p, f, defs), f, (v) => update({ ...applyForm(p, f, v, defs), type: p.type }));
+    // Conditions (`when`) also see the panel's type and its other settings.
+    const form = (f) => this._form(formData(p, f, defs), f, (v) => update({ ...applyForm(p, f, v, defs), type: p.type }), p);
     const only = this._onlyChanged;
     return parts.map(({ k, f: all }) => {
       // "Only changed settings": hide unchanged fields and empty sections.

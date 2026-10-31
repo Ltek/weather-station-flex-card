@@ -161,6 +161,15 @@ class WeatherStationFlexCard extends LitElement {
     return Math.max(min, Math.min(max, Math.min(w / d[0], h / d[1])));
   }
 
+  // Fill the panel: contents scale up or down to the largest size that fits
+  // the panel's box (panel `fill`, else the card's `panel_fill`). Only for panels
+  // with a set height that don't size their own contents.
+  _fillOn(p, rows = rowsOf(p)) {
+    if (!p || !(rows > 0) || this._ownFit(p) || ["stack", "heading", "clock"].includes(p.type) || panelMeta(p)?.bare) return false;
+    const own = p.fill;
+    return own === "on" || own === true ? true : own === "off" || own === false ? false : !!this._config?.panel_fill;
+  }
+
   // Panels that size their own content (or can't be scaled: live maps).
   _ownFit(p) {
     return p.type === "hero" || p.type === "radar" || p.type === "wind_map" || (p.type === "wind" && p.fit !== false);
@@ -171,21 +180,51 @@ class WeatherStationFlexCard extends LitElement {
    * still doesn't fit its box (down to the minimum; below that it scrolls).
    */
   _autoFitPanels() {
-    if (!this._autoFit) return;
     const grid = this.renderRoot?.querySelector(".grid");
     if (!grid) return;
+    if (!this._autoFit && !grid.querySelector(":scope > section.tile.fill")) { this._watchAutoFit(grid); return; }
     // Our own zoom changes resize the panels: don't let those re-trigger a pass.
     this._afBusy = true;
     requestAnimationFrame(() => requestAnimationFrame(() => (this._afBusy = false)));
     this._watchAutoFit(grid);
     const c = this._config;
-    const base = this._autoBase();
-    const min = (Number(c.auto_fit_min) || 60) / 100;
+    const base = this._autoFit ? this._autoBase() : 1;
+    const min = (Number(c.auto_fit_min) || 60) / 100, max = (Number(c.auto_fit_max) || 150) / 100;
     for (const tile of grid.querySelectorAll(":scope > section.tile[data-i]")) {
       const p = this._at(Number(tile.dataset.i));
       const el = [...tile.children].find((x) => x.tagName?.startsWith("WSFC-") || x.__wsfcPanel);
       if (!p || !el || this._ownFit(p) || tile.classList.contains("compact-tile")) continue;
       const manual = Math.max(0.4, Math.min(2, (Number(p.content_scale) || 100) / 100));
+      if (tile.classList.contains("fill") && !tile.classList.contains("collapsed")) {
+        // Largest scale where the contents fit their box (both ways), then the
+        // panel's own Scale all Panel Contents as a share of it (100% at most).
+        // Fits: the contents' natural height (the panel released from its box, so
+        // stretchy parts like charts drop to their minimum) is no taller than the
+        // box, and nothing runs off the side. Natural height grows with the zoom.
+        el.style.zoom = "1";
+        const boxH = el.getBoundingClientRect().height, boxW = el.getBoundingClientRect().width;
+        const prev = [el.style.flex, el.style.height, el.style.minHeight];
+        const fits = (k) => {
+          el.style.zoom = String(k);
+          el.style.flex = "none"; el.style.height = "auto"; el.style.minHeight = "0";
+          const h = el.getBoundingClientRect().height;
+          const wide = el.scrollWidth - el.clientWidth > 6 || el.getBoundingClientRect().width > boxW + 1;
+          return h <= boxH + 1 && !wide;
+        };
+        let lo = min, hi = max, k, over = false;
+        if (fits(hi)) k = hi;
+        else if (!fits(lo)) { k = lo; over = true; }
+        else { for (let n = 0; n < 8; n++) { const m = (lo + hi) / 2; if (fits(m)) lo = m; else hi = m; } k = lo; }
+        k = Math.floor(k * 100) / 100;
+        [el.style.flex, el.style.height, el.style.minHeight] = prev;
+        // Still too much at the smallest scale: scroll inside the panel instead of clipping.
+        tile.classList.toggle("fill-over", over);
+        el.style.zoom = String(k * Math.min(1, manual));
+        el.__wsfcAuto = k * Math.min(1, manual);
+        el.__wsfcFill = k;
+        continue;
+      }
+      if (!this._autoFit) continue;
       if (tile.classList.contains("collapsed")) { el.__wsfcAuto = base; el.style.zoom = String(manual * base); continue; }
       let k = base;
       el.style.zoom = String(manual * k);
@@ -212,7 +251,7 @@ class WeatherStationFlexCard extends LitElement {
   // Content can change size after it loads (history, forecasts): watch the
   // panels and look again at most once a second — not on every state update.
   _watchAutoFit(grid) {
-    if (!this._autoFit) { this._afRo?.disconnect(); this._afRo = null; return; }
+    if (!this._autoFit && !grid.querySelector(":scope > section.tile.fill")) { this._afRo?.disconnect(); this._afRo = null; this._afSeen = null; return; }
     this._afRo ||= new ResizeObserver(() => {
       if (this._afBusy || this._afT) return;
       this._afT = setTimeout(() => { this._afT = null; requestAnimationFrame(() => this._autoFitPanels()); }, 1000);
@@ -503,7 +542,7 @@ class WeatherStationFlexCard extends LitElement {
   updated() {
     // Re-fit when the layout inputs change, and once more after panels have
     // loaded their content (charts, forecasts).
-    const key = JSON.stringify([this._config?.panels, [...(this._hidden || [])], [...(this._collapsed || [])], this._focus, this._layoutSize, this._config?.layout, this._config?.auto_fit, this._config?.layout_screen, this._config?.auto_fit_min, this._config?.auto_fit_max]);
+    const key = JSON.stringify([this._config?.panels, [...(this._hidden || [])], [...(this._collapsed || [])], this._focus, this._layoutSize, this._config?.layout, this._config?.auto_fit, this._config?.layout_screen, this._config?.auto_fit_min, this._config?.auto_fit_max, this._config?.screen_fit, this._config?.panel_fill, this._config?.row_height, this._config?.gap]);
     if (key === this._fitKey) return;
     this._fitKey = key;
     this._scheduleFit();
@@ -818,7 +857,8 @@ class WeatherStationFlexCard extends LitElement {
       // half row is (row − gap) / 2, so two half panels plus their gap fill one row.
       // Panels that fit their content to the panel (Wind) get a fixed height, so
       // a tall rose shrinks instead of stretching the row and its neighbours.
-      const fit = (!!meta.fit || (p.type === "hero" && !!p.auto_scale)) && rows > 0 && p.fit !== false && this._focus == null;
+      const fill = this._fillOn(p, rows) && this._focus == null;
+      const fit = ((!!meta.fit || (p.type === "hero" && !!p.auto_scale)) && rows > 0 && p.fit !== false && this._focus == null) || fill;
       // Strict fit: every panel is exactly its rows tall; taller content scrolls inside it.
       // Locked size: Strict fit, else the panel's own choice, else the card's.
       const over = p.overflow && p.overflow !== "default" ? p.overflow : this._strict ? "scroll" : this._config.panel_overflow || "grow";
@@ -838,7 +878,7 @@ class WeatherStationFlexCard extends LitElement {
       const expandable = !bare && !tapToOpen && !["metric", "stack", "clock", "chips"].includes(p.type) && size !== "narrow";
       const bg = p.tile_background && p.tile_background !== "default" ? `bg-${p.tile_background}` : "";
       if (collapsed && this._viewOf(p) === "compact") return this._renderCompact(p, i, span, `${bg} ${tileFx(p)}`);
-      return html`<section class="tile ${p.type} ${meta.bare ? "bare" : ""} ${bg} ${tileFx(p)} ${rows ? "" : "auto"} ${(fit || strict) && !collapsed ? "fit" : ""} ${strict && !fit && !collapsed ? "strict" : ""} ${collapsed ? "collapsed" : ""} ${tapToOpen && !collapsed ? "tap" : ""} ${collapsible ? "can-collapse" : ""} ${titleTap ? "title-tap" : ""}" style=${style} data-i=${i}
+      return html`<section class="tile ${p.type} ${meta.bare ? "bare" : ""} ${bg} ${tileFx(p)} ${rows ? "" : "auto"} ${(fit || strict) && !collapsed ? "fit" : ""} ${strict && !fit && !collapsed ? "strict" : ""} ${fill && !collapsed ? "fill" : ""} ${collapsed ? "collapsed" : ""} ${tapToOpen && !collapsed ? "tap" : ""} ${collapsible ? "can-collapse" : ""} ${titleTap ? "title-tap" : ""}" style=${style} data-i=${i}
           @click=${titleTap ? (e) => this._titleTap(e, p, i) : nothing}>
         ${collapsible
           ? html`<button class="collapse" type="button" @click=${() => this._toggleCollapse(p, i)} aria-expanded=${String(!collapsed)}
@@ -931,7 +971,8 @@ class WeatherStationFlexCard extends LitElement {
     this._foldDecorate(el, p, i, folded, !popup);
     // Content size (zoom) and, for panels that use them, horizontal / vertical spacing.
     const z = Number(p.content_scale) || 100;
-    const zm = Math.max(0.4, Math.min(2, z / 100)) * (this._autoFit && !popup && !this._ownFit(p) ? el.__wsfcAuto || this._autoBase() : 1);
+    const fillNow = !popup && this._fillOn(p) && this._focus == null;
+    const zm = fillNow ? el.__wsfcAuto || 1 : Math.max(0.4, Math.min(2, z / 100)) * (this._autoFit && !popup && !this._ownFit(p) ? el.__wsfcAuto || this._autoBase() : 1);
     el.style.zoom = zm !== 1 ? String(zm) : "";
     const sx = Number(p.content_width) || 100, sy = Number(p.content_height) || 100;
     // Forecast panels: text, icon and chart sizes on their own (CSS variables the
@@ -1034,7 +1075,8 @@ class WeatherStationFlexCard extends LitElement {
     .tile.fit { overflow: hidden; contain: size; }
     .tile.fit > :not(.expand):not(.tap-open):not(.collapse) { flex: 1 1 0; min-height: 0; }
     /* Strict fit: content taller than the panel scrolls inside it. */
-    .tile.strict > :not(.expand):not(.tap-open):not(.collapse) { overflow: auto; scrollbar-width: thin; }
+    .tile.strict > :not(.expand):not(.tap-open):not(.collapse),
+    .tile.fill-over > :not(.expand):not(.tap-open):not(.collapse) { overflow: auto; scrollbar-width: thin; }
     /* Collapsed to the title header. */
     .tile.collapsed { min-height: 0 !important; height: auto !important; max-height: 80px; overflow: hidden; contain: none; }
     .tile.collapsed > :not(.expand):not(.tap-open):not(.collapse) { max-height: 48px; overflow: hidden; flex: 0 0 auto; }
