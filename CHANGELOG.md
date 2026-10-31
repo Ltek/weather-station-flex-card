@@ -1,5 +1,11 @@
 # Changelog
 
+## v2026.10.31.92
+
+- **Every cloud has its own shape.** Clouds were drawn from five shared silhouettes, each with the same smooth, rounded base. Now each cloud gets its own: 3–7 billows along the top at different sizes and heights (some heaped, some low banks), and a base of 3–6 overlapping lumps at different depths, so no bottom is a smooth arc. Shading and highlight sit at each cloud's own angle.
+- **Fix: cloud edges weren't roughened.** The card pointed the clouds at a filter name the build had renamed, so every edge was drawn smooth. Clouds now use one of six edge patterns each.
+- **Editor:** a settings group with nothing to show is hidden (Background → Image when the background isn't an image).
+
 ## v2026.10.31.91
 
 - **Lightning bolts taper like real ones.** The main channel starts 2.4–5 px thick at the cloud and narrows on the way down to 30–65 % of that, mostly gradually with the odd sudden narrowing. Each fork leaves the main channel at 40–75 % of its thickness there and thins to a thread. A channel only ever stays the same or gets thinner as it extends. The glow around the bolt follows the thickness. Bolts have 0–3 forks.

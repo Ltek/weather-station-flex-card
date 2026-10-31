@@ -91,6 +91,11 @@ const EXTRA_CSS = css`
     100% { opacity: 0; transform: translate3d(calc(var(--dx) * 1.3), 0, 0); }
   }
 
+  /* Clouds: each cloud's own silhouette (--puffs, random billows on top and an
+     uneven, lumpy base) and underside shading, instead of five shared shapes. */
+  .cloud[style*="--puffs"] .cloud-puffs::before { background: var(--puffs) !important; filter: var(--grey-f, none); }
+  .cloud[style*="--shade"] .cloud-shade { background: var(--shade) !important; }
+
   /* Lightning (see the storm scheduler below): the provider's single white
      flash is replaced by glows that light up the clouds and occasional bolts,
      each planned at random and drawn with the Web Animations API. */
@@ -177,7 +182,29 @@ if (!WeatherAnimationProvider.__wsfcExtra) {
   // Clouds: the overcast deck for every overcast condition, kept until it changes.
   const computeClouds = proto.computeCloudParticles;
   proto.computeCloudParticles = function () {
-    return computeClouds.call(overcast(this) ? asCloudy(this) : this);
+    // Each cloud: its own silhouette, shading and edge pattern.
+    return computeClouds.call(overcast(this) ? asCloudy(this) : this).map((c) => ({
+      ...c, puffs: cloudPuffs(), shade: cloudShade(), rough: Math.floor(Math.random() * CLOUD_FILTERS),
+    }));
+  };
+  // The vendored renderer only sets position and size; add each cloud's own look.
+  // Both copies of a layer (the seamless loop) get the same look.
+  const applyClouds = (el) => {
+    const clouds = (el._particles || []).filter((p) => p.type === "cloud");
+    if (!clouds.length) return;
+    el.renderRoot.querySelectorAll(".cloud-track").forEach((track, t) => {
+      const layer = [...new Set(clouds.map((c) => c.layer))].sort()[t];
+      const mine = clouds.filter((c) => c.layer === layer);
+      track.querySelectorAll(".cloud-set").forEach((set) => [...set.children].forEach((node, i) => {
+        const c = mine[i];
+        if (!c || node.__wsfcLook === c) return;
+        node.__wsfcLook = c;
+        node.style.setProperty("--puffs", c.puffs);
+        node.style.setProperty("--shade", c.shade);
+        node.style.setProperty("--cf", `url(#wsfcx-cloud-rough-${c.rough})`);
+        if (c.variant === "grey") node.style.setProperty("--grey-f", "brightness(0.86) saturate(0.55)");
+      }));
+    });
   };
   proto.getStableCloudParticles = function () {
     const sig = `${overcast(this) ? "overcast" : "partly"}:${this.isNightTime()}`;
@@ -209,6 +236,7 @@ if (!WeatherAnimationProvider.__wsfcExtra) {
   const upd = proto.updated;
   proto.updated = function (changed) {
     const r = upd?.call(this, changed);
+    applyClouds(this);
     if (this.isConnected && this.getActiveEffects().includes("lightning")) stormStart(this); else stormStop(this);
     return r;
   };
@@ -222,10 +250,11 @@ if (!WeatherAnimationProvider.__wsfcExtra) {
   const EXTRA = { fog: (el) => renderFog(el), hail: (el) => renderHail(el), wind: (el) => renderWind(el), lightning: (el) => renderLightning(el), exceptional: () => html`<div class="exceptional-glow"></div>` };
   proto.render = function () {
     const fx = this.getActiveEffects();
-    if (!fx.some((f) => EXTRA[f])) return render.call(this);
+    const defs = fx.includes("cloud") ? cloudFilters() : nothing;
+    if (!fx.some((f) => EXTRA[f])) return html`${defs}${render.call(this)}`;
     // The provider's own layers one at a time, so new ones slot in at their depth.
     try {
-      return html`${fx.map((f) => {
+      return html`${defs}${fx.map((f) => {
         if (EXTRA[f]) return EXTRA[f](this);
         this.getActiveEffects = () => [f];
         return render.call(this);
@@ -234,6 +263,51 @@ if (!WeatherAnimationProvider.__wsfcExtra) {
       delete this.getActiveEffects;
     }
   };
+}
+
+// --- Clouds --------------------------------------------------------------------
+const CLOUD_FILTERS = 6;
+
+/**
+ * A random cloud silhouette as CSS gradients: 3–7 billows along the top at
+ * different heights and sizes (taller in the middle for cumulus, flatter for a
+ * bank), and a base of 3–6 overlapping lumps at slightly different depths, so
+ * no two bottoms are alike and none is a smooth arc.
+ */
+export function cloudPuffs(r = Math.random) {
+  const P = (w, h, x, y) => `radial-gradient(${w.toFixed(0)}% ${h.toFixed(0)}% at ${x.toFixed(0)}% ${y.toFixed(0)}%, var(--cloud-color) 0 60%, transparent 62%)`;
+  const g = [];
+  const flat = r() < 0.3;                         // a low bank instead of a heap
+  const tops = 3 + Math.floor(r() * 5);
+  for (let i = 0; i < tops; i++) {
+    const x = 12 + ((i + 0.5) / tops) * 76 + (r() - 0.5) * 10;
+    const mid = 1 - Math.abs(x - 50) / 50;        // tallest near the middle
+    const w = (flat ? 16 : 20) + r() * 18;
+    const h = (flat ? 30 : 38) + mid * (flat ? 12 : 30) * r() + r() * 10;
+    g.push(P(w, h, x, (flat ? 56 : 50) - mid * (flat ? 6 : 14) * r() + (r() - 0.5) * 8));
+  }
+  const lumps = 3 + Math.floor(r() * 4);
+  for (let i = 0; i < lumps; i++) {
+    const x = 8 + ((i + 0.5) / lumps) * 84 + (r() - 0.5) * 12;
+    g.push(P(14 + r() * 22, 12 + r() * 14, x, 66 + r() * 14));
+  }
+  return g.join(", ");
+}
+
+/** Underside shading and highlight at a cloud's own angle. */
+export function cloudShade(r = Math.random) {
+  return `radial-gradient(${(45 + r() * 25).toFixed(0)}% ${(35 + r() * 20).toFixed(0)}% at ${(35 + r() * 30).toFixed(0)}% ${(86 + r() * 10).toFixed(0)}%, rgba(90, 100, 115, ${(0.35 + r() * 0.3).toFixed(2)}) 0%, rgba(90, 100, 115, 0) 70%), ` +
+    `radial-gradient(${(40 + r() * 20).toFixed(0)}% ${(35 + r() * 20).toFixed(0)}% at ${(25 + r() * 30).toFixed(0)}% ${(18 + r() * 16).toFixed(0)}%, rgba(255, 255, 255, ${(0.6 + r() * 0.3).toFixed(2)}) 0%, rgba(255, 255, 255, 0) 70%)`;
+}
+
+/** The roughening filters the clouds pick from (different noise each). */
+function cloudFilters() {
+  return html`<svg class="cloud-defs" width="0" height="0" aria-hidden="true"><defs>
+    ${Array.from({ length: CLOUD_FILTERS }, (_, i) => html`<filter id=${`wsfcx-cloud-rough-${i}`} x="-25%" y="-25%" width="150%" height="150%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency=${`${(0.009 + i * 0.0015).toFixed(4)} ${(0.014 + ((i * 7) % 5) * 0.002).toFixed(4)}`} numOctaves="5" seed=${String(11 + i * 17)} stitchTiles="stitch" result="noise"></feTurbulence>
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale=${String(36 + (i % 3) * 8)} xChannelSelector="R" yChannelSelector="G" result="disp"></feDisplacementMap>
+      <feGaussianBlur in="disp" stdDeviation="0.6"></feGaussianBlur></filter>`)}
+  </defs></svg>`;
 }
 
 // --- Lightning -----------------------------------------------------------------

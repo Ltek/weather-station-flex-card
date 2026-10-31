@@ -11,8 +11,10 @@ const SPEED_CSS = css`
   .cloud-track { animation-duration: calc(var(--cloud-drift-duration, 80s) * var(--wsfc-anim-clouds, 1)); }
   .raindrop, .splat { animation-duration: calc(var(--duration) * var(--wsfc-anim-rain, 1)); animation-delay: calc(var(--delay) * var(--wsfc-anim-rain, 1)); }
   .snowflake { animation-duration: calc(var(--duration) * var(--wsfc-anim-snow, 1)); animation-delay: calc(var(--delay) * var(--wsfc-anim-snow, 1)); }
-  .cloud { filter: var(--wsfc-cloud-filter, url(#wfc-cloud-rough)); will-change: var(--wsfc-cloud-will, auto); }
-  .cloud.night { filter: var(--wsfc-cloud-filter-night, url(#wfc-cloud-rough) brightness(0.5)); }
+  /* Each cloud has its own edge pattern (--cf, set in animation-extra.js); the
+     vendored filter's id is wsfc-cloud-rough after the build's rename. */
+  .cloud { filter: var(--wsfc-cloud-filter, var(--cf, url(#wsfc-cloud-rough))); will-change: var(--wsfc-cloud-will, auto); }
+  .cloud.night { filter: var(--wsfc-cloud-filter-night, var(--cf, url(#wsfc-cloud-rough)) brightness(0.5)); }
   :host { --sun-spin-duration: calc(var(--weather-forecast-card-effects-sun-spin-duration, 100s) * var(--wsfc-anim-sun, 1)); }
 `;
 

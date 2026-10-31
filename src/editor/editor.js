@@ -549,7 +549,8 @@ class WeatherStationFlexCardEditor extends LitElement {
     const bg = this._config.background || "none";
     return groups.map(([title, fields]) => {
       const f = this._onlyChanged ? fields.filter((x) => isChanged(this._config, x, GENERAL_DEFAULTS)) : fields;
-      if (!f.length) return nothing;
+      // A group whose every setting is hidden (e.g. Image without an image background) isn't shown.
+      if (!f.length || !f.some((x) => typeof x.when !== "function" || x.when(whole))) return nothing;
       const dot = fields.some((x) => isChanged(this._config, x, GENERAL_DEFAULTS));
       const prev = groups === BACKGROUND_GROUPS && title === "Background" && bg === "animated" && this._bgPrev?.open;
       const form = (ff) => this._form(formData(view, ff, GENERAL_DEFAULTS), ff, (v) => {
