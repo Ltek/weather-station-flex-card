@@ -162,6 +162,20 @@ function fillTile(core) {
   root.__wsfcFill = true;
 }
 
+// Readability (the card's Text contrast): icons inside the Weather Flex sections
+// get the halo set on the tile (--wsfc-icon-shadow); text inherits text-shadow.
+let contrastSheet;
+export function adoptContrast(core) {
+  const root = core?.shadowRoot;
+  if (!root || root.__wsfcContrast) return;
+  if (!contrastSheet) {
+    contrastSheet = new CSSStyleSheet();
+    contrastSheet.replaceSync("ha-icon, ha-state-icon, .wsfc-weather-condition-icon-slot, .wsfc-current-icon { filter: var(--wsfc-icon-shadow, none); }");
+  }
+  root.adoptedStyleSheets = [...root.adoptedStyleSheets, contrastSheet];
+  root.__wsfcContrast = true;
+}
+
 /** Base config (with the station's entity/sources) for a flex-based panel. */
 // A deep copy: panels adjust the merged config in place (timeframe, scaling),
 // which must never change the shared bases.
@@ -214,6 +228,11 @@ class WsfcFlexPanel extends LitElement {
   extra() {
     return nothing;
   }
+
+  updated(changed) {
+    super.updated?.(changed);
+    adoptContrast(this._slot.el);
+  }
 }
 
 class WsfcHeroPanel extends WsfcFlexPanel {
@@ -258,6 +277,8 @@ class WsfcHeroPanel extends WsfcFlexPanel {
   disconnectedCallback() {
     super.disconnectedCallback();
     this._ro?.disconnect();
+    this._cro?.disconnect(); this._cro = null; this._croSeen = null;
+    clearTimeout(this._croT);
   }
 
   // Fit to the panel (Auto scale with a set height): everything is scaled by
@@ -325,7 +346,9 @@ class WsfcHeroPanel extends WsfcFlexPanel {
 
   updated(changed) {
     fillTile(this._slot.el);
+    adoptContrast(this._slot.el);
     this.toggleAttribute("fit", this._fitting);
+    this._watchContent();
     if (!this._fitting) { this._k = undefined; requestAnimationFrame(() => this._fitFacts()); return; }
     // A new size or config: measure again (a few passes until it settles).
     const key = `${this._dimKey}|${JSON.stringify(this.config)}`;
@@ -333,6 +356,23 @@ class WsfcHeroPanel extends WsfcFlexPanel {
     if (this._fitPass >= 8) return;
     cancelAnimationFrame(this._fitRaf);
     this._fitRaf = requestAnimationFrame(() => setTimeout(() => this._refit(), 60));
+  }
+
+  // Content that changes size on its own (fonts and icons loading, forecast and
+  // sensor data arriving, the facts row): measure again when it does, so the
+  // weather info and the facts never overlap. Our own scaling settles in a few passes.
+  _watchContent() {
+    const card = this._slot.el?.shadowRoot?.querySelector("ha-card");
+    const facts = this.renderRoot?.querySelector(".hero-facts .facts");
+    this._cro ||= new ResizeObserver(() => {
+      clearTimeout(this._croT);
+      this._croT = setTimeout(() => {
+        if (Date.now() - (this._croAt || 0) < 400) return; // our own refit just ran
+        this._fitPass = 0;
+        this._refit();
+      }, 120);
+    });
+    for (const n of [card, facts]) if (n && !(this._croSeen ||= new WeakSet()).has(n)) { this._croSeen.add(n); this._cro.observe(n); }
   }
 
   // Natural height of the hero's content (the Weather Flex card's sections).
@@ -361,6 +401,7 @@ class WsfcHeroPanel extends WsfcFlexPanel {
 
   _refit() {
     if (!this.isConnected) return;
+    this._croAt = Date.now();
     this._fitFacts();
     if (!this._fitting) return;
     this._fitPass = (this._fitPass || 0) + 1;

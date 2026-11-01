@@ -590,6 +590,7 @@ export const COMMON_SCHEMA = [
   // Title, panel button and this panel's Appearance defaults.
   ...TITLE_FIELDS.map((f) => ({ ...f, section: "Default Overrides" })),
   { section: "Default Overrides", name: "in_bar", label: "Panel button", selector: { boolean: {} }, helper: "Adds a button for this panel to the button menu, to show or hide it (or open its pop-up). Off: no button, and the panel is always shown (unless hidden with the eye icon in the panel list)." },
+  { name: "text_contrast", section: "Default Overrides", label: "Text contrast", selector: { select: { options: opt([["default", "Card default (Appearance)"], ["off", "Off"], ["auto", "Auto — soft halo"], ["strong", "Strong — outline"]]) } }, default: "default" },
   { name: "tile_background", section: "Default Overrides", label: "Panel background", selector: { select: { options: opt([["default", "Default"], ["translucent", "See-through (uses Panel opacity)"], ["solid", "Solid"], ["none", "None"]]) } }, default: "default" },
   { name: "tile_shadow", section: "Default Overrides", label: "Disable shadow", invert: true, selector: { boolean: {} }, default: true },
   { name: "tile_border", section: "Default Overrides", label: "Disable border", invert: true, selector: { boolean: {} }, default: true },

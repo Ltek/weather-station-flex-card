@@ -51,7 +51,7 @@ const hex6 = (v) => (/^#[0-9a-fA-F]{6}$/.test(v || "") ? v : null);
  * object with the edited field set (undefined = cleared). `haForm(data, schema,
  * onChange)` draws the fields we don't.
  */
-export function renderFields({ data, schema, onChange, label, helper, haForm, auto, whenData }) {
+export function renderFields({ data, schema, onChange, label, helper, haForm, auto, whenData, isSet }) {
   const out = [];
   let run = [];
   const flush = () => {
@@ -65,7 +65,14 @@ export function renderFields({ data, schema, onChange, label, helper, haForm, au
     if (typeof f.when === "function" && !f.when(whenData ? { ...whenData, ...data } : data)) continue;
     if (!nativeField(f)) { run.push(f); continue; }
     flush();
-    out.push(field(f, data[f.name], (v) => onChange({ ...data, [f.name]: v }), label(f), helper(f), auto?.(f)));
+    const set = (v) => onChange({ ...data, [f.name]: v });
+    // A setting changed from its default gets a "Reset to default" link (undo an accidental change).
+    // (Sliders without a default already have their own × "Back to Auto".)
+    const ownReset = !!f.selector?.number && f.default === undefined;
+    out.push(isSet?.(f) && !ownReset
+      ? html`<div class="fwrap" data-name=${f.name}>${field(f, data[f.name], set, label(f), helper(f), auto?.(f))}<button type="button" class="fdefault" title="Back to the default value"
+          @click=${() => set(undefined)}><ha-icon icon="mdi:restore"></ha-icon>Reset to default</button></div>`
+      : field(f, data[f.name], set, label(f), helper(f), auto?.(f)));
   }
   flush();
   return out;
@@ -161,6 +168,12 @@ function colorField(id, value, set, lab, hint, bg = false) {
 
 export const fieldStyles = css`
   .fld { padding: var(--ltek-sp-1, 4px) 0; }
+  .fwrap { position: relative; }
+  .fdefault { display: inline-flex; align-items: center; gap: 4px; margin: 0 0 4px; padding: 2px 8px; border: 0; border-radius: 999px; cursor: pointer;
+    background: transparent; color: var(--ltek-c-accent, var(--primary-color)); font: inherit; font-size: var(--ltek-fs-small, 12px); }
+  .fdefault ha-icon { --mdc-icon-size: 14px; }
+  .fdefault:hover { background: color-mix(in srgb, var(--ltek-c-accent, var(--primary-color)) 12%, transparent); }
+  .fdefault:focus-visible { outline: 2px solid var(--ltek-c-accent, var(--primary-color)); outline-offset: 1px; }
   .frow { display: flex; align-items: center; gap: var(--ltek-sp-4, 12px); flex-wrap: wrap; justify-content: flex-start; }
   .frow.nowrap { flex-wrap: nowrap; }
   .frow > label, .flab { font-size: var(--ltek-fs-label, 14px); color: var(--ltek-c-text); white-space: nowrap; }

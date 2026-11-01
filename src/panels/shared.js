@@ -2,6 +2,8 @@ import { css, html, nothing } from "lit";
 
 // Shared look for every panel tile.
 export const panelStyles = css`
+  /* Text contrast (set on the tile): a halo behind icons; text inherits text-shadow. */
+  ha-icon, ha-state-icon { filter: var(--wsfc-icon-shadow, none); }
   :host {
     display: flex;
     flex-direction: column;

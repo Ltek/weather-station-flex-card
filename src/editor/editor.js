@@ -85,6 +85,8 @@ const APPEARANCE_GROUPS = [
     { name: "icon", selector: { icon: {} } },
   ]],
   ["Panels", [
+    { name: "text_contrast", label: "Text contrast", selector: { select: { options: [{ value: "off", label: "Off" }, { value: "auto", label: "Auto — a soft halo behind text and icons" }, { value: "strong", label: "Strong — an outline around text and icons" }] } }, default: "off",
+      helper: "Makes text and icons readable on any background (the animated sky, see-through panels): the halo is dark in a dark theme and light in a light one. Each panel can override it (Default Overrides)." },
     { name: "panel_opacity", selector: { number: { min: 0, max: 1, step: 0.05, mode: "slider" } }, helper: "With a card background: panel opacity (0 = fully transparent, 1 = solid). Default 0.55." },
     { name: "panel_blur", selector: { number: { min: 0, max: 30, step: 1, mode: "slider", unit_of_measurement: "px" } }, when: (d) => !d.anim_low_power, helper: "With a card background: blur behind panels. Default 6 (off with Low-power animation)." },
     { name: "panel_radius", selector: { number: { min: 0, max: 40, step: 1, mode: "slider", unit_of_measurement: "px" } }, helper: "Auto: your theme's card corner radius (shown above). Move the slider to set your own; × goes back to Auto." },
@@ -492,9 +494,9 @@ class WeatherStationFlexCardEditor extends LitElement {
 
   // Design-system fields (checkboxes, drop-downs, sliders, color control);
   // ha-form only for selectors we don't draw (entity, device, icon, object …).
-  _form(data, schema, onChange, whenData) {
+  _form(data, schema, onChange, whenData, isSet) {
     return renderFields({
-      data, schema, onChange, whenData,
+      data, schema, onChange, whenData, isSet,
       label: (f) => f.label || LABELS[f.name] || f.name,
       helper: (f) => f.helper,
       haForm: (d, sch, cb) => this._haForm(d, sch, cb),
@@ -566,7 +568,7 @@ class WeatherStationFlexCardEditor extends LitElement {
         if (ff.some((x) => x.name === "screen_fit")) { delete next.fit_height; delete next.fit_strict; delete next.auto_fit; }
         if (this._config.panels) next.panels = this._config.panels;
         this._emit(next);
-      }, whole);
+      }, whole, (x) => isChanged(this._config, x, GENERAL_DEFAULTS));
       // Fields marked `sub` go in a closed sub-panel at the end of the group.
       const main = f.filter((x) => !x.sub), subs = [...new Set(f.filter((x) => x.sub).map((x) => x.sub))];
       const sub = (name) => {
@@ -1039,7 +1041,7 @@ class WeatherStationFlexCardEditor extends LitElement {
       part.f.push(f);
     }
     // Conditions (`when`) also see the panel's type and its other settings.
-    const form = (f) => this._form(formData(p, f, defs), f, (v) => update({ ...applyForm(p, f, v, defs), type: p.type }), p);
+    const form = (f) => this._form(formData(p, f, defs), f, (v) => update({ ...applyForm(p, f, v, defs), type: p.type }), p, (x) => isChanged(p, x, defs));
     const only = this._onlyChanged;
     return parts.map(({ k, f: all }) => {
       // "Only changed settings": hide unchanged fields and empty sections.

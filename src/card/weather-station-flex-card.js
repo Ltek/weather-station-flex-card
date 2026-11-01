@@ -82,6 +82,19 @@ export function panelStyleVars(c) {
   return out;
 }
 
+// Text contrast: a halo behind text and icons, opposite to the text so it reads
+// on any background (dark halo in a dark theme, light in a light one).
+//   auto: soft halo; strong: an outline-like halo.
+export function contrastVars(mode, dark) {
+  if (mode !== "auto" && mode !== "strong") return "";
+  const c = dark ? "0, 0, 0" : "255, 255, 255";
+  const t = mode === "strong"
+    ? `0 0 1px rgba(${c}, 0.95), 0 0 2px rgba(${c}, 0.9), 0 0 4px rgba(${c}, 0.7)`
+    : `0 0 2px rgba(${c}, 0.6), 0 0 6px rgba(${c}, 0.45)`;
+  const i = mode === "strong" ? `drop-shadow(0 0 1px rgba(${c}, 0.95)) drop-shadow(0 0 3px rgba(${c}, 0.7))` : `drop-shadow(0 0 3px rgba(${c}, 0.55))`;
+  return `--wsfc-text-shadow:${t};--wsfc-icon-shadow:${i};`;
+}
+
 // A folded (or compact) panel takes half a row, or a quarter row when its height is set to 0.25.
 const foldTracks = (rows) => (Number(rows) > 0 ? Math.min(2, toTracks(rows)) : 2);
 // Fill: the scale up to which a chart / arc / bar gives up height for the text.
@@ -1044,7 +1057,8 @@ class WeatherStationFlexCard extends LitElement {
       const collapsed = collapsible && this._isCollapsed(p, i);
       const titleTap = collapsible && this._collapseOpt(p, "collapse_title_tap", true);
       // Title colours: collapsed and expanded each have an icon and a text colour.
-      const heads = collapsible ? this._foldColors(p, collapsed) : "";
+      const contrast = p.text_contrast && p.text_contrast !== "default" ? p.text_contrast : this._config.text_contrast;
+      const heads = (collapsible ? this._foldColors(p, collapsed) : "") + contrastVars(contrast, !!this.hass?.themes?.darkMode);
       const h = `calc(${rows} * var(--wsfc-row) + ${rows - 1} * var(--wsfc-gap))`;
       // Tracks are quarter rows: a 1-row panel spans 4, a folded one 2 (half a row).
       const at = placed?.pos?.get(i);
@@ -1208,6 +1222,9 @@ class WeatherStationFlexCard extends LitElement {
       background: var(--ha-card-background, var(--card-background-color, #1c1c1c)) !important; backdrop-filter: none !important;
       box-shadow: 0 10px 32px rgba(0, 0, 0, 0.55); border: 1px solid var(--divider-color, rgba(127, 127, 127, 0.35)); padding: 12px 14px; }
     .ov > .close { position: sticky; top: 0; margin-left: auto; margin-bottom: -32px; }
+    /* Text contrast: text-shadow is inherited into every panel. */
+    .tile { text-shadow: var(--wsfc-text-shadow, none); }
+    .tile .compact ha-icon, .tile .head ha-icon, .tile .collapse ha-icon { filter: var(--wsfc-icon-shadow, none); }
     .tile.compact-tile { min-height: 0; height: auto; padding-top: 8px; padding-bottom: 8px; justify-content: center; }
     .tile.compact-tile.sized { padding-top: 4px; padding-bottom: 4px; overflow: hidden; }
     .tile.compact-tile.sized .compact { flex-wrap: wrap; overflow: hidden; row-gap: calc(6px * var(--ck, 1)); }

@@ -1,5 +1,11 @@
 # Changelog
 
+## v2026.11.01.101
+
+- **Text contrast** (Appearance → Panels, `text_contrast`): **Auto** puts a soft halo behind every panel's text and icons, **Strong** an outline-like one, so they read on the animated sky and see-through panels. The halo is dark in a dark theme and light in a light one. Each panel can override it (Default Overrides → Text contrast). Off by default.
+- **Reset to default:** every setting you've changed from its default now has a small **Reset to default** link under it, in the card's sections and each panel's. Sliders that already had a × to go back to Auto keep that. The panel's **Reset to default** button at the top still resets the whole panel.
+- **Hero with sun & moon facts:** the hero now measures again whenever its content changes size on its own (fonts and icons loading, data arriving, chips appearing). On a slower device, content that arrived after the first fit could overflow into the facts row.
+
 ## v2026.11.01.100
 
 - **Fix: large gaps between panels with a compact panel that has a height.** A collapsible panel shown compact with Height 1 was placed as if it were half a row, but drawn a full row tall. The grid rows around it stretched to fit it, leaving gaps and pushing the panels below out of line. It's now placed at its real height, so its neighbours line up (e.g. UV & Solar compact at 1 row beside Daily, with Wind directly below it).
