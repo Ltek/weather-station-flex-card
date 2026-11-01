@@ -568,7 +568,7 @@ Default size: 6 of 12 wide, 4 rows high.
 | `radar` | `true` / `false` | `true` | **Radar loop** — RainViewer radar loop. Turn off for a plain map with OpenWeatherMap layers. |
 | `start_paused` | `true` / `false` | `false` | **Start paused** — Show only the latest radar image until you press play; the other frames load then. Lighter for low-powered tablets. |
 | `base_map` | `gray` · `streets` · `topo` · `imagery` · `osm` |  | **Base map** |
-| `zoom` | number 2–14 |  | **Zoom** |
+| `zoom` | number 2–16 | `7` | **Zoom** |
 | `latitude` | number |  | **Latitude** — Map center (default: your Home Assistant location). |
 | `longitude` | number |  | **Longitude** |
 | `radar_opacity` | number 0.1–1 |  | **Radar opacity** |
