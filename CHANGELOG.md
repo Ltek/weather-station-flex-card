@@ -1,5 +1,9 @@
 # Changelog
 
+## v2026.11.01.105
+
+- **Fix: chart time axis wider than the range.** Temp & Humidity, UV & Solar, Graph and the Wind history chart rounded their time axis out to "nice" numbers, so a 24 h chart spanned about 32 h with empty space at both ends. The axis now covers exactly the chosen range, ending now, with labels on round local times: every 4 h for 24 h, midnights for 7 d, weekly for 30 d.
+
 ## v2026.11.01.104
 
 - **Stack → Merge tiles:** the stacked panels that are showing tiles become one set of tiles, with no titles or icons, wrapping evenly across the stack. Each tile still opens its own panel the way that panel's Panel View says. Panels that are open, or hidden (e.g. Pollen off-season, Lightning with no strikes), simply aren't in the set. Without Merge tiles, turning off a panel's tiles icon and title still gives tiles without headers, one group per panel.

@@ -49,6 +49,27 @@ export function timeTick(rangeHours, locale) {
   return (v) => fmt.format(new Date(v));
 }
 
+// Time ticks on round local hours or days, at most `limit` of them, between min and max.
+const H = 3600e3, STEPS_H = [1, 2, 3, 4, 6, 8, 12, 24, 48, 72, 168, 360, 720, 1440];
+export function timeTicks(min, max, limit = 7) {
+  const span = (max - min) / H;
+  const step = STEPS_H.find((h) => span / h <= limit) || STEPS_H[STEPS_H.length - 1];
+  const d = new Date(min);
+  d.setMinutes(0, 0, 0);
+  if (step >= 24) d.setHours(0);
+  const ok = (x) => step < 24 ? x.getHours() % step === 0
+    : step <= 72 ? (x.getDate() - 1) % (step / 24) === 0
+    : step === 168 ? x.getDay() === 1
+    : step === 360 ? x.getDate() === 1 || x.getDate() === 16
+    : x.getDate() === 1 && (step === 720 || x.getMonth() % 2 === 0);
+  const out = [];
+  for (let n = 0; n < 2000 && d.getTime() <= max; n++) {
+    if (d.getTime() >= min && ok(d)) out.push({ value: d.getTime() });
+    if (step < 24) d.setHours(d.getHours() + 1); else d.setDate(d.getDate() + 1);
+  }
+  return out;
+}
+
 export function tooltipTitle(rangeHours, locale) {
   const fmt = new Intl.DateTimeFormat(
     locale,
@@ -79,8 +100,13 @@ export function baseOptions(el, rangeHours, locale) {
       tooltip: { callbacks: { title: tooltipTitle(rangeHours, locale) } },
     },
     scales: {
+      // Exactly the chosen range, ending now (a linear axis would round out to
+      // "nice" numbers and show hours with no data), ticked on round local times.
       x: {
         type: "linear",
+        min: Date.now() - rangeHours * H,
+        max: Date.now(),
+        afterBuildTicks: (sc) => { sc.ticks = timeTicks(sc.min, sc.max, 7); },
         grid: { color: grid },
         ticks: { color: text, font, maxRotation: 0, autoSkip: true, maxTicksLimit: 8, callback: timeTick(rangeHours, locale) },
       },
