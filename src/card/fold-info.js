@@ -69,7 +69,7 @@ const BY_TYPE = {
     const n = el?.shadowRoot?.querySelector(".nights .n b");
     return n ? `tonight ${n.textContent}` : null;
   },
-  radar(p, h, s, el) {
+  rainviewer(p, h, s, el) {
     return el?._frameLabel ? `radar ${el._frameLabel}` : null;
   },
   health(p, h, s) {
@@ -77,7 +77,7 @@ const BY_TYPE = {
     return t ? "station online" : "station offline";
   },
 };
-for (const t of ["forecast", "hourly", "daily", "day", "bulletin", "sky_tracker", "astronomy", "moon", "wind_map", "graph", "statistics", "card"]) BY_TYPE[t] ||= (p, h, s) => weatherLine(h, s);
+for (const t of ["forecast", "hourly", "daily", "day", "bulletin", "sky_tracker", "astronomy", "moon", "windy_map", "graph", "statistics", "card"]) BY_TYPE[t] ||= (p, h, s) => weatherLine(h, s);
 
 /** The text for a folded panel's header, or "" for none. */
 export function foldInfo(p, mode, hass, station, el) {

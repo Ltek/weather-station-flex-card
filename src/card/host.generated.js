@@ -15,14 +15,15 @@ import * as m11 from "./layout.js";
 import * as m12 from "./lazy.js";
 import * as m13 from "./metrics.js";
 import * as m14 from "./panels.js";
-import * as m15 from "./resolve.js";
-import * as m16 from "./unsaved.js";
-import * as m17 from "./weather-station-flex-card.js";
-import * as m18 from "./../panels/flex.js";
-import * as m19 from "./../panels/graph.js";
-import * as m20 from "./../panels/statistics.js";
-import * as m21 from "./../../vendor/weather-forecast-card/src/types.ts";
-import * as m22 from "./../../vendor/weather-forecast-card/src/weather-forecast-card.ts";
+import * as m15 from "./pollen.js";
+import * as m16 from "./resolve.js";
+import * as m17 from "./unsaved.js";
+import * as m18 from "./weather-station-flex-card.js";
+import * as m19 from "./../panels/flex.js";
+import * as m20 from "./../panels/graph.js";
+import * as m21 from "./../panels/statistics.js";
+import * as m22 from "./../../vendor/weather-forecast-card/src/types.ts";
+import * as m23 from "./../../vendor/weather-forecast-card/src/weather-forecast-card.ts";
 globalThis.__wsfcHost = {
   "lit": m0,
   "lit/decorators": m1,
@@ -39,12 +40,13 @@ globalThis.__wsfcHost = {
   "src/card/lazy.js": m12,
   "src/card/metrics.js": m13,
   "src/card/panels.js": m14,
-  "src/card/resolve.js": m15,
-  "src/card/unsaved.js": m16,
-  "src/card/weather-station-flex-card.js": m17,
-  "src/panels/flex.js": m18,
-  "src/panels/graph.js": m19,
-  "src/panels/statistics.js": m20,
-  "vendor/weather-forecast-card/src/types.ts": m21,
-  "vendor/weather-forecast-card/src/weather-forecast-card.ts": m22,
+  "src/card/pollen.js": m15,
+  "src/card/resolve.js": m16,
+  "src/card/unsaved.js": m17,
+  "src/card/weather-station-flex-card.js": m18,
+  "src/panels/flex.js": m19,
+  "src/panels/graph.js": m20,
+  "src/panels/statistics.js": m21,
+  "vendor/weather-forecast-card/src/types.ts": m22,
+  "vendor/weather-forecast-card/src/weather-forecast-card.ts": m23,
 };

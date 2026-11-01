@@ -39,9 +39,9 @@ panels:
     rows: 0.5
   - type: temp_humidity
   - type: uv_solar
-  - type: radar
+  - type: rainviewer
     display: tile_popup
-  - type: wind_map
+  - type: windy_map
     display: tile_popup
 ```
 
@@ -72,7 +72,7 @@ panels:
 ### A map with OpenWeatherMap layers
 
 ```yaml
-- type: radar
+- type: rainviewer
   radar: false                    # a plain map instead of the radar loop
   base_map: imagery
   zoom: 5
@@ -151,7 +151,7 @@ layout: fullscreen
 screen_fit: strict           # every panel exactly its rows; tall content scrolls inside
 layout_screen: 1280x800      # the editor's layout map shows this screen at load
 panels:
-  - type: radar
+  - type: rainviewer
     collapsible: true
     collapsed: true          # starts collapsed to its title (and paused)
   - type: air_quality

@@ -28,13 +28,13 @@ globalThis.__wsfcCondition = { stationCondition, clearSkyRadiation, skyClearness
 import "../panels/flex.js";
 import "../panels/graph.js";
 import "../panels/wind.js";
-import "../panels/radar.js";
+import "../panels/rainviewer.js";
 import "../panels/sun-moon.js";
 import "../panels/metric.js";
 import "../panels/info.js";
 import "../panels/stack.js";
 import "../panels/astronomy.js";
-import "../panels/wind-map.js";
+import "../panels/windy-map.js";
 import "../panels/statistics.js";
 import "../panels/health.js";
 import "../panels/pollen.js";
@@ -224,7 +224,7 @@ class WeatherStationFlexCard extends LitElement {
 
   // Panels that size their own content (or can't be scaled: live maps).
   _ownFit(p) {
-    return p.type === "hero" || p.type === "radar" || p.type === "wind_map" || (p.type === "wind" && p.fit !== false);
+    return p.type === "hero" || p.type === "rainviewer" || p.type === "windy_map" || (p.type === "wind" && p.fit !== false);
   }
 
   /**
@@ -954,8 +954,8 @@ class WeatherStationFlexCard extends LitElement {
   _autoTitle(p) {
     if (p.type === "metric") return p.label || p.metric || "Metric";
     if (p.type === "day") return Number(p.day_offset ?? 1) === 0 ? "Today" : Number(p.day_offset ?? 1) === 1 ? "Tomorrow" : `Day +${p.day_offset}`;
-    if (p.type === "radar" && p.radar === false) return "Map";
-    if (p.type === "wind_map") return "Wind map";
+    if (p.type === "rainviewer" && p.radar === false) return "Map";
+    if (p.type === "windy_map") return "Windy map";
     if (p.type === "statistics") return p.title || ({ temps: "Temps", wind: "Wind graph", pressure_humidity: "Pressure", solar_uv: "Solar & UV", rain: "Rain", temperature_range: "Temp range" }[p.preset] || "Graph");
     return panelMeta(p).label.replace(/ \(.*\)$/, "");
   }

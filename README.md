@@ -10,7 +10,7 @@ https://github.com/Ltek/weather-station-flex-card
 
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Ltek&repository=weather-station-flex-card&category=plugin)
 
-Current build: **v2026.11.01.109** · full history in [CHANGELOG.md](CHANGELOG.md)
+Current build: **v2026.11.01.110** · full history in [CHANGELOG.md](CHANGELOG.md)
 
 ---
 
@@ -49,10 +49,10 @@ Current build: **v2026.11.01.109** · full history in [CHANGELOG.md](CHANGELOG.m
 
 ### Wind
 - **Wind** — a live compass or a wind rose, speed, gust and direction, and a 24-hour speed and gust chart. With the [Wind Rose Card](https://github.com/aukedejong/lovelace-windrose-card) installed the rose view uses it, with presets (period buttons, Beaufort, corner info, statistics, playback) and every part adjustable: coloured speed bars, corner readings, min / average / max line, arrows and buttons. It shrinks to fit its panel instead of stretching the row.
-- **Wind map** — Windy's animated wind map (or gusts, rain, temperature, clouds, pressure, radar, satellite) centred on your home, at the surface or higher altitudes.
+- **Windy Map** — Windy's animated weather maps: wind, gusts, rain, temperature, clouds, pressure, radar, satellite and more, centred on your home, at the surface or higher altitudes.
 
 ### Radar & maps
-- **Radar** — an animated RainViewer radar loop with play / pause and the time in the header, over gray, street, topographic or satellite maps, with optional OpenWeatherMap layers.
+- **RainViewer + OpenWeatherMap** — an animated RainViewer radar loop with play / pause and the time in the header, over gray, street, topographic or satellite maps, with optional OpenWeatherMap layers.
 
 ### Graphs & history
 - **Station graphs** — temperatures, wind, pressure & humidity, solar & UV, rain, air quality and a 30-day temperature range, drawn by the [Statistics Graph Chart Card](https://github.com/cataseven/Statistics-Graph-Chart-Card) when installed (mixed bars, lines and areas, second axis) or Home Assistant's own statistics graph.

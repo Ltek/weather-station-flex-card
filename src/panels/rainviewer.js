@@ -36,7 +36,7 @@ export const OWM_LAYERS = {
   pressure_new: "Pressure",
 };
 
-class WsfcRadar extends LitElement {
+class WsfcRainViewer extends LitElement {
   static properties = {
     hass: { attribute: false },
     config: { attribute: false },
@@ -119,7 +119,7 @@ class WsfcRadar extends LitElement {
       // Leaflet's stylesheet comes with it (wsfc-leaflet.js): add it to this panel once.
       if (L.leafletCss && !this.__leafletCss) {
         this.__leafletCss = true;
-        const sheet = (WsfcRadar.__lcss ||= (() => { const c = new CSSStyleSheet(); c.replaceSync(L.leafletCss); return c; })());
+        const sheet = (WsfcRainViewer.__lcss ||= (() => { const c = new CSSStyleSheet(); c.replaceSync(L.leafletCss); return c; })());
         this.renderRoot.adoptedStyleSheets = [...this.renderRoot.adoptedStyleSheets, sheet];
       }
     } catch (e) {
@@ -273,4 +273,4 @@ class WsfcRadar extends LitElement {
   }
 }
 
-customElements.get("wsfc-panel-radar") || customElements.define("wsfc-panel-radar", WsfcRadar);
+customElements.get("wsfc-panel-rainviewer") || customElements.define("wsfc-panel-rainviewer", WsfcRainViewer);

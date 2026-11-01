@@ -1,5 +1,18 @@
 # Changelog
 
+## v2026.11.01.110
+
+- **Map panels renamed** to say what they are. Your YAML keeps working: the old names are read as the new ones and written as the new ones the next time you edit.
+  - Type `radar` becomes `rainviewer`, labelled **RainViewer + OpenWeatherMap (radar & weather)**.
+  - Type `wind_map` becomes `windy_map`, labelled **Windy Map (wind, rain, radar, temperature…)**.
+- **Data Sources** (was Weather station) now starts with **Connected sources**. It lists every source the card reads, what each one supplies, and how it's connected:
+  - **In your list**: your weather entity, your station's integration.
+  - **Found automatically**: e.g. AirNow for air quality, the pollen integration, the alerts sensor.
+  - **Online, no setup**: RainViewer, Windy, map tiles, Open-Meteo.
+  - **Online, with your key**: OpenWeatherMap map layers.
+
+  Lightning distance and strikes were added to Values used.
+
 ## v2026.11.01.109
 
 - **Map zoom shows the distance:** Radar and Wind map zoom say roughly how far the map reaches at that zoom, from your home to the panel's sides and across, for the panel's width on your Screen guide size. They add a note where the weather data can't show more detail (radar beyond zoom 10; Windy stops at 11).

@@ -239,8 +239,8 @@ export const PANEL_TYPES = {
       ]],
     ],
   },
-  radar: {
-    tag: "wsfc-panel-radar", label: "Radar / map", icon: "mdi:radar", span: 6, rows: 4,
+  rainviewer: {
+    tag: "wsfc-panel-rainviewer", label: "RainViewer + OpenWeatherMap (radar & weather)", icon: "mdi:radar", span: 6, rows: 4,
     schema: [
       { name: "radar", selector: { boolean: {} }, default: true, helper: "RainViewer radar loop. Turn off for a plain map with OpenWeatherMap layers." },
       { name: "start_paused", label: "Start paused", when: (d) => d.radar !== false, selector: { boolean: {} }, default: false, helper: "Show only the latest radar image until you press play; the other frames load then. Lighter for low-powered tablets." },
@@ -317,8 +317,8 @@ export const PANEL_TYPES = {
       ...factsFields(undefined, true),
     ],
   },
-  wind_map: {
-    tag: "wsfc-panel-wind-map", label: "Wind map (Windy)", icon: "mdi:map-marker-radius-outline", span: 6, rows: 3,
+  windy_map: {
+    tag: "wsfc-panel-windy-map", label: "Windy Map (wind, rain, radar, temperature…)", icon: "mdi:map-marker-radius-outline", span: 6, rows: 3,
     schema: [
       { name: "start_paused", label: "Start paused", selector: { boolean: {} }, default: false, helper: "Don't load the animated Windy map until you press play (Windy can't show a still image). Lighter for low-powered tablets." },
       { name: "overlay", selector: { select: { options: opt([["wind", "Wind"], ["gust", "Gusts"], ["rain", "Rain & thunder"], ["temp", "Temperature"], ["clouds", "Clouds"], ["pressure", "Pressure"], ["radar", "Radar"], ["satellite", "Satellite"]]) } }, default: "wind" },
@@ -578,7 +578,7 @@ export const COLLAPSE_FIELDS = [
 ];
 
 // Panels with their own size sliders, or none that make sense here.
-const OWN_SIZES = new Set(["daily", "hourly", "forecast", "sky_tracker", "hero", "radar", "wind_map", "stack", "heading", "clock"]);
+const OWN_SIZES = new Set(["daily", "hourly", "forecast", "sky_tracker", "hero", "rainviewer", "windy_map", "stack", "heading", "clock"]);
 const CHART_TYPES = new Set(["graph", "temp_humidity", "uv_solar", "statistics"]);
 export const COMMON_SCHEMA = [
   { section: "Size and Scaling", name: "display", label: "Location", selector: { select: { options: opt([["grid", "In the grid"], ["tile_popup", "In the grid — tap it to open larger"], ["popup", "Pop-up only (from its panel button)"]]) } } },
@@ -586,7 +586,7 @@ export const COMMON_SCHEMA = [
   { section: "Size and Scaling", name: "rows", selector: { number: { min: 0, max: 10, step: 0.25, mode: "slider" } }, helper: "Height in row units, in quarter steps (0 = fit content, 0.5 = half height)." },
   { section: "Size and Scaling", name: "overflow", label: "When the content doesn't fit", selector: { select: { options: opt([["default", "Card default (Screen fit & layout)"], ["grow", "Grow — the panel gets taller"], ["scroll", "Scroll — keep the set height, with a scroll bar"]]) } }, default: "default", helper: "Scroll needs a height of at least 1 row (it is raised to 1 when you pick Scroll)." },
   { section: "Size and Scaling", name: "compact", label: "Compact view", selector: { boolean: {} }, default: false, helper: "Show this panel as one row of small tiles with all its data; tapping it opens the full panel (see Collapse → Opens)." },
-  { section: "Size and Scaling", name: "fill", label: "Fill the panel", when: (d) => !["hero", "wind", "radar", "wind_map", "stack", "heading", "clock"].includes(d.type), selector: { select: { options: opt([["default", "Card default (Screen fit & layout)"], ["on", "On — contents scale to fill the panel"], ["off", "Off"]]) } }, default: "default",
+  { section: "Size and Scaling", name: "fill", label: "Fill the panel", when: (d) => !["hero", "wind", "rainviewer", "windy_map", "stack", "heading", "clock"].includes(d.type), selector: { select: { options: opt([["default", "Card default (Screen fit & layout)"], ["on", "On — contents scale to fill the panel"], ["off", "Off"]]) } }, default: "default",
     helper: "For a panel with a set height. With it on, Scale all Panel Contents is a share of the filled size (e.g. 90% leaves some room). If the contents don't fit even at the Smallest content scale, the panel scrolls." },
   // Group sizes for the panels that don't have their own (forecasts, Sky Tracker).
   { section: "Size and Scaling", name: "text_scale", label: "Text size", when: (d) => !OWN_SIZES.has(d.type), selector: { number: { min: 50, max: 200, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100, helper: "All the panel's text, relative to its other parts." },
@@ -664,8 +664,8 @@ export const DEFAULT_PANELS = [
   { type: "health", show: false },
   { type: "pollen", show: false },
   { type: "air_quality", show: false },
-  { type: "radar", display: "popup" },
-  { type: "wind_map", display: "popup" },
+  { type: "rainviewer", display: "popup" },
+  { type: "windy_map", display: "popup" },
 ];
 
 /** Normalize a config: panels list (legacy hero/no-panels handled), ids. */
@@ -733,8 +733,13 @@ function deepMergeShallowWfc(barFlex, sunFlex) {
   return { ...(sunFlex || {}), ...(barFlex || {}), wfc: w };
 }
 
+// Panel types renamed in v2026.11.01.110 (the old names still work).
+export const RENAMED_TYPES = { radar: "rainviewer", wind_map: "windy_map" };
+const renameType = (p) => (p && RENAMED_TYPES[p.type] ? { ...p, type: RENAMED_TYPES[p.type] } : p);
+
 export function normalizePanels(config) {
   let panels = Array.isArray(config.panels) && config.panels.length ? config.panels : DEFAULT_PANELS;
+  panels = panels.map((p) => (p?.type === "stack" ? { ...p, panels: (p.panels || []).map(renameType) } : renameType(p)));
   // A hero that showed its own Sky Bar (default before v2026.10.20.7).
   const hero = panels.find((p) => p?.type === "hero");
   // Only configs that still use an old sky panel type predate the change.

@@ -35,7 +35,7 @@ export function windyUrl(c, hass) {
   return `https://embed.windy.com/embed.html?${q}`;
 }
 
-class WsfcWindMap extends LitElement {
+class WsfcWindyMap extends LitElement {
   static properties = { hass: { attribute: false }, config: { attribute: false }, station: { attribute: false }, lite: { attribute: false }, autostart: { attribute: false }, _on: { state: true } };
   static styles = [
     panelStyles,
@@ -89,4 +89,4 @@ class WsfcWindMap extends LitElement {
   }
 }
 
-customElements.get("wsfc-panel-wind-map") || customElements.define("wsfc-panel-wind-map", WsfcWindMap);
+customElements.get("wsfc-panel-windy-map") || customElements.define("wsfc-panel-windy-map", WsfcWindyMap);

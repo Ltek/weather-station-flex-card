@@ -238,7 +238,7 @@ const card = document.querySelector("weather-station-flex-card");
 const LEGACY_PANELS = [
   { type: "temp_humidity" },
   { type: "wind" },
-  { type: "radar" },
+  { type: "rainviewer" },
   { type: "forecast" },
   { type: "sun_moon" },
 ];
@@ -291,8 +291,8 @@ const config = () => ({
     { type: "metric", metric: "temperature" }, { type: "metric", metric: "rain_today" }, { type: "metric", metric: "humidity" },
     { type: "metric", metric: "uv_index" }, { type: "metric", metric: "solar_radiation" }, { type: "metric", metric: "pressure" },
     { type: "temp_humidity" }, { type: "wind", span: 4, rows: 3 }, { type: "moon" }, { type: "daily" },
-    { type: "radar", display: "tile_popup", span: 4, rows: 3 },
-    { type: "astronomy" }, { type: "wind_map", display: "tile_popup" },
+    { type: "rainviewer", display: "tile_popup", span: 4, rows: 3 },
+    { type: "astronomy" }, { type: "windy_map", display: "tile_popup" },
     { type: "statistics", preset: "temps" }, { type: "statistics", preset: "wind" },
     { type: "statistics", preset: "pressure_humidity" }, { type: "statistics", preset: "solar_uv" }, { type: "statistics", preset: "rain" },
   ] } : {}),

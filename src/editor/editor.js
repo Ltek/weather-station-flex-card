@@ -30,7 +30,8 @@ import { detected } from "../card/detected.js";
 import { ANIM_SPEEDS } from "../card/animation-speed.js";
 import { canCollapseType } from "../card/weather-station-flex-card.js";
 import { viewOptions, readView, writeView, viewKind, VIEW_KEYS } from "./panel-view.js";
-import { alertSources } from "../card/alerts.js";
+import { alertSources, alertsEntity } from "../card/alerts.js";
+import { pollenModel } from "../card/pollen.js";
 import { OPEN_ICONS_SMALL, OPEN_ICONS_FULL } from "../card/icons.js";
 import { COMPACT_TYPES } from "../card/compact.js";
 import { metricSensor, entityValue, integrationOf } from "../card/resolve.js";
@@ -243,8 +244,8 @@ const PANEL_PRESETS = {
   records: [["Area only", { show_station: false }], ["Today only", { show_month: false, show_all_time: false }], ["Everything", { show_station: null, show_today: null, show_month: null, show_all_time: null }]],
   lightning: [["Quiet", { hide_when_zero: true, show_battery: false, show_note: false }], ["Everything", { hide_when_zero: null, show_battery: null, show_note: null }]],
   wind: [["Rose, chart on demand", { view: "rose", chart_mode: "popover" }], ["Compass and chart", { view: "compass", chart_mode: null }]],
-  radar: [["Light on tablets", { start_paused: true, collapsible: true, collapsed: true }], ["Live", { start_paused: null, collapsed: null }]],
-  wind_map: [["Light on tablets", { start_paused: true, collapsible: true, collapsed: true }], ["Live", { start_paused: null, collapsed: null }]],
+  rainviewer: [["Light on tablets", { start_paused: true, collapsible: true, collapsed: true }], ["Live", { start_paused: null, collapsed: null }]],
+  windy_map: [["Light on tablets", { start_paused: true, collapsible: true, collapsed: true }], ["Live", { start_paused: null, collapsed: null }]],
   frost_watch: [["Tiles row", { compact: true }], ["Full", { compact: null }]],
   vpd: [["Number only", { show_plant: false, show_scale: false, show_note: false }], ["Full", { show_plant: null, show_scale: null, show_note: null, show_advice: null }]],
 };
@@ -442,7 +443,7 @@ class WeatherStationFlexCardEditor extends LitElement {
           <label class="onlychg" title="Show only the settings you've changed from their defaults"><input type="checkbox" .checked=${!!this._onlyChanged} @change=${(e) => { this._onlyChanged = e.target.checked; this.requestUpdate(); }} />Only changed</label>
         </div>
         ${this._q && this._q.trim().length >= 2 ? this._searchResults(this._q.trim()) : nothing}
-        ${this._section("station", "mdi:weather-cloudy-clock", "Weather station", () => this._stationEditor())}
+        ${this._section("station", "mdi:database-outline", "Data Sources", () => this._stationEditor())}
         ${this._section("background", "mdi:image-filter-hdr", "Background", () => this._general(BACKGROUND_GROUPS), (this._config.background || "none") === "animated" ? this._bgPreviewButton() : nothing)}
         ${this._section("general", "mdi:palette-outline", "Appearance", () => this._general(APPEARANCE_GROUPS))}
         ${this._section("alerts", "mdi:alert-outline", "Alerts Bar", () => this._general(ALERTS_GROUPS))}
@@ -459,7 +460,7 @@ class WeatherStationFlexCardEditor extends LitElement {
   _searchIndex() {
     const out = [];
     const label = (f) => f.label || LABELS[f.name] || f.name.replace(/[._]/g, " ");
-    for (const [area, title, groups] of [["station", "Weather station", [["Current condition", STATION_FIELDS]]], ["background", "Background", BACKGROUND_GROUPS], ["general", "Appearance", APPEARANCE_GROUPS], ["alerts", "Alerts Bar", ALERTS_GROUPS], ["behavior", "Screen fit & layout", LAYOUT_GROUPS], ["collapse", "Panel View Defaults", PANEL_GROUPS]])
+    for (const [area, title, groups] of [["station", "Data Sources", [["Current condition", STATION_FIELDS]]], ["background", "Background", BACKGROUND_GROUPS], ["general", "Appearance", APPEARANCE_GROUPS], ["alerts", "Alerts Bar", ALERTS_GROUPS], ["behavior", "Screen fit & layout", LAYOUT_GROUPS], ["collapse", "Panel View Defaults", PANEL_GROUPS]])
       for (const [g, fields] of groups) for (const f of fields.filter((x) => !x.kind)) out.push({ label: label(f), help: f.helper || "", where: `${title} › ${g}`, go: { open: area }, f });
     for (const f of REMEMBER) out.push({ label: label(f), help: f.helper || "", where: "Button Menu", go: { open: "buttons" }, f });
     const add = (p, key, nested) => {
@@ -737,7 +738,7 @@ class WeatherStationFlexCardEditor extends LitElement {
 
   _stationEditor() {
     const station = this._station;
-    const rows = [...MAP_KEYS, "rain_today", "battery", "battery_voltage", "capacitor", "signal", "signal_quality", "rssi", "online", "hardware_id", "aqi", "pm2_5", "pm10", "ozone"].map((k) => {
+    const rows = [...MAP_KEYS, "rain_today", "battery", "battery_voltage", "capacitor", "signal", "signal_quality", "rssi", "online", "hardware_id", "aqi", "pm2_5", "pm10", "ozone", "lightning_distance", "lightning_count"].filter((k) => MAP_KEYS.includes(k) || METRICS[k] || ["rain_today", "battery", "battery_voltage", "capacitor", "signal", "signal_quality", "rssi", "online", "hardware_id"].includes(k)).map((k) => {
       const e = METRICS[k]?.find || METRICS[k]?.aq
         ? metricEntity(k, station, this.hass)
         : metricSensor(station, this.hass, k) || (this.hass.states[station.entity]?.attributes?.[k] != null ? station.entity : null);
@@ -746,7 +747,18 @@ class WeatherStationFlexCardEditor extends LitElement {
       return { k, e, v: v ? `${v.value} ${v.unit}` : wv != null ? String(wv) : "", label: MAP_LABELS[k] || METRICS[k]?.label || k.replace(/_/g, " "), integ: e ? integrationOf(this.hass, e) : "" };
     });
     const found = rows.filter((r) => r.e).length;
+    const used = this._connectedSources(rows);
+    const HOW = { listed: ["In your list", "mdi:format-list-numbered"], auto: ["Found automatically", "mdi:auto-fix"], web: ["Online, no setup", "mdi:web"], key: ["Online, with your key", "mdi:key-outline"] };
     return html`
+      <div class="csrc">
+        <div class="agrp-t">Connected sources</div>
+        <div class="fhelp">Everything the card reads from, and what each one supplies.</div>
+        <table><tbody>${used.map((u) => html`<tr>
+          <td><b>${u.name}</b>${u.ent ? html`<span class="asrc-id">${u.ent}</span>` : nothing}</td>
+          <td>${u.provides.join(", ")}</td>
+          <td><span class="asrc-how ${u.how}"><ha-icon icon=${HOW[u.how][1]}></ha-icon>${HOW[u.how][0]}</span></td>
+        </tr>`)}</tbody></table>
+      </div>
       <p class="hint">Sources are used top to bottom: for each value the first source that has it wins, and they apply to every panel. Add your station's <b>device</b> (sensors are mapped automatically, outdoor first) and a <b>weather entity</b> for the forecast and condition. Open a source to see or change what it supplies.</p>
       <wsfc-sources-editor .hass=${this.hass} .config=${{ entity: this._config.entity, metric_sources: this._config.metric_sources }}
         @sources-changed=${(e) => {
@@ -773,6 +785,42 @@ class WeatherStationFlexCardEditor extends LitElement {
   }
 
 
+
+  // Every source the card reads: the integrations behind the values used
+  // (grouped, with what they supply), and the online services panels load.
+  _connectedSources(rows) {
+    const h = this.hass, c = this._config;
+    const listed = new Set();
+    for (const src of c.metric_sources?.sources || (c.entity ? [{ ref: c.entity }] : [])) {
+      if (!src?.ref || src.disabled) continue;
+      const ref = String(src.ref);
+      const eid = ref.startsWith("device:") ? Object.values(h?.entities || {}).find((x) => x.device_id === ref.slice(7))?.entity_id : ref;
+      const n = integrationOf(h, eid);
+      if (n) listed.add(n);
+    }
+    const map = new Map();
+    const add = (name, what, how, ent) => {
+      if (!name) return;
+      const u = map.get(name) || { name, provides: [], how, ent };
+      if (!u.provides.includes(what)) u.provides.push(what);
+      if (how === "listed") u.how = "listed";
+      map.set(name, u);
+    };
+    const weatherName = integrationOf(h, c.entity) || h?.states?.[c.entity]?.attributes?.attribution || c.entity;
+    if (c.entity) add(weatherName, "forecast and condition", "listed", c.entity);
+    for (const r of rows) if (r.e) { const n = r.integ || (r.e.startsWith("weather.") ? weatherName : "Other sensors"); add(n, r.label, listed.has(n) ? "listed" : "auto"); }
+    const types = new Set(this._panels.flatMap((p) => [p.type, ...(p.type === "stack" ? (p.panels || []).map((q) => q?.type) : [])]));
+    const panelsOf = (t) => this._panels.flatMap((p) => [p, ...(p.type === "stack" ? p.panels || [] : [])]).filter((p) => p?.type === t);
+    if (types.has("pollen")) for (const p of panelsOf("pollen")) { const m = pollenModel(p, h); const e = m.entities?.[0] || m.rows?.[0]?.entity; const n = e && integrationOf(h, e); if (n) add(n, "pollen", "auto"); }
+    if (c.alerts_bar) { const e = alertsEntity(c, h); if (e) add(integrationOf(h, e) || "Alerts sensor", "weather alerts", c.alerts_entity ? "listed" : "auto", e); }
+    if (types.has("rainviewer") && panelsOf("rainviewer").some((p) => p.radar !== false)) add("RainViewer", "radar loop", "web");
+    if (types.has("rainviewer") && panelsOf("rainviewer").some((p) => p.owm_api_key)) add("OpenWeatherMap maps", "map layers", "key");
+    if (types.has("rainviewer")) add("Map tiles (Esri, OpenStreetMap…)", "base map", "web");
+    if (types.has("windy_map")) add("Windy", "weather maps", "web");
+    if (["records", "rain", "garden"].some((t) => types.has(t))) add("Open-Meteo", "climate history and normals", "web");
+    const order = { listed: 0, auto: 1, key: 2, web: 3 };
+    return [...map.values()].sort((a, b) => order[a.how] - order[b.how]);
+  }
 
   // One embedded Weather Flex editor per panel slot (key = path, e.g. "3" or "5.1").
   _flexEditor(key, p, update) {
@@ -1160,7 +1208,7 @@ class WeatherStationFlexCardEditor extends LitElement {
     const across = ((156543.03 * Math.cos((lat * Math.PI) / 180)) / 2 ** z) * w; // metres
     const km = this.hass?.config?.unit_system?.length === "km";
     const d = (m) => { const v = km ? m / 1000 : m / 1609.344; return `${v < 1 ? v.toFixed(1) : v < 10 ? v.toFixed(1).replace(/\.0$/, "") : Math.round(v)} ${km ? "km" : "mi"}`; };
-    const note = p.type === "radar" ? (z > 10 ? " Radar is about 0.6 mi (1 km) per pixel, so beyond zoom 10 it shows as large blocks." : "")
+    const note = p.type === "rainviewer" ? (z > 10 ? " Radar is about 0.6 mi (1 km) per pixel, so beyond zoom 10 it shows as large blocks." : "")
       : z >= 11 ? " 11 is as close as Windy goes." : "";
     return `About ${d(across / 2)} from your home to the panel's sides (${d(across)} across, for a ${Math.round(w)} px wide panel).${note}`;
   }
@@ -1194,7 +1242,7 @@ class WeatherStationFlexCardEditor extends LitElement {
     const spacing = (m0.schema || []).filter((f) => SPACING.includes(f.name)).map((f) => ({ ...f, section: "Size and Scaling" }));
     let m = spacing.length ? { ...m0, schema: m0.schema.filter((f) => !SPACING.includes(f.name)) } : m0;
     // Map zoom: say roughly how much ground it shows in this panel.
-    if (["radar", "wind_map"].includes(p.type) && m.schema) m = { ...m, schema: m.schema.map((f) => (f.name === "zoom" ? { ...f, helper: this._zoomHint(p, f) } : f)) };
+    if (["rainviewer", "windy_map"].includes(p.type) && m.schema) m = { ...m, schema: m.schema.map((f) => (f.name === "zoom" ? { ...f, helper: this._zoomHint(p, f) } : f)) };
     const defs = nested ? { show_title: TITLE_WHEN_SET.has(p.type) ? !!p.title : true } : panelDefaults(p);
     let common = nested ? STACK_CHILD_SCHEMA : COMMON_SCHEMA;
     if (p.type === "hero") common = common.filter((f) => !["icon", "display", "in_bar"].includes(f.name));
@@ -1391,6 +1439,14 @@ class WeatherStationFlexCardEditor extends LitElement {
     .chg { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-left: 8px; vertical-align: middle; background: var(--warning-color, #ffa600); flex: 0 0 auto; }
     .pview { margin: 0 0 var(--ltek-sp-3, 12px); padding: var(--ltek-sp-2, 8px) var(--ltek-sp-3, 12px); border: 1px solid var(--ltek-c-accent, var(--primary-color)); border-radius: var(--ltek-radius, 10px); }
     .pview label { font-weight: 600; color: var(--ltek-c-accent, var(--primary-color)); }
+    .csrc { margin: 0 0 var(--ltek-sp-3, 12px); }
+    .csrc table { width: 100%; border-collapse: collapse; margin-top: 6px; font-size: var(--ltek-fs-small, 13px); }
+    .csrc td { padding: 5px 6px 5px 0; vertical-align: top; border-top: 1px solid var(--divider-color, rgba(127, 127, 127, 0.2)); }
+    .csrc td:first-child { width: 32%; }
+    .csrc td:last-child { width: 1%; white-space: nowrap; text-align: right; }
+    .asrc-how.listed { color: var(--ltek-c-accent, var(--primary-color)); background: color-mix(in srgb, var(--ltek-c-accent, var(--primary-color)) 14%, transparent); }
+    .asrc-how.auto { color: var(--success-color, #43a047); background: color-mix(in srgb, var(--success-color, #43a047) 14%, transparent); }
+    .asrc-how.web, .asrc-how.key { color: var(--secondary-text-color); background: rgba(127, 127, 127, 0.14); }
     .asrc { display: grid; gap: var(--ltek-sp-3, 12px); margin: var(--ltek-sp-2, 8px) 0; }
     .asrc-g { border: 1px solid var(--divider-color, rgba(127, 127, 127, 0.3)); border-radius: var(--ltek-radius, 10px); padding: var(--ltek-sp-2, 8px) var(--ltek-sp-3, 12px); }
     .asrc-g.off { opacity: 0.55; }
