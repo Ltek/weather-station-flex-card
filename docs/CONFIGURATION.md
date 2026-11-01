@@ -654,6 +654,7 @@ Default size: 12 of 12 wide, fits its content.
 | `spacing` | `fill` · `spread` · `center` · `top` | `fill` | **Spare height** — When the stack is taller than its panels (e.g. compact rows of tiles): where the spare height goes. |
 | `compact_max_scale` | number 100–400 % | `250` | **Largest compact size** — How large compact rows may grow (they also stop when the widest row runs out of room). |
 | `min_width` | number 80–800 px |  | **Minimum width** — Horizontal: children wrap to a new line only below this width (default 180). |
+| `merge_tiles` | `true` / `false` | `false` | **Merge tiles** — The stacked panels showing tiles become one set of tiles, with no titles or icons, wrapping evenly. A tile opens its own panel as that panel's Panel View says (or its sensor's details when tapping tiles doesn't open the panel). |
 
 ### Station graph — `type: statistics`
 
