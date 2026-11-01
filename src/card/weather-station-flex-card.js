@@ -994,7 +994,9 @@ class WeatherStationFlexCard extends LitElement {
     const items = idx.map((i) => {
       const o = own(i), lay = phone ? { span: Math.max(1, Math.min(12, Number(o?.span ?? 12))), rows: Math.max(0, Number(o?.rows ?? rowsOf(panels[i]))) } : layoutOf(panels[i], size);
       const collapsed = this._canCollapse(panels[i]) && this._isCollapsed(panels[i], i);
-      return { key: i, w: lay.span, h: collapsed ? foldTracks(lay.rows) : toTracks(lay.rows), x: hasPos(o) ? Number(o.x) : null, y: hasPos(o) ? Number(o.y) * 4 : null };
+      // A compact panel with a height keeps it (its tiles fill it); other collapsed panels take half a row.
+      const compactSized = collapsed && this._viewOf(panels[i]) === "compact" && lay.rows > 0;
+      return { key: i, w: lay.span, h: collapsed && !compactSized ? foldTracks(lay.rows) : toTracks(lay.rows), x: hasPos(o) ? Number(o.x) : null, y: hasPos(o) ? Number(o.y) * 4 : null };
     });
     const pos = arrange(items, { gravity: this._config.layout_gaps !== "keep" });
     return { pos, order: readingOrder(pos) };
@@ -1047,7 +1049,8 @@ class WeatherStationFlexCard extends LitElement {
       // Tracks are quarter rows: a 1-row panel spans 4, a folded one 2 (half a row).
       const at = placed?.pos?.get(i);
       const col = at ? `${at.x + 1} / span ${at.w}` : `span ${span}`;
-      const tr = collapsed ? foldTracks(rows) : toTracks(rows);
+      const compactSized = collapsed && this._viewOf(p) === "compact" && rows > 0;
+      const tr = collapsed && !compactSized ? foldTracks(rows) : toTracks(rows);
       const row = at ? `${at.y + 1} / span ${at.h}` : `span ${tr}`;
       const style = heads + (collapsed
         ? `grid-column: ${col};grid-row: ${row};`

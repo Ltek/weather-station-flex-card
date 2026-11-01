@@ -1,5 +1,9 @@
 # Changelog
 
+## v2026.11.01.100
+
+- **Fix: large gaps between panels with a compact panel that has a height.** A collapsible panel shown compact with Height 1 was placed as if it were half a row, but drawn a full row tall. The grid rows around it stretched to fit it, leaving gaps and pushing the panels below out of line. It's now placed at its real height, so its neighbours line up (e.g. UV & Solar compact at 1 row beside Daily, with Wind directly below it).
+
 ## v2026.11.01.99
 
 - **Collapse / expand everywhere.** The editor said "fold", "folded" and "collapsed" for the same thing. It now uses Home Assistant's terms: collapse, collapsed, expand, expanded. Setting names in YAML are unchanged.
