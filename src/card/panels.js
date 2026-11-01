@@ -245,7 +245,7 @@ export const PANEL_TYPES = {
       { name: "radar", selector: { boolean: {} }, default: true, helper: "RainViewer radar loop. Turn off for a plain map with OpenWeatherMap layers." },
       { name: "start_paused", label: "Start paused", when: (d) => d.radar !== false, selector: { boolean: {} }, default: false, helper: "Show only the latest radar image until you press play; the other frames load then. Lighter for low-powered tablets." },
       { name: "base_map", selector: { select: { options: BASES } } },
-      { name: "zoom", selector: { number: { min: 2, max: 14, step: 0.5, mode: "box" } } },
+      { name: "zoom", selector: { number: { min: 2, max: 16, step: 0.5, mode: "slider" } }, default: 7 },
       { name: "latitude", selector: { number: { mode: "box", step: "any" } }, helper: "Map center (default: your Home Assistant location)." },
       { name: "longitude", selector: { number: { mode: "box", step: "any" } } },
       { name: "radar_opacity", selector: { number: { min: 0.1, max: 1, step: 0.05, mode: "slider" } } },

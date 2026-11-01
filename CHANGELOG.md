@@ -1,5 +1,10 @@
 # Changelog
 
+## v2026.11.01.109
+
+- **Map zoom shows the distance:** Radar and Wind map zoom say roughly how far the map reaches at that zoom, from your home to the panel's sides and across, for the panel's width on your Screen guide size. They add a note where the weather data can't show more detail (radar beyond zoom 10; Windy stops at 11).
+- **Radar zoom** is a slider (2 to 16, in half steps; default 7). Zoom 14.5 is about a 1-mile radius in a 4-column panel at 2000 px.
+
 ## v2026.11.01.108
 
 - **Alerts Bar finds its sensors and shows them.** The section now lists, for each alert, what it watches for and which entity it reads for each part, marked **Auto** (found on your station), **Your choice** or **Not found** with what to do about it.

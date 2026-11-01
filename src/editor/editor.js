@@ -1149,6 +1149,22 @@ class WeatherStationFlexCardEditor extends LitElement {
     });
   }
 
+  // Roughly how far the map reaches at its zoom: from the centre (your home) to
+  // the panel's sides, for the panel's width on the Screen guide size (or 450 px).
+  _zoomHint(p, f) {
+    const z = Number(p.zoom ?? f.default ?? 7);
+    const lat = Number(p.latitude ?? this.hass?.config?.latitude ?? 40);
+    const [sw] = String(this._config.layout_screen || "").split("x").map(Number);
+    const span = Number(p.span ?? panelMeta(p)?.span ?? 6);
+    const w = sw > 0 ? Math.max(200, ((sw - 13 * 12) / 12) * span + (span - 1) * 12 - 32) : 450;
+    const across = ((156543.03 * Math.cos((lat * Math.PI) / 180)) / 2 ** z) * w; // metres
+    const km = this.hass?.config?.unit_system?.length === "km";
+    const d = (m) => { const v = km ? m / 1000 : m / 1609.344; return `${v < 1 ? v.toFixed(1) : v < 10 ? v.toFixed(1).replace(/\.0$/, "") : Math.round(v)} ${km ? "km" : "mi"}`; };
+    const note = p.type === "radar" ? (z > 10 ? " Radar is about 0.6 mi (1 km) per pixel, so beyond zoom 10 it shows as large blocks." : "")
+      : z >= 11 ? " 11 is as close as Windy goes." : "";
+    return `About ${d(across / 2)} from your home to the panel's sides (${d(across)} across, for a ${Math.round(w)} px wide panel).${note}`;
+  }
+
   // Panel View drop-down (top of every panel's settings that can collapse).
   _panelView(p, update) {
     const m = panelMeta(p);
@@ -1176,7 +1192,9 @@ class WeatherStationFlexCardEditor extends LitElement {
     // Auto scale sliders stay in its group).
     const SPACING = ["content_width", "content_height", ...(["daily", "hourly", "forecast", "sky_tracker"].includes(p.type) ? ["text_scale", "icon_scale", "chart_scale", "bar_scale", "arc_scale"] : []), ...(p.type === "hero" ? ["text_scale", "icon_scale_all"] : [])];
     const spacing = (m0.schema || []).filter((f) => SPACING.includes(f.name)).map((f) => ({ ...f, section: "Size and Scaling" }));
-    const m = spacing.length ? { ...m0, schema: m0.schema.filter((f) => !SPACING.includes(f.name)) } : m0;
+    let m = spacing.length ? { ...m0, schema: m0.schema.filter((f) => !SPACING.includes(f.name)) } : m0;
+    // Map zoom: say roughly how much ground it shows in this panel.
+    if (["radar", "wind_map"].includes(p.type) && m.schema) m = { ...m, schema: m.schema.map((f) => (f.name === "zoom" ? { ...f, helper: this._zoomHint(p, f) } : f)) };
     const defs = nested ? { show_title: TITLE_WHEN_SET.has(p.type) ? !!p.title : true } : panelDefaults(p);
     let common = nested ? STACK_CHILD_SCHEMA : COMMON_SCHEMA;
     if (p.type === "hero") common = common.filter((f) => !["icon", "display", "in_bar"].includes(f.name));
