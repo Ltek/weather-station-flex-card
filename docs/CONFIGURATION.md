@@ -559,7 +559,19 @@ Default size: 4 of 12 wide, fits its content.
 | `seasons` | mapping / list |  | **Season months** — Season months per species, e.g. JUNIPER: [1, 2, 3, 4]. Default: Google's season text, else typical months. |
 | `entities` | entity id (`sensor.*`) — list |  | **Sensors** — Advanced: use these sensors instead of finding Pollen Levels automatically. |
 
-### Radar / map — `type: radar`
+### Rain totals — `type: rain`
+
+Default size: 4 of 12 wide, fits its content.
+
+| Option | Value | Default | What it does |
+|---|---|---|---|
+| `show_rows` | list of: `rain_rate` · `rain_hour` · `rain_today` · `rain_24h` · `rain_event` · `rain_week` · `rain_month` · `rain_year` · `last_rain` |  | **Rows** — In this order. Week, month and year come from Home Assistant's history when the station has no sensor for them. |
+| `show_normal` | `true` / `false` | `true` | **Against the normal** — This month and year so far against the area's normal (CoAgMET or Open-Meteo). |
+| `area_source` | `auto` · `coagmet` · `open_meteo` · `off` | `auto` | **Area data from** |
+| `content_width` | number 30–200 % | `100` | **Horizontal spacing** |
+| `content_height` | number 30–200 % | `100` | **Vertical spacing** |
+
+### RainViewer + OpenWeatherMap (radar & weather) — `type: rainviewer`
 
 Default size: 6 of 12 wide, 4 rows high.
 
@@ -578,18 +590,6 @@ Default size: 6 of 12 wide, 4 rows high.
 | `owm_opacity` | number 0.1–1 |  | **Layer opacity** |
 | `base_map_url` | text |  | **Custom tile URL** — Custom XYZ tile URL (overrides base map). |
 | `base_map_attribution` | text |  | **Custom tile attribution** |
-
-### Rain totals — `type: rain`
-
-Default size: 4 of 12 wide, fits its content.
-
-| Option | Value | Default | What it does |
-|---|---|---|---|
-| `show_rows` | list of: `rain_rate` · `rain_hour` · `rain_today` · `rain_24h` · `rain_event` · `rain_week` · `rain_month` · `rain_year` · `last_rain` |  | **Rows** — In this order. Week, month and year come from Home Assistant's history when the station has no sensor for them. |
-| `show_normal` | `true` / `false` | `true` | **Against the normal** — This month and year so far against the area's normal (CoAgMET or Open-Meteo). |
-| `area_source` | `auto` · `coagmet` · `open_meteo` · `off` | `auto` | **Area data from** |
-| `content_width` | number 30–200 % | `100` | **Horizontal spacing** |
-| `content_height` | number 30–200 % | `100` | **Vertical spacing** |
 
 ### Sky Tracker — `type: sky_tracker`
 
@@ -824,7 +824,7 @@ Default size: 6 of 12 wide, 4 rows high.
 | `entities.wind_gust_speed` | entity id (`sensor.*`) |  | **Gust sensor** |
 | `entities.wind_bearing` | entity id (`sensor.*`) |  | **Wind direction sensor** |
 
-### Wind map (Windy) — `type: wind_map`
+### Windy Map (wind, rain, radar, temperature…) — `type: windy_map`
 
 Default size: 6 of 12 wide, 3 rows high.
 
@@ -881,9 +881,9 @@ panels:
     rows: 0.5
   - type: temp_humidity
   - type: uv_solar
-  - type: radar
+  - type: rainviewer
     display: tile_popup
-  - type: wind_map
+  - type: windy_map
     display: tile_popup
 ```
 
@@ -914,7 +914,7 @@ panels:
 ### A map with OpenWeatherMap layers
 
 ```yaml
-- type: radar
+- type: rainviewer
   radar: false                    # a plain map instead of the radar loop
   base_map: imagery
   zoom: 5
@@ -993,7 +993,7 @@ layout: fullscreen
 screen_fit: strict           # every panel exactly its rows; tall content scrolls inside
 layout_screen: 1280x800      # the editor's layout map shows this screen at load
 panels:
-  - type: radar
+  - type: rainviewer
     collapsible: true
     collapsed: true          # starts collapsed to its title (and paused)
   - type: air_quality
