@@ -1,79 +1,16 @@
 # Weather Station Flex Card
 
-A complete weather-station dashboard in one Home Assistant Dashboard card. Your own station's live readings, forecasts, radar, wind, sky, air quality, pollen and the garden, in a flexible panel grid over an animated weather background. Use it as a normal card, or as a full-screen wall display.
+The most flexible and comprehensive Weather card. Combine multiple sources and weather-stations and configure it any way you want... for large screens, small screens and everything in between. 
+
+Use your station's live readings, forecasts, radar, wind, sky, air quality, pollen and the garden, in a flexible panel grid over any background, including multiple custom animated weather backgrounds.
+
+The card auto detects multiple weather sources and supporting cards. Most card panel functions are built-in but it can also use some 3rd party cards.
+
+See screenshots below for ideas. 
 
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Ltek&repository=weather-station-flex-card&category=plugin)
 
-Current build: **v2026.11.01.110** · full history in [CHANGELOG.md](CHANGELOG.md)
-
----
-
-## Screenshots
-
-The same card, set up in different ways. All of it is done in the visual editor.
-
-<!-- SCREENSHOTS:START -->
-<table>
-  <tr>
-    <td align="center" valign="top" width="50%">
-      <a href="screenshots/01-full-screen-wall-tablet.png"><img src="screenshots/01-full-screen-wall-tablet.png" width="100%" alt="Full screen wall tablet"></a><br>
-      <sub>Full screen wall tablet</sub>
-    </td>
-    <td align="center" valign="top" width="50%">
-      <a href="screenshots/02-full-screen-storm-with-lightning.png"><img src="screenshots/02-full-screen-storm-with-lightning.png" width="100%" alt="Full screen storm with lightning"></a><br>
-      <sub>Full screen storm with lightning</sub>
-    </td>
-  </tr>
-  <tr>
-    <td align="center" valign="top" width="50%">
-      <a href="screenshots/03-classic-dashboard.png"><img src="screenshots/03-classic-dashboard.png" width="100%" alt="Classic dashboard"></a><br>
-      <sub>Classic dashboard</sub>
-    </td>
-    <td align="center" valign="top" width="50%">
-      <a href="screenshots/04-compact-and-merged-tiles.png"><img src="screenshots/04-compact-and-merged-tiles.png" width="100%" alt="Compact and merged tiles"></a><br>
-      <sub>Compact and merged tiles</sub>
-    </td>
-  </tr>
-  <tr>
-    <td align="center" valign="top" width="50%">
-      <a href="screenshots/05-charts-rain-and-records.png"><img src="screenshots/05-charts-rain-and-records.png" width="100%" alt="Charts rain and records"></a><br>
-      <sub>Charts rain and records</sub>
-    </td>
-    <td align="center" valign="top" width="50%">
-      <a href="screenshots/06-sky-sun-and-moon-light-theme.png"><img src="screenshots/06-sky-sun-and-moon-light-theme.png" width="100%" alt="Sky sun and moon light theme"></a><br>
-      <sub>Sky sun and moon light theme</sub>
-    </td>
-  </tr>
-  <tr>
-    <td align="center" valign="top" width="50%">
-      <a href="screenshots/07-garden-air-quality-and-pollen.png"><img src="screenshots/07-garden-air-quality-and-pollen.png" width="100%" alt="Garden air quality and pollen"></a><br>
-      <sub>Garden air quality and pollen</sub>
-    </td>
-    <td align="center" valign="top" width="50%">
-      <a href="screenshots/08-wind-rose-compass-and-maps.png"><img src="screenshots/08-wind-rose-compass-and-maps.png" width="100%" alt="Wind rose compass and maps"></a><br>
-      <sub>Wind rose compass and maps</sub>
-    </td>
-  </tr>
-  <tr>
-    <td align="center" valign="top" width="50%">
-      <a href="screenshots/09-phone-layout.png"><img src="screenshots/09-phone-layout.png" width="100%" alt="Phone layout"></a><br>
-      <sub>Phone layout</sub>
-    </td>
-    <td align="center" valign="top" width="50%">
-      <a href="screenshots/10-editor-data-sources.png"><img src="screenshots/10-editor-data-sources.png" width="100%" alt="Editor data sources"></a><br>
-      <sub>Editor data sources</sub>
-    </td>
-  </tr>
-  <tr>
-    <td align="center" valign="top" width="50%">
-      <a href="screenshots/11-editor-layout-map.png"><img src="screenshots/11-editor-layout-map.png" width="100%" alt="Editor layout map"></a><br>
-      <sub>Editor layout map</sub>
-    </td>
-    <td></td>
-  </tr>
-</table>
-<!-- SCREENSHOTS:END -->
-
+full history in [CHANGELOG.md](CHANGELOG.md)
 ---
 
 ## At a glance
@@ -138,20 +75,77 @@ The same card, set up in different ways. All of it is done in the visual editor.
 
 **HACS (recommended):** click the badge above, or add `Ltek/weather-station-flex-card` as a custom repository (category **Dashboard**). Install **Weather Station Flex Card (Ltek)**, then hard-refresh your browser.
 
-**Manually:** copy [`dist/`](dist) into `config/www/community/weather-station-flex-card/`. Then add `/local/community/weather-station-flex-card/weather-station-flex-card.js` as a Dashboard resource of type **JavaScript Module**.
-
 Then add **Weather Station Flex Card** from the card picker, choose your weather entity and station under **Data Sources**, and arrange the panels. For a wall display, use a **Panel** view and **Full screen** layout.
 
 It works alongside Weather Flex Card on the same dashboard. Every option is listed in the [configuration reference](docs/CONFIGURATION.md), and [docs/config-examples.md](docs/config-examples.md) has example setups.
 
 ---
 
-## Credits
+## Screenshots & Examples
 
-- Base card and animations: [troinine/ha-weather-forecast-card](https://github.com/troinine/ha-weather-forecast-card) (MIT). Layout inspired by [Station Météo](https://github.com/RenaudSub/Station-Meteo).
-- Radar: [RainViewer](https://www.rainviewer.com). Weather maps: [Windy](https://www.windy.com). Base maps: Esri, HERE, Garmin, Maxar, © OpenStreetMap contributors. Optional layers: [OpenWeatherMap](https://openweathermap.org). Climate history: [Open-Meteo](https://open-meteo.com).
-- Charts: [Chart.js](https://www.chartjs.org). Maps: [Leaflet](https://leafletjs.com). Sun and moon: [SunCalc](https://github.com/mourner/suncalc).
+There are ,millions of possabilities all very easy to confiuge in the visual editor. Soever presets built-in so add your panels
 
-## License
-
-MIT, see [LICENSE](LICENSE).
+<!-- SCREENSHOTS:START -->
+<table>
+  <tr>
+    <td align="center" valign="top" width="50%">
+      <a href="screenshots/00-live-wall-display.jpg"><img src="screenshots/00-live-wall-display.jpg" width="100%" alt="Live wall display"></a><br>
+      <sub>Live wall display</sub>
+    </td>
+    <td align="center" valign="top" width="50%">
+      <a href="screenshots/01-full-screen-wall-tablet.png"><img src="screenshots/01-full-screen-wall-tablet.png" width="100%" alt="Full screen wall tablet"></a><br>
+      <sub>Full screen wall tablet</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" valign="top" width="50%">
+      <a href="screenshots/02-full-screen-storm-with-lightning.png"><img src="screenshots/02-full-screen-storm-with-lightning.png" width="100%" alt="Full screen storm with lightning"></a><br>
+      <sub>Full screen storm with lightning</sub>
+    </td>
+    <td align="center" valign="top" width="50%">
+      <a href="screenshots/03-classic-dashboard.png"><img src="screenshots/03-classic-dashboard.png" width="100%" alt="Classic dashboard"></a><br>
+      <sub>Classic dashboard</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" valign="top" width="50%">
+      <a href="screenshots/04-compact-and-merged-tiles.png"><img src="screenshots/04-compact-and-merged-tiles.png" width="100%" alt="Compact and merged tiles"></a><br>
+      <sub>Compact and merged tiles</sub>
+    </td>
+    <td align="center" valign="top" width="50%">
+      <a href="screenshots/05-charts-rain-and-records.png"><img src="screenshots/05-charts-rain-and-records.png" width="100%" alt="Charts rain and records"></a><br>
+      <sub>Charts rain and records</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" valign="top" width="50%">
+      <a href="screenshots/06-sky-sun-and-moon-light-theme.png"><img src="screenshots/06-sky-sun-and-moon-light-theme.png" width="100%" alt="Sky sun and moon light theme"></a><br>
+      <sub>Sky sun and moon light theme</sub>
+    </td>
+    <td align="center" valign="top" width="50%">
+      <a href="screenshots/07-garden-air-quality-and-pollen.png"><img src="screenshots/07-garden-air-quality-and-pollen.png" width="100%" alt="Garden air quality and pollen"></a><br>
+      <sub>Garden air quality and pollen</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" valign="top" width="50%">
+      <a href="screenshots/08-wind-rose-compass-and-maps.png"><img src="screenshots/08-wind-rose-compass-and-maps.png" width="100%" alt="Wind rose compass and maps"></a><br>
+      <sub>Wind rose compass and maps</sub>
+    </td>
+    <td align="center" valign="top" width="50%">
+      <a href="screenshots/09-phone-layout.png"><img src="screenshots/09-phone-layout.png" width="100%" alt="Phone layout"></a><br>
+      <sub>Phone layout</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" valign="top" width="50%">
+      <a href="screenshots/10-editor-data-sources.png"><img src="screenshots/10-editor-data-sources.png" width="100%" alt="Editor data sources"></a><br>
+      <sub>Editor data sources</sub>
+    </td>
+    <td align="center" valign="top" width="50%">
+      <a href="screenshots/11-editor-layout-map.png"><img src="screenshots/11-editor-layout-map.png" width="100%" alt="Editor layout map"></a><br>
+      <sub>Editor layout map</sub>
+    </td>
+  </tr>
+</table>
+<!-- SCREENSHOTS:END -->
