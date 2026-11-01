@@ -89,6 +89,7 @@ With no `panels:` the card shows its default dashboard (hero, bulletin, Sky Trac
 
 | Option | Value | Default | What it does |
 |---|---|---|---|
+| `text_contrast` | `off` · `auto` · `strong` | `off` | **Text contrast** — Makes text and icons readable on any background (the animated sky, see-through panels): the halo is dark in a dark theme and light in a light one. Each panel can override it (Default Overrides). |
 | `panel_opacity` | number 0–1 | `0.55` | **Panel opacity** — With a card background: panel opacity (0 = fully transparent, 1 = solid). Default 0.55. |
 | `panel_blur` | number 0–30 px | `6` | **Panel blur** — With a card background: blur behind panels. Default 6 (off with Low-power animation). |
 | `panel_radius` | number 0–40 px |  | **Corner radius** — Auto: your theme's card corner radius (shown above). Move the slider to set your own; × goes back to Auto. |
@@ -186,6 +187,7 @@ Where the buttons go: `panel_bar: false` hides the bar; a Button Menu panel (`he
 | `show_icon` | `true` / `false` | `true` | **Show the title icon** |
 | `icon` | icon, e.g. `mdi:weather-windy` |  | **Icon** |
 | `in_bar` | `true` / `false` |  | **Panel button** — Adds a button for this panel to the button menu, to show or hide it (or open its pop-up). Off: no button, and the panel is always shown (unless hidden with the eye icon in the panel list). |
+| `text_contrast` | `default` · `off` · `auto` · `strong` | `default` | **Text contrast** |
 | `tile_background` | `default` · `translucent` · `solid` · `none` | `default` | **Panel background** |
 | `tile_shadow` | `true` / `false` | `true` | **Disable shadow** (the editor shows it as a *Disable …* checkbox; `false` = disabled) |
 | `tile_border` | `true` / `false` | `true` | **Disable border** (the editor shows it as a *Disable …* checkbox; `false` = disabled) |
