@@ -85,11 +85,30 @@ With no `panels:` the card shows its default dashboard (hero, bulletin, Sky Trac
 | `subtitle` | text |  | **Subtitle** |
 | `icon` | icon, e.g. `mdi:weather-windy` |  | **Icon** |
 
+### Text & icons
+
+| Option | Value | Default | What it does |
+|---|---|---|---|
+| `text_size` | number 8–32 px | `14` | **Text size** — Base text size for every panel (designed at 14 px): all their text grows or shrinks with it. A panel's own Text size (%) scales this. |
+| `icon_size` | number 12–64 px | `24` | **Icon size** — Base icon size for every panel (designed at 24 px). A panel's own Icon size (%) scales this. |
+| `_reset_sizes` |  |  | **Every panel uses these sizes** — Clears the Text size and Icon size set on single panels. |
+
+### Panel titles
+
+| Option | Value | Default | What it does |
+|---|---|---|---|
+| `title_size` | number 8–40 px |  | **Title text size** — Not set: follows Text size (15 px at the default). |
+| `title_icon_size` | number 10–64 px |  | **Title icon size** — Not set: follows Icon size (20 px at the default). |
+| `expanded_icon_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Title icon color** — Not set: the theme's normal title icon colour. |
+| `expanded_text_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Title text color** — Not set: the theme's text colour. |
+| `_reset_titles` |  |  | **Every panel uses these title colours** — Clears the title colours set on single panels. |
+
 ### Panels
 
 | Option | Value | Default | What it does |
 |---|---|---|---|
 | `text_contrast` | `off` · `auto` · `strong` | `off` | **Text contrast** — Makes text and icons readable on any background (the animated sky, see-through panels): the halo is dark in a dark theme and light in a light one. Each panel can override it (Default Overrides). |
+| `_reset_contrast` |  |  | **Every panel uses this setting** — Clears Text contrast set on single panels. |
 | `panel_opacity` | number 0–1 | `0.55` | **Panel opacity** — With a card background: panel opacity (0 = fully transparent, 1 = solid). Default 0.55. |
 | `panel_blur` | number 0–30 px | `6` | **Panel blur** — With a card background: blur behind panels. Default 6 (off with Low-power animation). |
 | `panel_radius` | number 0–40 px |  | **Corner radius** — Auto: your theme's card corner radius (shown above). Move the slider to set your own; × goes back to Auto. |
@@ -99,15 +118,6 @@ With no `panels:` the card shows its default dashboard (hero, bulletin, Sky Trac
 | `panel_glow` | `true` / `false` | `false` | **Glow** — A soft glow around each panel. |
 | `panel_glow_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Glow color** — Not set: the border color, else the theme's primary color. |
 | `panel_glow_size` | number 2–40 px | `10` | **Glow size** |
-
-### Alerts bar
-
-| Option | Value | Default | What it does |
-|---|---|---|---|
-| `alerts_bar` | `true` / `false` | `false` | **Alerts bar** — A thin row at the top that appears only while something needs attention: heat or frost (the Frost & heat watch rules), lightning within 10 miles in the last 30 minutes, and weather alerts. Tap one to open its panel. |
-| `alerts_watch` | `true` / `false` | `true` | **Heat and frost** |
-| `alerts_lightning` | `true` / `false` | `true` | **Lightning nearby** |
-| `alerts_entity` | entity id (`sensor.*`) |  | **Weather alerts sensor** — Optional, e.g. the NWS Alerts integration's sensor (its Alerts attribute). |
 
 ### Screen fit & sizing
 
@@ -138,8 +148,6 @@ With no `panels:` the card shows its default dashboard (hero, bulletin, Sky Trac
 | `show_collapse_hint` | `true` / `false` | `false` | **Hint under the title while collapsed** — e.g. "Tap title to show" (off by default: the open button already says it). |
 | `collapse_hint` | text |  | **Hint text** — Default "Tap title to show". |
 | `collapsed_info` | `summary` · `off` | `summary` | **Info in the header while collapsed** |
-| `expanded_icon_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Title icon color** — Not set: the theme's normal title icon colour. |
-| `expanded_text_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Title text color** — Not set: the theme's text colour. |
 | `collapsed_icon_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Collapsed icon color** — Not set: the same as the title icon colour. |
 | `collapsed_text_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Collapsed title color** — Not set: the same as the title text colour. |
 
@@ -178,8 +186,6 @@ Where the buttons go: `panel_bar: false` hides the bar; a Button Menu panel (`he
 | `collapsed_info` | `default` · `summary` · `entity` · `off` | `default` | **Info in the header while collapsed** |
 | `collapsed_entity` | entity id |  | **Entity to show** — Its value in the collapsed header (used by "An entity's value", and instead of the summary when set). |
 | `collapsed_label` | text |  | **Label before the value** |
-| `expanded_icon_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Title icon color** — Not set: the theme's normal title icon colour. |
-| `expanded_text_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Title text color** — Not set: the theme's text colour. |
 | `collapsed_icon_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Collapsed icon color** — Not set: the same as the title icon colour. |
 | `collapsed_text_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Collapsed title color** — Not set: the same as the title text colour. |
 | `show_title` | `true` / `false` | `true` | **Show the title** |
@@ -187,6 +193,8 @@ Where the buttons go: `panel_bar: false` hides the bar; a Button Menu panel (`he
 | `show_icon` | `true` / `false` | `true` | **Show the title icon** |
 | `icon` | icon, e.g. `mdi:weather-windy` |  | **Icon** |
 | `in_bar` | `true` / `false` |  | **Panel button** — Adds a button for this panel to the button menu, to show or hide it (or open its pop-up). Off: no button, and the panel is always shown (unless hidden with the eye icon in the panel list). |
+| `expanded_icon_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Title icon color** — Not set: the theme's normal title icon colour or the card's (Appearance → Panel titles). |
+| `expanded_text_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Title text color** — Not set: the theme's text colour or the card's (Appearance → Panel titles). |
 | `text_contrast` | `default` · `off` · `auto` · `strong` | `default` | **Text contrast** |
 | `tile_background` | `default` · `translucent` · `solid` · `none` | `default` | **Panel background** |
 | `tile_shadow` | `true` / `false` | `true` | **Disable shadow** (the editor shows it as a *Disable …* checkbox; `false` = disabled) |
@@ -218,8 +226,6 @@ Panels inside a `stack` have no grid place of their own; they take:
 | `collapsed_info` | `default` · `summary` · `entity` · `off` | `default` | **Info in the header while collapsed** |
 | `collapsed_entity` | entity id |  | **Entity to show** — Its value in the collapsed header (used by "An entity's value", and instead of the summary when set). |
 | `collapsed_label` | text |  | **Label before the value** |
-| `expanded_icon_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Title icon color** — Not set: the theme's normal title icon colour. |
-| `expanded_text_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Title text color** — Not set: the theme's text colour. |
 | `collapsed_icon_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Collapsed icon color** — Not set: the same as the title icon colour. |
 | `collapsed_text_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Collapsed title color** — Not set: the same as the title text colour. |
 | `show_title` | `true` / `false` | `true` | **Show the title** |
@@ -464,6 +470,7 @@ Default size: 6 of 12 wide, 3 rows high.
 | `ranges` | list of: `6h` · `12h` · `24h` · `48h` · `7d` · `30d` · `90d` · `365d` |  | **Range buttons** |
 | `range` | `6h` · `12h` · `24h` · `48h` · `7d` · `30d` · `90d` · `365d` |  | **Default range** — Range shown first. |
 | `show_readings` | `true` / `false` | `true` | **Show current readings** |
+| `readings_place` | `auto` · `header` · `below` | `auto` | **Readings** — In the title row, the chart gets the height of the readings row. |
 | `left_min` | number |  | **Left axis min** |
 | `left_max` | number |  | **Left axis max** |
 | `right_min` | number |  | **Right axis min** |
@@ -681,6 +688,7 @@ Default size: 6 of 12 wide, 3 rows high.
 |---|---|---|---|
 | `range` | `6h` · `12h` · `24h` · `48h` · `7d` · `30d` · `90d` · `365d` |  | **Default range** |
 | `show_readings` | `true` / `false` | `true` | **Show current readings** |
+| `readings_place` | `auto` · `header` · `below` | `auto` | **Readings** — In the title row, the chart gets the height of the readings row. |
 
 ### UV & Solar — `type: uv_solar`
 
@@ -690,6 +698,7 @@ Default size: 6 of 12 wide, 3 rows high.
 |---|---|---|---|
 | `range` | `6h` · `12h` · `24h` · `48h` · `7d` · `30d` · `90d` · `365d` |  | **Default range** |
 | `show_readings` | `true` / `false` | `true` | **Show current readings** |
+| `readings_place` | `auto` · `header` · `below` | `auto` | **Readings** — In the title row, the chart gets the height of the readings row. |
 
 ### Weather records — `type: records`
 
