@@ -1,5 +1,13 @@
 # Changelog
 
+## v2026.11.01.108
+
+- **Alerts Bar finds its sensors and shows them.** The section now lists, for each alert, what it watches for and which entity it reads for each part, marked **Auto** (found on your station), **Your choice** or **Not found** with what to do about it.
+  - Heat and frost: temperature, feels-like, dew point, wind speed, tonight's low from the weather entity's hourly forecast, and day or night.
+  - Lightning nearby: strike distance and last strike time, the same sensors the Lightning panel uses (including ones chosen there).
+  - Weather alerts: the alerts sensor. If none is chosen, the card now uses the first sensor with an Alerts list, preferring the NWS Alerts integration's.
+- New **Weather alerts** checkbox to turn that part off, like Heat and frost and Lightning nearby. The settings have clearer descriptions, grouped under Alerts bar and What it shows.
+
 ## v2026.11.01.107
 
 - **Wind rose larger:** Home Assistant pads every card's content by 16 px. The Wind Rose Card inside the Wind panel got that padding on top of the panel's own, so the rose was 32 px narrower and shorter than the space it had. The padding is removed inside the panel.

@@ -30,6 +30,7 @@ import { detected } from "../card/detected.js";
 import { ANIM_SPEEDS } from "../card/animation-speed.js";
 import { canCollapseType } from "../card/weather-station-flex-card.js";
 import { viewOptions, readView, writeView, viewKind, VIEW_KEYS } from "./panel-view.js";
+import { alertSources } from "../card/alerts.js";
 import { OPEN_ICONS_SMALL, OPEN_ICONS_FULL } from "../card/icons.js";
 import { COMPACT_TYPES } from "../card/compact.js";
 import { metricSensor, entityValue, integrationOf } from "../card/resolve.js";
@@ -114,10 +115,14 @@ const APPEARANCE_GROUPS = [
 // Alerts Bar section.
 const ALERTS_GROUPS = [
   ["Alerts bar", [
-    { name: "alerts_bar", label: "Alerts bar", selector: { boolean: {} }, default: false, helper: "A thin row at the top that appears only while something needs attention: heat or frost (the Frost & heat watch rules), lightning within 10 miles in the last 30 minutes, and weather alerts. Tap one to open its panel." },
-    { name: "alerts_watch", label: "Heat and frost", when: (d) => !!d.alerts_bar, selector: { boolean: {} }, default: true },
-    { name: "alerts_lightning", label: "Lightning nearby", when: (d) => !!d.alerts_bar, selector: { boolean: {} }, default: true },
-    { name: "alerts_entity", label: "Weather alerts sensor", when: (d) => !!d.alerts_bar, selector: { entity: { domain: "sensor" } }, helper: "Optional, e.g. the NWS Alerts integration's sensor (its Alerts attribute)." },
+    { name: "alerts_bar", label: "Show the Alerts bar", selector: { boolean: {} }, default: false, helper: "A thin row at the top of the card. It appears only while something needs attention and is hidden the rest of the time. Tap an alert to open its panel (Frost & heat watch, Lightning) or the alert's details." },
+    { name: "_alerts_sources", kind: "info", when: (d) => !!d.alerts_bar },
+  ]],
+  ["What it shows", [
+    { name: "alerts_watch", label: "Heat and frost", when: (d) => !!d.alerts_bar, selector: { boolean: {} }, default: true, helper: "From your station's temperature, feels-like, dew point and wind, and tonight's forecast low." },
+    { name: "alerts_lightning", label: "Lightning nearby", when: (d) => !!d.alerts_bar, selector: { boolean: {} }, default: true, helper: "From your station's lightning sensor (e.g. Ecowitt WH57): strikes within 10 mi in the last 30 minutes." },
+    { name: "alerts_weather", label: "Weather alerts", when: (d) => !!d.alerts_bar, selector: { boolean: {} }, default: true, helper: "Official watches and warnings from an alerts sensor, such as the NWS Alerts integration's." },
+    { name: "alerts_entity", label: "Weather alerts sensor", when: (d) => !!d.alerts_bar && d.alerts_weather !== false, selector: { entity: { domain: "sensor" } }, helper: "Not set: the card uses the alerts sensor it finds (shown above). Choose one to use a different sensor." },
   ]],
 ];
 // "Every panel uses …" buttons: the panel settings each one clears.
@@ -174,7 +179,7 @@ const PANEL_GROUPS = [
 ];
 // In the Button Menu section.
 const REMEMBER = [{ name: "remember", selector: { boolean: {} }, default: true, helper: "Keep which panels were shown or hidden with the panel buttons after a refresh, in each browser. Off: every load starts from the panels' Shown setting (the eye icon)." }];
-const GENERAL_SCHEMA = [...STATION_FIELDS, ...[...BACKGROUND_GROUPS, ...APPEARANCE_GROUPS, ...ALERTS_GROUPS, ...LAYOUT_GROUPS, ...PANEL_GROUPS].flatMap(([, f]) => f)].filter((f) => f.kind !== "action");
+const GENERAL_SCHEMA = [...STATION_FIELDS, ...[...BACKGROUND_GROUPS, ...APPEARANCE_GROUPS, ...ALERTS_GROUPS, ...LAYOUT_GROUPS, ...PANEL_GROUPS].flatMap(([, f]) => f)].filter((f) => !f.kind);
 const GENERAL_DEFAULTS = { layout: "auto", panel_bar: true, remember: true, screen_fit: "rows", layout_size: "auto", background: "none", panel_opacity: 0.55, panel_blur: 6 };
 
 const LABELS = {
@@ -455,7 +460,7 @@ class WeatherStationFlexCardEditor extends LitElement {
     const out = [];
     const label = (f) => f.label || LABELS[f.name] || f.name.replace(/[._]/g, " ");
     for (const [area, title, groups] of [["station", "Weather station", [["Current condition", STATION_FIELDS]]], ["background", "Background", BACKGROUND_GROUPS], ["general", "Appearance", APPEARANCE_GROUPS], ["alerts", "Alerts Bar", ALERTS_GROUPS], ["behavior", "Screen fit & layout", LAYOUT_GROUPS], ["collapse", "Panel View Defaults", PANEL_GROUPS]])
-      for (const [g, fields] of groups) for (const f of fields.filter((x) => x.kind !== "action")) out.push({ label: label(f), help: f.helper || "", where: `${title} › ${g}`, go: { open: area }, f });
+      for (const [g, fields] of groups) for (const f of fields.filter((x) => !x.kind)) out.push({ label: label(f), help: f.helper || "", where: `${title} › ${g}`, go: { open: area }, f });
     for (const f of REMEMBER) out.push({ label: label(f), help: f.helper || "", where: "Button Menu", go: { open: "buttons" }, f });
     const add = (p, key, nested) => {
       const m = panelMeta(p);
@@ -519,7 +524,7 @@ class WeatherStationFlexCardEditor extends LitElement {
   // ha-form only for selectors we don't draw (entity, device, icon, object …).
   _form(data, schema, onChange, whenData, isSet) {
     return renderFields({
-      data, schema, onChange, whenData, isSet, action: (f) => this._resetAction(f),
+      data, schema, onChange, whenData, isSet, action: (f) => (f.kind === "info" ? this._infoBlock(f) : this._resetAction(f)),
       label: (f) => f.label || LABELS[f.name] || f.name,
       helper: (f) => f.helper,
       haForm: (d, sch, cb) => this._haForm(d, sch, cb),
@@ -624,6 +629,26 @@ class WeatherStationFlexCardEditor extends LitElement {
     const walk = (list) => { for (const p of list || []) { if (keys.some((k) => p?.[k] !== undefined)) n++; if (Array.isArray(p?.panels)) walk(p.panels); } };
     walk(this._config.panels);
     return n;
+  }
+
+  // Information blocks inside a settings group.
+  _infoBlock(f) {
+    if (f.name !== "_alerts_sources") return nothing;
+    const rows = alertSources(this.hass, this._station, this._config);
+    const HOW = { found: ["Auto", "mdi:auto-fix"], chosen: ["Your choice", "mdi:account-check-outline"], missing: ["Not found", "mdi:help-circle-outline"] };
+    const name = (e) => this.hass?.states?.[e]?.attributes?.friendly_name;
+    return html`<div class="asrc">
+      <div class="fhelp">What each alert reads. <b>Auto</b> entities were found on your station; the rest you chose.</div>
+      ${rows.map((r) => html`<div class="asrc-g ${r.on ? "" : "off"}">
+        <div class="asrc-t">${r.title}${r.on ? "" : html` <span class="asrc-off">(off)</span>`}</div>
+        <div class="fhelp">${r.rule}</div>
+        <table><tbody>${r.items.map((it) => html`<tr class=${it.how}>
+          <td>${it.label}</td>
+          <td>${it.entity ? html`<span class="asrc-e" title=${it.entity}>${name(it.entity) || it.entity}</span><span class="asrc-id">${it.entity}</span>` : html`<span class="asrc-miss">—</span>`}${it.note ? html`<div class="fhelp">${it.note}</div>` : nothing}</td>
+          <td><span class="asrc-how ${it.how}"><ha-icon icon=${HOW[it.how][1]}></ha-icon>${HOW[it.how][0]}</span></td>
+        </tr>`)}</tbody></table>
+      </div>`)}
+    </div>`;
   }
 
   _resetAction(f) {
@@ -1348,6 +1373,22 @@ class WeatherStationFlexCardEditor extends LitElement {
     .chg { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-left: 8px; vertical-align: middle; background: var(--warning-color, #ffa600); flex: 0 0 auto; }
     .pview { margin: 0 0 var(--ltek-sp-3, 12px); padding: var(--ltek-sp-2, 8px) var(--ltek-sp-3, 12px); border: 1px solid var(--ltek-c-accent, var(--primary-color)); border-radius: var(--ltek-radius, 10px); }
     .pview label { font-weight: 600; color: var(--ltek-c-accent, var(--primary-color)); }
+    .asrc { display: grid; gap: var(--ltek-sp-3, 12px); margin: var(--ltek-sp-2, 8px) 0; }
+    .asrc-g { border: 1px solid var(--divider-color, rgba(127, 127, 127, 0.3)); border-radius: var(--ltek-radius, 10px); padding: var(--ltek-sp-2, 8px) var(--ltek-sp-3, 12px); }
+    .asrc-g.off { opacity: 0.55; }
+    .asrc-t { font-weight: 600; margin-bottom: 2px; }
+    .asrc-off { font-weight: 400; color: var(--secondary-text-color); }
+    .asrc table { width: 100%; border-collapse: collapse; margin-top: 6px; font-size: var(--ltek-fs-small, 13px); }
+    .asrc td { padding: 4px 6px 4px 0; vertical-align: top; border-top: 1px solid var(--divider-color, rgba(127, 127, 127, 0.2)); }
+    .asrc td:first-child { width: 34%; color: var(--secondary-text-color); }
+    .asrc td:last-child { width: 1%; white-space: nowrap; text-align: right; }
+    .asrc-e { display: block; }
+    .asrc-id { display: block; font-size: 11px; color: var(--secondary-text-color); word-break: break-all; }
+    .asrc-how { display: inline-flex; align-items: center; gap: 3px; font-size: 12px; padding: 1px 8px; border-radius: 999px; }
+    .asrc-how ha-icon { --mdc-icon-size: 14px; }
+    .asrc-how.found { color: var(--success-color, #43a047); background: color-mix(in srgb, var(--success-color, #43a047) 14%, transparent); }
+    .asrc-how.chosen { color: var(--ltek-c-accent, var(--primary-color)); background: color-mix(in srgb, var(--ltek-c-accent, var(--primary-color)) 14%, transparent); }
+    .asrc-how.missing { color: var(--warning-color, #ffa600); background: color-mix(in srgb, var(--warning-color, #ffa600) 14%, transparent); }
     .presets { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 0 0 var(--ltek-sp-3); }
     .convert { display: flex; gap: var(--ltek-sp-3); align-items: center; flex-wrap: wrap; margin: var(--ltek-sp-2) 0 var(--ltek-sp-4); }
     details.flat { border: 1px solid transparent; border-top-color: var(--ltek-c-border-soft); border-radius: 0; }

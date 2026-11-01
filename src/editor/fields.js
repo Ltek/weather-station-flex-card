@@ -63,7 +63,7 @@ export function renderFields({ data, schema, onChange, label, helper, haForm, au
   for (const f of schema) {
     // Sub-settings of a feature that's off are hidden (design system: no dead controls).
     if (typeof f.when === "function" && !f.when(whenData ? { ...whenData, ...data } : data)) continue;
-    if (f.kind === "action") { flush(); if (action) out.push(action(f)); continue; }
+    if (f.kind === "action" || f.kind === "info") { flush(); if (action) out.push(action(f)); continue; }
     if (!nativeField(f)) { run.push(f); continue; }
     flush();
     const set = (v) => onChange({ ...data, [f.name]: v });
