@@ -1,5 +1,9 @@
 # Changelog
 
+## v2026.11.01.104
+
+- **Stack → Merge tiles:** the stacked panels that are showing tiles become one set of tiles, with no titles or icons, wrapping evenly across the stack. Each tile still opens its own panel the way that panel's Panel View says. Panels that are open, or hidden (e.g. Pollen off-season, Lightning with no strikes), simply aren't in the set. Without Merge tiles, turning off a panel's tiles icon and title still gives tiles without headers, one group per panel.
+
 ## v2026.11.01.103
 
 - **Panel View:** one drop-down at the top of each panel's settings replaces Compact view, Collapse button, Start collapsed, Opens and View when collapsed. Each option is named by how the panel starts, then what a tap does:

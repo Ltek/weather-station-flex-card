@@ -33,6 +33,10 @@ class WsfcStack extends LitElement {
       .tile.folded { flex-grow: 0 !important; min-height: 0 !important; }
       .tile.ctile-row { padding-top: 8px; padding-bottom: 8px; justify-content: center; }
       .tile .chide { display: none; }
+      /* Merged tiles: one even set from several panels; each tile opens its own panel. */
+      .tile.merged .compact { flex-wrap: wrap; justify-content: center; }
+      .tile.merged .ctile.tap { cursor: pointer; }
+      .tile.merged .ctile:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 2px; }
       .fold { position: absolute; top: 4px; right: 4px; z-index: 5; border: 0; background: transparent; cursor: pointer; padding: 6px; border-radius: 50%; line-height: 0;
         color: var(--wsfc-head-icon, var(--secondary-text-color)); }
       .fold ha-icon { --mdc-icon-size: 24px; }
@@ -128,8 +132,51 @@ class WsfcStack extends LitElement {
     // A vertical stack with its own height shares it among its children, so
     // when one is hidden the others fill its space.
     const fill = vertical && Number(this.config?.rows) > 0;
-    return all.map((p, i) => {
+    // Merge tiles: every stacked panel showing tiles goes into one set of tiles
+    // (no titles or icons), drawn where the first of them is.
+    const merge = !!this.config?.merge_tiles && !!this.card && this.card._focus == null;
+    const merged = [];
+    let mergedAt = -1;
+    const out = all.map((p, i) => {
       if (!p || !PANEL_TYPES[p.type] || hidden[i] === "true") return nothing;
+      if (merge && PANEL_TYPES[p.type] && panelMeta(p)) {
+        const card = this.card, path = `${this.path}.${i}`;
+        if (card._canCollapse(p) && card._isCollapsed(p, path) && card._viewOf(p) === "compact") {
+          const el = this._el(p, i);
+          card._foldDecorate(el, p, path, true); el.autostart = true;
+          merged.push({ p, i, path, el, tiles: compactTiles(p, card.hass, card._station, NEEDS_PANEL.has(p.type) ? el : null) });
+          if (mergedAt < 0) mergedAt = i;
+          return nothing;
+        }
+      }
+      return this._child(p, i, vertical, fill);
+    });
+    if (merged.length) out[mergedAt] = this._merged(merged);
+    return out;
+  }
+
+  // One set of tiles from several stacked panels.
+  _merged(list) {
+    const card = this.card;
+    const tiles = list.flatMap(({ p, path, tiles }) => tiles.map((t) => ({ ...t, open: p.compact_expand !== false ? () => card._toggleCollapse(p, path) : null })));
+    const more = (eid) => this.dispatchEvent(new CustomEvent("hass-more-info", { detail: { entityId: eid }, bubbles: true, composed: true }));
+    const grow = list.reduce((g, { p }) => Math.max(g, Number(p.grow ?? 1)), 1);
+    return html`<section class="tile merged folded ctile-row" style=${`--grow:${grow}`}>
+      <div class="compact">${tiles.length
+        ? tiles.map((t) => html`<div class="ctile ${t.open || t.entity ? "tap" : ""}" style=${t.color ? `--c:${t.color}` : ""} title=${[t.label, t.value, t.unit].filter(Boolean).join(" ")}
+            role=${t.open || t.entity ? "button" : nothing} tabindex=${t.open || t.entity ? "0" : nothing}
+            @click=${(e) => { e.stopPropagation(); if (t.open) t.open(); else if (t.entity) more(t.entity); }}
+            @keydown=${(e) => { if (e.key !== "Enter" && e.key !== " ") return; e.preventDefault(); if (t.open) t.open(); else if (t.entity) more(t.entity); }}>
+            ${t.color ? html`<span class="dot"></span>` : nothing}
+            <span><span class="n">${t.label}</span><span class="v">${t.value}${t.unit ? html`<small>${t.unit}</small>` : nothing}</span></span>
+          </div>`)
+        : html`<span class="empty">Loading…</span>`}</div>
+      <div class="chide" aria-hidden="true">${list.filter(({ p }) => NEEDS_PANEL.has(p.type)).map(({ el }) => el)}</div>
+    </section>`;
+  }
+
+  _child(p, i, vertical, fill) {
+    {
       const meta = panelMeta(p);
       if (!meta) return nothing;
       // Horizontal: `grow` (or span) sets relative width; vertical: rows sets a minimum height.
@@ -168,7 +215,7 @@ class WsfcStack extends LitElement {
       const titleTap = can && card._collapseOpt(p, "collapse_title_tap", true);
       return html`<section data-j=${i} class="tile ${p.type} ${bare ? "bare" : ""} ${fx} ${folded ? "folded" : ""} ${can ? "can-fold" : ""}" style=${`${style};${colors}`}
         @click=${titleTap ? (e) => card._titleTap(e, p, path) : nothing}>${btn}${el}</section>`;
-    });
+    }
   }
 
   _el(p, i) {

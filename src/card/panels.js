@@ -160,6 +160,7 @@ export const PANEL_TYPES = {
       { name: "spacing", label: "Spare height", when: (d) => d.direction === "vertical", selector: { select: { options: opt([["fill", "Grow compact rows to fill it"], ["spread", "Spread the panels out evenly"], ["center", "Centre them"], ["top", "Keep them at the top"]]) } }, default: "fill", helper: "When the stack is taller than its panels (e.g. compact rows of tiles): where the spare height goes." },
       { name: "compact_max_scale", label: "Largest compact size", when: (d) => d.direction === "vertical" && (d.spacing ?? "fill") === "fill", selector: { number: { min: 100, max: 400, step: 10, mode: "slider", unit_of_measurement: "%" } }, default: 250, helper: "How large compact rows may grow (they also stop when the widest row runs out of room)." },
       { name: "min_width", selector: { number: { min: 80, max: 800, mode: "box", unit_of_measurement: "px" } }, helper: "Horizontal: children wrap to a new line only below this width (default 180)." },
+      { name: "merge_tiles", label: "Merge tiles", selector: { boolean: {} }, default: false, helper: "The stacked panels showing tiles become one set of tiles, with no titles or icons, wrapping evenly. A tile opens its own panel as that panel's Panel View says (or its sensor's details when tapping tiles doesn't open the panel)." },
     ],
   },
   wind: {
