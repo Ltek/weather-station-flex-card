@@ -1,5 +1,22 @@
 # Changelog
 
+## v2026.11.01.103
+
+- **Panel View:** one drop-down at the top of each panel's settings replaces Compact view, Collapse button, Start collapsed, Opens and View when collapsed. Each option is named by how the panel starts, then what a tap does:
+  - Full Size
+  - Full Size → Collapse to Title
+  - Title → Expand to Full Size
+  - Full Size → Collapse to Tiles
+  - Tiles → Expand (card default)
+  - Tiles → Expand in Place
+  - Tiles → Open Over the Other Panels
+  - Tiles → Open as a Pop-up
+
+  Tiles options appear only on panels that have a tiles row. Your YAML keeps working: the drop-down reads and writes the same settings as before.
+- **Collapsed View** (a panel section): what the collapsed title bar or the tiles show, shown only for the views it applies to.
+- **Panel View Defaults** (was Collapsible Panel Defaults): **Set every panel's view** applies one Panel View to all panels at once (it says how many it changes, and skips tiles views on panels without tiles). It replaces Convert all now.
+- **Fix:** compact tiles are centred in the panel's height instead of sitting at the top.
+
 ## v2026.11.01.102
 
 - **Alerts Bar** is its own editor section (it was a group in Appearance).

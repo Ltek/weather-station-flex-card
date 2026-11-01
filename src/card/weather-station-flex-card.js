@@ -512,7 +512,7 @@ class WeatherStationFlexCard extends LitElement {
   }
 
   // Icons: the small pop-over (a folded panel opening over the others) and the
-  // full-size one (expand to the whole card / pop-up), chosen in Collapsible Panel Defaults.
+  // full-size one (expand to the whole card / pop-up), chosen in Panel View Defaults.
   get _iconSmall() {
     return openIcon(this._config, "open_icon_small", OPEN_ICONS_SMALL);
   }
@@ -1243,7 +1243,8 @@ class WeatherStationFlexCard extends LitElement {
     .tile.compact-tile { min-height: 0; height: auto; padding-top: 8px; padding-bottom: 8px; justify-content: center; }
     .tile.compact-tile.sized { padding-top: 4px; padding-bottom: 4px; overflow: hidden; }
     .tile.compact-tile.sized .compact { flex-wrap: wrap; overflow: hidden; row-gap: calc(6px * var(--ck, 1)); }
-    .tile.compact-tile .cwrap { min-width: 0; }
+    /* The tiles row is centred in the panel's height (the wrapper fills the panel). */
+    .tile.compact-tile .cwrap { min-width: 0; display: flex; flex-direction: column; justify-content: center; }
     .tile.compact-tile .chide { display: none; }
     .tile.compact-tile.own-btn .cwrap { padding-right: 36px; }
     :host {

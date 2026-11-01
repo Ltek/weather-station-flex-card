@@ -29,6 +29,7 @@ import { setUnsaved, isLive, setLive } from "../card/unsaved.js";
 import { detected } from "../card/detected.js";
 import { ANIM_SPEEDS } from "../card/animation-speed.js";
 import { canCollapseType } from "../card/weather-station-flex-card.js";
+import { viewOptions, readView, writeView, viewKind, VIEW_KEYS } from "./panel-view.js";
 import { OPEN_ICONS_SMALL, OPEN_ICONS_FULL } from "../card/icons.js";
 import { COMPACT_TYPES } from "../card/compact.js";
 import { metricSensor, entityValue, integrationOf } from "../card/resolve.js";
@@ -157,11 +158,11 @@ const LAYOUT_GROUPS = [
   ]],
 ];
 
-// Collapsible Panel Defaults section: how panels collapse and open (each panel can override).
+// Panel View Defaults section: how panels collapse and open (each panel can override).
 const PANEL_GROUPS = [
-  ["Every collapsible panel", [
-    { name: "collapsed_view", label: "Default view when collapsed", selector: { select: { options: [{ value: "minimal", label: "Minimal — the title and a line of info (e.g. 7 strikes today)" }, { value: "compact", label: "Compact — one row of tiles with all the data" }] } }, default: "minimal", helper: "For panels with Collapse button on; panels without a tiles view use Minimal. Each panel can override it — Convert all now clears those overrides." },
-    { name: "collapsed_open", label: "A collapsed panel opens", selector: { select: { options: [{ value: "auto", label: "Automatic — over the other panels in full screen or Auto-fit, else in place" }, { value: "inplace", label: "In place — the panel grows, the others move" }, { value: "overlay", label: "Over the other panels — nothing moves; tap outside or Esc to close" }, { value: "popup", label: "As a pop-up" }] } }, default: "auto", helper: "Each panel can override this (Collapse → Opens)." },
+  ["Collapsing and opening", [
+    { name: "collapsed_view", label: "Panels set up with a collapse button collapse to", selector: { select: { options: [{ value: "minimal", label: "Minimal — the title and a line of info (e.g. 7 strikes today)" }, { value: "compact", label: "Compact — one row of tiles with all the data" }] } }, default: "minimal", helper: "For panels whose YAML has collapsible: true without a view of their own. Panels set with Panel View don't use this." },
+    { name: "collapsed_open", label: "Collapsed panels open (card default)", selector: { select: { options: [{ value: "auto", label: "Automatic — over the other panels in full screen or Auto-fit, else in place" }, { value: "inplace", label: "In place — the panel grows, the others move" }, { value: "overlay", label: "Over the other panels — nothing moves; tap outside or Esc to close" }, { value: "popup", label: "As a pop-up" }] } }, default: "auto", helper: "Each panel can override this (Collapse → Opens)." },
     ...openIconFields("open_icon_small", "Small pop-over icon", OPEN_ICONS_SMALL, "On a collapsed panel that opens over the others."),
     ...openIconFields("open_icon_full", "Full-size icon", OPEN_ICONS_FULL, "Expand to the whole card, tap-to-open tiles and panels that open as a pop-up."),
     { name: "collapse_title_tap", label: "Tap the title to collapse / expand", selector: { boolean: {} }, default: true, helper: "For panels with Collapse button on (each panel can override this)." },
@@ -442,7 +443,7 @@ class WeatherStationFlexCardEditor extends LitElement {
         ${this._section("alerts", "mdi:alert-outline", "Alerts Bar", () => this._general(ALERTS_GROUPS))}
         ${this._section("behavior", "mdi:fit-to-screen-outline", "Screen fit & layout", () => this._general(LAYOUT_GROUPS))}
         ${this._section("buttons", "mdi:gesture-tap-button", "Button Menu", () => this._buttonsEditor())}
-        ${this._section("collapse", "mdi:arrow-collapse-vertical", "Collapsible Panel Defaults", () => html`${this._general(PANEL_GROUPS)}${this._convertBar()}`)}
+        ${this._section("collapse", "mdi:view-agenda-outline", "Panel View Defaults", () => html`${this._general(PANEL_GROUPS)}${this._convertBar()}`)}
         ${this._section("layout", "mdi:view-dashboard-edit-outline", "Layout Map", () => this._layoutEditor())}
         ${this._section("panels", "mdi:view-list-outline", `Panels (${this._panels.length})`, () => this._panelList())}
       </div>
@@ -453,7 +454,7 @@ class WeatherStationFlexCardEditor extends LitElement {
   _searchIndex() {
     const out = [];
     const label = (f) => f.label || LABELS[f.name] || f.name.replace(/[._]/g, " ");
-    for (const [area, title, groups] of [["station", "Weather station", [["Current condition", STATION_FIELDS]]], ["background", "Background", BACKGROUND_GROUPS], ["general", "Appearance", APPEARANCE_GROUPS], ["alerts", "Alerts Bar", ALERTS_GROUPS], ["behavior", "Screen fit & layout", LAYOUT_GROUPS], ["collapse", "Collapsible Panel Defaults", PANEL_GROUPS]])
+    for (const [area, title, groups] of [["station", "Weather station", [["Current condition", STATION_FIELDS]]], ["background", "Background", BACKGROUND_GROUPS], ["general", "Appearance", APPEARANCE_GROUPS], ["alerts", "Alerts Bar", ALERTS_GROUPS], ["behavior", "Screen fit & layout", LAYOUT_GROUPS], ["collapse", "Panel View Defaults", PANEL_GROUPS]])
       for (const [g, fields] of groups) for (const f of fields.filter((x) => x.kind !== "action")) out.push({ label: label(f), help: f.helper || "", where: `${title} › ${g}`, go: { open: area }, f });
     for (const f of REMEMBER) out.push({ label: label(f), help: f.helper || "", where: "Button Menu", go: { open: "buttons" }, f });
     const add = (p, key, nested) => {
@@ -554,21 +555,28 @@ class WeatherStationFlexCardEditor extends LitElement {
   }
 
 
-  // "Convert all now": every panel (and stacked panel) follows the card's
-  // Default view when collapsed — their own View when collapsed is cleared.
+  // "Set every panel's view": one Panel View for every panel (and stacked panel)
+  // that has it; tiles views only go to panels with a tiles row.
   _convertBar() {
-    const view = this._config.collapsed_view || "minimal";
-    const all = this._panels.flatMap((p) => [p, ...(p.type === "stack" ? p.panels || [] : [])]);
-    const over = all.filter((p) => p.collapsed_view && p.collapsed_view !== "default").length;
-    const convert = () => {
-      const clear = (p) => { if (!p) return p; const { collapsed_view: _v, ...r } = p; return r; };
+    const card = { ...this._config, screen_fit: fitMode(this._config) };
+    const can = (p) => p && canCollapseType(p.type) && !panelMeta(p)?.bare;
+    const opts = viewOptions({ type: "uv_solar" }, card, true);
+    const pick = this._allView || "full_title";
+    const fits = (p) => can(p) && viewOptions(p, card, true).some(([v]) => v === pick);
+    const all = this._panels.flatMap((p) => [p, ...(p.type === "stack" ? p.panels || [] : [])]).filter(can);
+    const n = all.filter(fits).length, change = all.filter((p) => fits(p) && readView(p, this._config) !== pick).length;
+    const apply = () => {
+      const set = (p) => (fits(p) ? writeView(p, pick, this._config) : p);
       this._flexEds.clear();
-      this._setPanels(this._panels.map((p) => (p.type === "stack" ? { ...clear(p), panels: (p.panels || []).map(clear) } : clear(p))));
+      this._setPanels(this._panels.map((p) => (p.type === "stack" ? { ...p, panels: (p.panels || []).map(set) } : set(p))));
     };
     return html`<div class="convert">
-      <button class="btn sm" ?disabled=${!over} @click=${convert} title="Clears every panel's own View when collapsed">
-        <ha-icon icon="mdi:swap-horizontal"></ha-icon>Convert all now</button>
-      <span class="fhelp">${over ? `${over === 1 ? "1 panel sets its own view" : `${over} panels set their own view`}; Convert all now makes every collapsible panel ${view === "compact" ? "Compact" : "Minimal"}.` : `Every collapsible panel follows the default (${view === "compact" ? "Compact" : "Minimal"}).`}</span>
+      <div class="fld"><div class="frow"><label for="allview">Set every panel's view</label>
+        <select id="allview" class="sel" @change=${(e) => { this._allView = e.target.value; this.requestUpdate(); }}>
+          ${opts.map(([v, l]) => html`<option value=${v} ?selected=${v === pick}>${l}</option>`)}
+        </select>
+        <button class="btn sm" ?disabled=${!change} @click=${apply}><ha-icon icon="mdi:format-paint"></ha-icon>Apply</button></div>
+      <span class="fhelp">${change ? `Changes ${change} of the ${n} panel${n === 1 ? "" : "s"} that can use it.` : n ? `All ${n} panel${n === 1 ? "" : "s"} that can use it already do.` : "No panel can use this view."}${n < all.length ? ` Tiles views skip panels without a tiles row.` : ""}</span></div>
     </div>`;
   }
 
@@ -1094,6 +1102,9 @@ class WeatherStationFlexCardEditor extends LitElement {
       // "Only changed settings": hide unchanged fields and empty sections.
       const f = only ? all.filter((x) => isChanged(p, x, defs)) : all;
       if (!f.length) return nothing;
+      // A section whose every setting is hidden (e.g. Collapsed View on a Full Size panel) isn't shown.
+      const data = { ...formData(p, f, defs), ...p };
+      if (!f.some((x) => typeof x.when !== "function" || x.when(data))) return nothing;
       const dot = all.some((x) => isChanged(p, x, defs));
       const name = k.slice(4);
       if (k.startsWith("sub:")) {
@@ -1111,6 +1122,21 @@ class WeatherStationFlexCardEditor extends LitElement {
       }
       return flat ? this._flat(p, name, form(f), dot) : html`<div class="grp">${name}${dot ? html`<i class="chg" title="Has changed settings"></i>` : nothing}</div>${form(f)}`;
     });
+  }
+
+  // Panel View drop-down (top of every panel's settings that can collapse).
+  _panelView(p, update) {
+    const m = panelMeta(p);
+    const opts = viewOptions(p, { ...this._config, screen_fit: fitMode(this._config) }, canCollapseType(p.type) && !m?.bare);
+    if (opts.length < 2) return nothing;
+    const cur = readView(p, this._config);
+    const id = `pv-${p.type}`;
+    return html`<div class="pview fld"><div class="frow"><label for=${id}>Panel View</label>
+      <select id=${id} class="sel" @change=${(e) => update(writeView(p, e.target.value, this._config))}>
+        ${opts.map(([v, l]) => html`<option value=${v} ?selected=${v === cur}>${l}</option>`)}
+      </select></div>
+      <div class="fhelp">How the panel starts → what a tap on its title or tiles does.${viewKind(cur) === "title" && p.show_title === false ? " It needs its title shown to collapse." : ""}</div>
+    </div>`;
   }
 
   _panelBody(p, key, updatePanel, nested) {
@@ -1131,6 +1157,19 @@ class WeatherStationFlexCardEditor extends LitElement {
     if (p.type === "hero") common = common.filter((f) => !["icon", "display", "in_bar"].includes(f.name));
     // Panels without a title header can't fold down to it.
     if (!canCollapseType(p.type)) common = common.filter((f) => f.section !== "Collapse");
+    // Panel View: the drop-down at the top replaces the view settings; the rest
+    // (what the collapsed bar or the tiles show) appear only for the views they belong to.
+    common = common.filter((f) => !VIEW_KEYS.includes(f.name)).map((f) => {
+      if (f.section !== "Collapse") return f;
+      const kinds = ["compact_expand", "compact_icon", "compact_title"].includes(f.name) ? ["tiles"]
+        : ["show_collapse_hint", "collapse_hint", "collapsed_info", "collapsed_entity", "collapsed_label"].includes(f.name) ? ["title"] : ["title", "tiles"];
+      const orig = f.when;
+      return { ...f, section: "Collapsed View", when: (d) => {
+        const k = viewKind(readView(d, this._config));
+        if (!kinds.includes(k)) return false;
+        return typeof orig !== "function" || orig({ ...d, collapsible: true, compact: k === "tiles", collapsed_view: k === "tiles" ? "compact" : "minimal" });
+      } };
+    });
     // "Card default" choices say what the card's setting currently is.
     const C = this._config, strictish = C.layout === "fullscreen" && ["strict", "scale"].includes(fitMode(C));
     const DEF = {
@@ -1147,7 +1186,7 @@ class WeatherStationFlexCardEditor extends LitElement {
       return { ...f, selector: { select: { ...f.selector.select, options: opts.map((o) => (o.value === "default" ? { ...o, label: `Card default — ${DEF[f.name]()}` } : o)) } } };
     });
     // Tiles view only where the panel has one.
-    if (!COMPACT_TYPES.has(p.type)) common = common.filter((f) => !["collapsed_view", "compact_expand", "compact_title", "compact"].includes(f.name));
+    if (!COMPACT_TYPES.has(p.type)) common = common.filter((f) => !["collapsed_view", "compact_expand", "compact_title", "compact_icon", "compact"].includes(f.name));
     // Panels without a header have no title options.
     if (NO_TITLE.has(p.type)) common = common.filter((f) => !["show_title", "title", "show_icon", "icon"].includes(f.name) || (p.type !== "clock" && f.name === "title"));
     const isGraph = ["graph", "temp_humidity", "uv_solar", "statistics"].includes(p.type);
@@ -1169,6 +1208,7 @@ class WeatherStationFlexCardEditor extends LitElement {
         this._flexEds.clear();
         update(np);
       }}>${name}</button>`)}</div>` : nothing}
+      ${this._panelView(p, update)}
       ${isGraph
         ? html`<div class="grp first">Series</div>
             <wsfc-series-editor .hass=${this.hass} .panel=${p} .station=${this._station} @panel-changed=${(e) => update(e.detail.panel)}></wsfc-series-editor>`
@@ -1306,6 +1346,8 @@ class WeatherStationFlexCardEditor extends LitElement {
     .flash { animation: wsfc-flash 1.6s ease; border-radius: 6px; }
     @keyframes wsfc-flash { 0%, 60% { background: var(--ltek-c-accent-fade); box-shadow: 0 0 0 2px var(--ltek-c-accent); } 100% { background: transparent; box-shadow: none; } }
     .chg { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-left: 8px; vertical-align: middle; background: var(--warning-color, #ffa600); flex: 0 0 auto; }
+    .pview { margin: 0 0 var(--ltek-sp-3, 12px); padding: var(--ltek-sp-2, 8px) var(--ltek-sp-3, 12px); border: 1px solid var(--ltek-c-accent, var(--primary-color)); border-radius: var(--ltek-radius, 10px); }
+    .pview label { font-weight: 600; color: var(--ltek-c-accent, var(--primary-color)); }
     .presets { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 0 0 var(--ltek-sp-3); }
     .convert { display: flex; gap: var(--ltek-sp-3); align-items: center; flex-wrap: wrap; margin: var(--ltek-sp-2) 0 var(--ltek-sp-4); }
     details.flat { border: 1px solid transparent; border-top-color: var(--ltek-c-border-soft); border-radius: 0; }
@@ -1356,4 +1398,5 @@ customElements.get("weather-station-flex-card-editor") || customElements.define(
 // For tests.
 globalThis.__wsfcEditorHelpers = { stackWithNext, unstack, moveIntoStack };
 // For scripts/gen-config-doc.mjs (docs/CONFIGURATION.md is generated from these).
+globalThis.__wsfcPanelView = { viewOptions, readView, writeView, viewKind };
 globalThis.__wsfcSchemas = { STATION_FIELDS, BACKGROUND_GROUPS, APPEARANCE_GROUPS, ALERTS_GROUPS, RESET_ACTIONS, LAYOUT_GROUPS, PANEL_GROUPS, GENERAL_DEFAULTS, REMEMBER, LABELS, PANEL_TYPES, COMMON_SCHEMA, STACK_CHILD_SCHEMA };
