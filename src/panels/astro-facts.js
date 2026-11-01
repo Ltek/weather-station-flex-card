@@ -53,7 +53,7 @@ export function factsFields(defaults = ALL_FACTS, on = false, positions = [["bel
     { name: "fact_value_size", label: "Value size", when, selector: { number: { min: 8, max: 40, mode: "slider", unit_of_measurement: "px" } }, default: 13 },
     { name: "fact_value_weight", label: "Value weight", when, selector: { select: { options: weights } }, default: "400" },
     { name: "fact_value_color", label: "Value color", when, selector: { text: {} }, helper: "Not set: primary text." },
-  ].map((f) => ({ ...f, sub: "Sun & moon facts" }));
+  ].map((f) => ({ ...f, section: "Sun & moon facts" }));
 }
 
 /** Values for today at the Home Assistant location (exported for tests). */

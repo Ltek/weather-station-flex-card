@@ -1,5 +1,18 @@
 # Changelog
 
+## v2026.11.01.99
+
+- **Collapse / expand everywhere.** The editor said "fold", "folded" and "collapsed" for the same thing. It now uses Home Assistant's terms: collapse, collapsed, expand, expanded. Setting names in YAML are unchanged.
+- **Editor sections:** Panel behavior is split into **Button Menu** (the panel buttons) and **Collapsible Panel Defaults** (how collapsible panels look and open, with Convert all now).
+- **Sun & moon facts** is a flat section like the others in the Hero, Sky Tracker and Astronomy settings. The hero's Text size and Icon size moved into its Size and Scaling section (it showed two).
+- **Layout Map: one view.** The separate "on the screen at load" picture is gone; the map itself shows it:
+  - the screen edge where it really falls, with the area below it shaded;
+  - a dashed extension under panels whose content makes them taller;
+  - an orange outline on panels partly off screen, a dotted one on those fully off screen.
+- **Layout Map: panels hidden on load aren't on the map.** They're listed under it, keep their place in the panel list, and the panels below close up as they do on the card.
+- **Hero with sun & moon facts:** the facts are now part of the hero's layout instead of drawn over it. With Auto scale the weather info fits in the space above (or below) them. They stay on one line, scaled down to the hero's width when needed.
+- **Wind rose:** when the panel is narrower than the rose needs, the rose is centred in the spare height instead of leaving it all at the bottom. New **Bars: Auto** puts the speed bars beside the rose in a wide panel and under it in a tall one, whichever lets the rose be larger.
+
 ## v2026.10.31.98
 
 **Free placement and quarter rows**

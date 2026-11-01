@@ -144,7 +144,7 @@ CoAgMET package: copy both files from `extras/coagmet/` (`coagmet_records.yaml` 
 - type: lightning            # hidden until a lightning sensor exists
 ```
 
-### Full screen that fits exactly, maps folded at load
+### Full screen that fits exactly, maps collapsed at load
 
 ```yaml
 layout: fullscreen
@@ -153,7 +153,7 @@ layout_screen: 1280x800      # the editor's layout map shows this screen at load
 panels:
   - type: radar
     collapsible: true
-    collapsed: true          # starts folded to its title (and paused)
+    collapsed: true          # starts collapsed to its title (and paused)
   - type: air_quality
     layout: tiles
     content_scale: 85        # everything inside smaller

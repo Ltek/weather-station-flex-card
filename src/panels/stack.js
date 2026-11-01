@@ -148,7 +148,7 @@ class WsfcStack extends LitElement {
       const toggle = () => card._toggleCollapse(p, path);
       const btn = can
         ? html`<button class="fold" type="button" @click=${(e) => { e.stopPropagation(); toggle(); }} aria-expanded=${String(!folded)}
-            aria-label=${`${folded ? "Expand" : "Collapse"} ${p.title || meta.label}`} title=${folded ? "Show" : "Collapse to its title"}>
+            aria-label=${`${folded ? "Expand" : "Collapse"} ${p.title || meta.label}`} title=${folded ? "Expand" : "Collapse to its title"}>
             <ha-icon icon=${card._foldIcon(p, folded)}></ha-icon></button>`
         : nothing;
       const colors = can ? card._foldColors(p, folded) : "";

@@ -225,10 +225,16 @@ class WsfcHeroPanel extends WsfcFlexPanel {
     factStyles,
     css`
       :host { position: relative; }
-      /* Sun & moon facts across the bottom of the hero, over its background. */
-      .hero-facts { position: absolute; left: 16px; right: 16px; bottom: 12px; z-index: 1; pointer-events: none; }
-      .hero-facts .facts { margin: 0; }
-      .hero-facts.top { bottom: auto; top: 12px; }
+      /* Sun & moon facts along the bottom (or top) of the hero: in the flow, so the
+         hero's content fits above (below) them, and on one line, scaled to fit it. */
+      .hero-facts { flex: 0 0 auto; margin: 0 16px 10px; pointer-events: none; min-width: 0; overflow: hidden; }
+      .hero-facts.top { order: -1; margin: 10px 16px 0; }
+      .hero-facts .facts { margin: 0; display: flex; flex-wrap: nowrap; align-items: flex-start; column-gap: var(--f-gap, 14px); justify-content: space-between; width: max-content; min-width: 100%; box-sizing: border-box; }
+      .hero-facts .facts.packed { justify-content: flex-start; }
+      .hero-facts .facts.packed.al-center { justify-content: center; }
+      .hero-facts .facts.packed.al-right { justify-content: flex-end; }
+      .hero-facts .fact { flex: 0 0 auto; }
+      .hero-facts .fact.moon { grid-column: auto; }
       .core { margin: 0; display: flex; }
       /* Fit to the panel: the hero takes the panel's height, its content scales to it. */
       :host([fit]) .core { flex: 1 1 0; min-height: 0; overflow: hidden; }
@@ -320,7 +326,7 @@ class WsfcHeroPanel extends WsfcFlexPanel {
   updated(changed) {
     fillTile(this._slot.el);
     this.toggleAttribute("fit", this._fitting);
-    if (!this._fitting) { this._k = undefined; return; }
+    if (!this._fitting) { this._k = undefined; requestAnimationFrame(() => this._fitFacts()); return; }
     // A new size or config: measure again (a few passes until it settles).
     const key = `${this._dimKey}|${JSON.stringify(this.config)}`;
     if (key !== this._fitKey) { this._fitKey = key; this._fitPass = 0; }
@@ -340,10 +346,26 @@ class WsfcHeroPanel extends WsfcFlexPanel {
     return bottom - top + (parseFloat(getComputedStyle(card).paddingBottom) || 0);
   }
 
+  // Facts on one line: scaled down to the hero's width (and with the hero's own
+  // scale when it fits its panel, up to 1.6×).
+  _fitFacts() {
+    const box = this.renderRoot?.querySelector(".hero-facts");
+    const row = box?.querySelector(".facts");
+    if (!row) return;
+    box.style.zoom = "1";
+    const room = box.clientWidth, need = row.scrollWidth;
+    const want = this._fitting ? Math.max(0.6, Math.min(1.6, this._k || 1)) : 1;
+    const z = Math.max(0.4, Math.min(want, need > 0 ? room / need : want));
+    box.style.zoom = Math.abs(z - 1) < 0.005 ? "" : String(Math.floor(z * 100) / 100);
+  }
+
   _refit() {
-    if (!this._fitting || !this.isConnected) return;
+    if (!this.isConnected) return;
+    this._fitFacts();
+    if (!this._fitting) return;
     this._fitPass = (this._fitPass || 0) + 1;
-    const avail = this.clientHeight, need = this._contentHeight();
+    // The content's room: the hero less the facts row (the core takes what's left).
+    const avail = this.renderRoot.querySelector(".core")?.clientHeight || this.clientHeight, need = this._contentHeight();
     if (!avail || !need) return;
     const card = this._slot.el?.shadowRoot?.querySelector("ha-card");
     const wide = card && card.scrollWidth > card.clientWidth + 2 ? card.clientWidth / card.scrollWidth : 1;

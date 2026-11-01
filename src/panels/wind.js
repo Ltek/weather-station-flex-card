@@ -86,7 +86,7 @@ class WsfcWind extends LitElement {
       /* The Wind Rose Card draws into a fixed-ratio SVG (about 1.35 : 1). In fit
          mode it gets the whole width and is scaled to the height it has, so it is
          never squeezed sideways. */
-      :host([fit]) .wr.byh { width: 100%; max-width: none; margin: 0; display: flex; justify-content: center; overflow: hidden; }
+      :host([fit]) .wr.byh { width: 100%; max-width: none; margin: auto 0; display: flex; justify-content: center; overflow: hidden; }
       :host([fit]) .wr.byh > :first-child { flex: 0 0 auto; width: var(--wsfc-wr-w, 100%); }
       .wr > * { --ha-card-background: transparent; --ha-card-box-shadow: none; --ha-card-border-width: 0; display: block; }
     `,
@@ -147,7 +147,7 @@ class WsfcWind extends LitElement {
     if (wr) {
       const ids = this._ids();
       if (ids.dir && ids.speed) {
-        this._ensureRose(windroseCard(c, ids, unit));
+        this._ensureRose(windroseCard(c.wr_bars === "auto" ? { ...c, wr_bars: this._autoBars() } : c, ids, unit));
         if (this._wrEl) this._wrEl.hass = this.hass;
         if (this._wrNext) this._wrNext.hass = this.hass;
         const sc = Math.max(30, Math.min(150, Number(c.wr_scale ?? 100)));
@@ -314,7 +314,7 @@ class WsfcWind extends LitElement {
   // its width) so the whole panel's content fits that height.
   _watchFit() {
     if (!this._fitRo) {
-      this._fitRo = new ResizeObserver(() => this._refit());
+      this._fitRo = new ResizeObserver(() => { if (this.config?.wr_bars === "auto" && this._bars && this._autoBars() !== this._lastBars) { this._lastBars = this._bars; this.requestUpdate(); } this._refit(); });
       this._fitRo.observe(this);
     }
     // The Wind Rose Card renders asynchronously; watch it too.
@@ -327,6 +327,19 @@ class WsfcWind extends LitElement {
     requestAnimationFrame(() => this._refit());
   }
 
+  // Bars "auto": beside the rose in a wide panel, under it in a tall one
+  // (whichever lets the rose be larger; the card draws 1616×1194 vs 1184×1504).
+  _autoBars() {
+    const head = this.renderRoot?.querySelector(".head")?.getBoundingClientRect().height || 40;
+    const w = this.clientWidth || 400, h = Math.max(60, (this.clientHeight || 300) - head - 8);
+    const right = Math.min(w / 1616, h / 1194), bottom = Math.min(w / 1184, h / 1504);
+    const prev = this._bars || "right";
+    // A little hysteresis so a panel near the turning point doesn't flip back and forth.
+    const next = prev === "right" ? (bottom > right * 1.05 ? "bottom" : "right") : right > bottom * 1.05 ? "right" : "bottom";
+    this._bars = next;
+    return next;
+  }
+
   _refit() {
     const fitmain = this.renderRoot.querySelector(".fitmain");
     const kids = [...this.renderRoot.children].filter((k) => k.getBoundingClientRect().height > 0 && getComputedStyle(k).position !== "absolute");
@@ -337,7 +350,9 @@ class WsfcWind extends LitElement {
     const mh = main.getBoundingClientRect().height, mw = main.getBoundingClientRect().width;
     if (!hostH || !mh || !mw) return;
     const top = kids[0].getBoundingClientRect().top, bottom = Math.max(...kids.map((k) => k.getBoundingClientRect().bottom));
-    const used = bottom - top;
+    // The rose is centred in spare height (auto margins): that space isn't used.
+    const cs = getComputedStyle(fitmain);
+    const used = bottom - top - (parseFloat(cs.marginTop) || 0) - (parseFloat(cs.marginBottom) || 0);
     const extra = used - hostH; // > 0: too tall; < 0: room to grow
     if (Math.abs(extra) < 3) return;
     // The rose / dial is about as tall as it is wide (plus fixed parts), so

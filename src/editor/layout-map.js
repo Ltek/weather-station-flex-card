@@ -92,8 +92,13 @@ class WsfcLayoutMap extends LitElement {
   }
 
   // Grid panels = everything not shown as a pop-up.
+  // Panels hidden on load aren't on the map (they're listed under it).
+  _inMap(p) {
+    return p.display !== "popup" && p.show !== false;
+  }
+
   _gridIdx() {
-    return (this.panels || []).map((p, i) => i).filter((i) => this.panels[i].display !== "popup");
+    return (this.panels || []).map((p, i) => i).filter((i) => this._inMap(this.panels[i]));
   }
 
   // Items for placement: every grid panel with its size and position (tracks).
@@ -113,6 +118,7 @@ class WsfcLayoutMap extends LitElement {
     this._pos = this._positions();
     const order = readingOrder(this._pos);
     const popups = panels.map((p, i) => i).filter((i) => panels[i].display === "popup");
+    const hidden = panels.map((p, i) => i).filter((i) => panels[i].display !== "popup" && panels[i].show === false);
     const sc = this._scale();
     this._mr = sc.row; this._mg = sc.gap;
     const mode = this.guide?.mode || "line";
@@ -123,7 +129,12 @@ class WsfcLayoutMap extends LitElement {
         </div>
         ${this.guide?.fit ? html`<div class="grid measure" aria-hidden="true" style=${`--row:${sc.row}px;--gap:${sc.gap}px`}>
           ${this._measureBlocks(panels)}</div>` : nothing}
-        ${sc.line == null || this.measured
+        ${this.measured?.w && this._mapW
+          // Measured on that screen: the screen edge where it really is.
+          ? (this.measured.gridH > this.measured.visibleH + 1
+            ? html`<div class="guide frame" style=${`top:${6 + this.measured.visibleH * (this._mapW / this.measured.w)}px`} aria-hidden="true"><span>${this.guide.w}×${this.guide.h} screen edge</span></div>`
+            : html`<div class="guide fitbox" aria-hidden="true"><span>Fits ${this.guide.w}×${this.guide.h}</span></div>`)
+          : sc.line == null
           ? nothing
           : sc.fits
             // Full screen + fit: everything fits; the frame is the screen.
@@ -132,34 +143,28 @@ class WsfcLayoutMap extends LitElement {
                 <span>${this.guide.w}×${this.guide.h} screen edge${this.guide.fit ? ` · rows at the ${sc.rowPx}px minimum` : ""}</span></div>`}
       </div>
       ${this._screen()}
+      ${hidden.length
+        ? html`<div class="pops"><span>Hidden on load (not on the map):</span>${hidden.map((i) => html`<span class="pop"><ha-icon icon=${iconOf(panels[i])}></ha-icon>${nameOf(panels[i])}</span>`)}</div>`
+        : nothing}
       ${popups.length
         ? html`<div class="pops"><span>Pop-ups:</span>${popups.map((i) => html`<span class="pop"><ha-icon icon=${iconOf(panels[i])}></ha-icon>${nameOf(panels[i])}</span>`)}</div>`
         : nothing}
     `;
   }
 
-  // The real screen at load, to scale: every panel where the card puts it,
-  // the screen edge, and what's below it (needs scrolling to see).
+  // On the real screen at load (from the layout probe): one line of summary and
+  // which panels end up partly or fully off screen. The map itself marks them
+  // (screen edge line, shaded area below it, dashed extensions for panels that
+  // grow, dotted outlines for those off screen).
   _screen() {
     const m = this.measured, g = this.guide;
     if (!m || !g || !this._mapW || !m.w) return nothing;
-    const k = this._mapW / m.w;
-    const total = Math.max(m.gridH, m.visibleH);
     const off = m.tiles.filter((t) => t.where === "off"), part = m.tiles.filter((t) => t.where === "partial");
     const names = (list) => list.map((t) => nameOf(this.panels[t.i] || {})).join(", ");
     return html`<div class="shot-head">On the ${g.w}×${g.h} screen at load${m.gridH <= m.visibleH + 1 ? html` — <span class="okc">everything fits</span>` : ""}</div>
-      <div class="shot" style=${`height:${Math.round(total * k) + 2}px`}>
-        ${m.tiles.map((t) => {
-          const p = this.panels[t.i] || {};
-          return html`<div class="st ${t.where} ${t.collapsed ? "folded" : ""}" style=${`left:${t.x * k}px;top:${t.y * k}px;width:${Math.max(4, t.w * k)}px;height:${Math.max(4, t.h * k)}px`}
-            title=${`${nameOf(p)}: ${Math.round(t.w)}×${Math.round(t.h)} px${t.where === "off" ? " — off screen at load" : t.where === "partial" ? " — partly off screen" : ""}`}>
-            <ha-icon icon=${iconOf(p)}></ha-icon><span>${nameOf(p)}</span></div>`;
-        })}
-        ${m.gridH > m.visibleH + 1 ? html`<div class="below" style=${`top:${m.visibleH * k}px`}><span>screen edge · scroll for the rest</span></div>` : nothing}
-      </div>
       ${off.length || part.length
         ? html`<div class="shot-note">${part.length ? html`<b>Partly off screen:</b> ${names(part)}. ` : ""}${off.length ? html`<b>Off screen:</b> ${names(off)}.` : ""}
-            ${g.fit && !g.strict ? " Content makes some panels taller than their rows (→ in the map above); try Strict fit, Content size, or more rows for them." : ""}</div>`
+            ${g.fit && !g.strict ? " Content makes some panels taller than their rows (dashed in the map); try Exact heights, Fill the panel, or more rows for them." : ""}</div>`
         : nothing}`;
   }
 
@@ -180,18 +185,20 @@ class WsfcLayoutMap extends LitElement {
     const r = this._pos.get(i);
     const span = r.w;
     const rows = sz ? sz.rows : rowsOf(p);
-    const style = this._place(r);
+    let style = this._place(r);
     const m = !sz && this.measured?.tiles?.find((t) => t.i === i);
     // Rows this panel really takes on that screen (content can make it taller).
     const real = m && !m.collapsed ? Math.round(((m.h + this.measured.gap) / (this.measured.row + this.measured.gap)) * Q) / Q : null;
     const grows = real != null && rows > 0 && real > rows + 0.25;
+    // How much taller it really is, drawn as a dashed extension below the block.
+    if (grows) style += `--extra:${Math.round((real - rows) * ((this._mr || MAP_ROW) + (this._mg || MAP_GAP)))}px;`;
     const cls = ["blk", p.show === false ? "hidden" : "", this._drag?.index === i ? "dragging" : "", sz ? "sizing" : "", p.type, m ? `at-${m.where}` : "", grows ? "grows" : "", m?.collapsed ? "folded" : ""].join(" ");
     return html`<div class=${cls} style=${style} data-i=${i} tabindex="0" role="button"
         aria-label=${`${nameOf(p)}, column ${r.x + 1}, row ${toRows(r.y) + 1}, width ${span} of 12, height ${rows || "auto"}. Arrow keys move; Shift+arrows resize.`}
         @pointerdown=${(e) => this._startMove(e, i)} @keydown=${(e) => this._key(e, i)}>
       <ha-icon icon=${iconOf(p)}></ha-icon>
       <span class="nm">${nameOf(p)}</span>
-      <span class="dim">${span}×${rows || "a"}${grows ? html` <b class="need" title="Its content makes it taller on that screen">→ ${real}</b>` : nothing}${m?.collapsed ? " · folded" : ""}</span>
+      <span class="dim">${span}×${rows || "a"}${grows ? html` <b class="need" title="Its content makes it taller on that screen">→ ${real}</b>` : nothing}${m?.collapsed ? " · collapsed" : ""}</span>
       <span class="rz x" @pointerdown=${(e) => this._startSize(e, i, "x")}></span>
       <span class="rz y" @pointerdown=${(e) => this._startSize(e, i, "y")}></span>
       <span class="rz xy" @pointerdown=${(e) => this._startSize(e, i, "xy")}></span>
@@ -253,9 +260,9 @@ class WsfcLayoutMap extends LitElement {
       if (sizes[i]) Object.assign(p, sizes[i]);
       return this._tidy(p);
     });
-    const next = panels.map((p) => (p.display === "popup" ? p : queue.shift()));
+    const next = panels.map((p) => (this._inMap(p) ? queue.shift() : p));
     // Where each panel ends up in the stored list (it's re-sorted into reading order).
-    const slots = panels.map((p, k) => k).filter((k) => panels[k].display !== "popup");
+    const slots = panels.map((p, k) => k).filter((k) => this._inMap(panels[k]));
     this._moved = new Map(order.map((i, n) => [i, slots[n]]));
     this._emit(next);
   }
@@ -272,7 +279,7 @@ class WsfcLayoutMap extends LitElement {
     // Pop-up panels keep their positions; grid panels fill the grid slots in the new order.
     const panels = this.panels;
     const queue = order.map((i) => panels[i]);
-    const next = panels.map((p) => (p.display === "popup" ? p : queue.shift()));
+    const next = panels.map((p) => (this._inMap(p) ? queue.shift() : p));
     this._emit(next);
   }
 
@@ -413,7 +420,11 @@ class WsfcLayoutMap extends LitElement {
     .rz.y { left: 0; bottom: 0; height: 8px; width: 100%; cursor: ns-resize; }
     .rz.xy { right: 0; bottom: 0; width: 12px; height: 12px; cursor: nwse-resize; background: linear-gradient(135deg, transparent 50%, var(--primary-color) 50%); opacity: 0.7; border-bottom-right-radius: 6px; }
     .need { color: var(--warning-color, #ffa600); font-weight: 700; }
-    .blk.grows { border-color: var(--warning-color, #ffa600); }
+    .blk.grows { border-color: var(--warning-color, #ffa600); overflow: visible; }
+    .blk.grows::after { content: ""; position: absolute; left: -1px; right: -1px; top: 100%; height: var(--extra, 0); z-index: 1; pointer-events: none;
+      border: 1px dashed var(--warning-color, #ffa600); border-top: 0; border-radius: 0 0 6px 6px;
+      background: repeating-linear-gradient(135deg, rgba(255, 166, 0, 0.18) 0 4px, transparent 4px 8px); }
+    .blk.at-partial { border-color: var(--warning-color, #ffa600); }
     .blk.at-off { border-style: dotted; }
     .blk.folded { opacity: 0.8; }
     .shot-head { margin: 10px 0 4px; font-size: 12px; font-weight: 600; color: var(--secondary-text-color); }

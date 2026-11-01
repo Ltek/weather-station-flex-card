@@ -134,21 +134,21 @@ const LAYOUT_GROUPS = [
   ]],
 ];
 
-// Panel behavior section: panel buttons (below), then how panels fold and open.
+// Collapsible Panel Defaults section: how panels collapse and open (each panel can override).
 const PANEL_GROUPS = [
-  ["Collapsed panels", [
+  ["Every collapsible panel", [
     { name: "collapsed_view", label: "Default view when collapsed", selector: { select: { options: [{ value: "minimal", label: "Minimal — the title and a line of info (e.g. 7 strikes today)" }, { value: "compact", label: "Compact — one row of tiles with all the data" }] } }, default: "minimal", helper: "For panels with Collapse button on; panels without a tiles view use Minimal. Each panel can override it — Convert all now clears those overrides." },
-    { name: "collapsed_open", label: "A folded panel opens", selector: { select: { options: [{ value: "auto", label: "Automatic — over the other panels in full screen or Auto-fit, else in place" }, { value: "inplace", label: "In place — the panel grows, the others move" }, { value: "overlay", label: "Over the other panels — nothing moves; tap outside or Esc to close" }, { value: "popup", label: "As a pop-up" }] } }, default: "auto", helper: "Each panel can override this (Collapse → Opens)." },
-    ...openIconFields("open_icon_small", "Small pop-over icon", OPEN_ICONS_SMALL, "On a folded panel that opens over the others."),
+    { name: "collapsed_open", label: "A collapsed panel opens", selector: { select: { options: [{ value: "auto", label: "Automatic — over the other panels in full screen or Auto-fit, else in place" }, { value: "inplace", label: "In place — the panel grows, the others move" }, { value: "overlay", label: "Over the other panels — nothing moves; tap outside or Esc to close" }, { value: "popup", label: "As a pop-up" }] } }, default: "auto", helper: "Each panel can override this (Collapse → Opens)." },
+    ...openIconFields("open_icon_small", "Small pop-over icon", OPEN_ICONS_SMALL, "On a collapsed panel that opens over the others."),
     ...openIconFields("open_icon_full", "Full-size icon", OPEN_ICONS_FULL, "Expand to the whole card, tap-to-open tiles and panels that open as a pop-up."),
-    { name: "collapse_title_tap", label: "Tap the title to fold / unfold", selector: { boolean: {} }, default: true, helper: "For panels with Collapse button on (each panel can override this)." },
-    { name: "show_collapse_hint", label: "Hint under the title while folded", selector: { boolean: {} }, default: false, helper: "e.g. \"Tap title to show\" (off by default: the open button already says it)." },
+    { name: "collapse_title_tap", label: "Tap the title to collapse / expand", selector: { boolean: {} }, default: true, helper: "For panels with Collapse button on (each panel can override this)." },
+    { name: "show_collapse_hint", label: "Hint under the title while collapsed", selector: { boolean: {} }, default: false, helper: "e.g. \"Tap title to show\" (off by default: the open button already says it)." },
     { name: "collapse_hint", label: "Hint text", when: (d) => !!d.show_collapse_hint, selector: { text: {} }, helper: "Default \"Tap title to show\"." },
-    { name: "collapsed_info", label: "Info in the header while folded", selector: { select: { options: [{ value: "summary", label: "The panel's summary (e.g. strikes today, rain today)" }, { value: "off", label: "None" }] } }, default: "summary" },
+    { name: "collapsed_info", label: "Info in the header while collapsed", selector: { select: { options: [{ value: "summary", label: "The panel's summary (e.g. strikes today, rain today)" }, { value: "off", label: "None" }] } }, default: "summary" },
     ...COLLAPSE_COLORS,
   ]],
 ];
-// In the Panel behavior section (Panel buttons).
+// In the Button Menu section.
 const REMEMBER = [{ name: "remember", selector: { boolean: {} }, default: true, helper: "Keep which panels were shown or hidden with the panel buttons after a refresh, in each browser. Off: every load starts from the panels' Shown setting (the eye icon)." }];
 const GENERAL_SCHEMA = [...STATION_FIELDS, ...[...BACKGROUND_GROUPS, ...APPEARANCE_GROUPS, ...LAYOUT_GROUPS, ...PANEL_GROUPS].flatMap(([, f]) => f)];
 const GENERAL_DEFAULTS = { layout: "auto", panel_bar: true, remember: true, screen_fit: "rows", layout_size: "auto", background: "none", panel_opacity: 0.55, panel_blur: 6 };
@@ -417,7 +417,8 @@ class WeatherStationFlexCardEditor extends LitElement {
         ${this._section("background", "mdi:image-filter-hdr", "Background", () => this._general(BACKGROUND_GROUPS), (this._config.background || "none") === "animated" ? this._bgPreviewButton() : nothing)}
         ${this._section("general", "mdi:palette-outline", "Appearance", () => this._general(APPEARANCE_GROUPS))}
         ${this._section("behavior", "mdi:fit-to-screen-outline", "Screen fit & layout", () => this._general(LAYOUT_GROUPS))}
-        ${this._section("buttons", "mdi:gesture-tap-button", "Panel behavior", () => html`<div class="agrp"><div class="agrp-t">Panel buttons</div>${this._buttonsEditor()}</div>${this._general(PANEL_GROUPS)}${this._convertBar()}`)}
+        ${this._section("buttons", "mdi:gesture-tap-button", "Button Menu", () => this._buttonsEditor())}
+        ${this._section("collapse", "mdi:arrow-collapse-vertical", "Collapsible Panel Defaults", () => html`${this._general(PANEL_GROUPS)}${this._convertBar()}`)}
         ${this._section("layout", "mdi:view-dashboard-edit-outline", "Layout Map", () => this._layoutEditor())}
         ${this._section("panels", "mdi:view-list-outline", `Panels (${this._panels.length})`, () => this._panelList())}
       </div>
@@ -428,9 +429,9 @@ class WeatherStationFlexCardEditor extends LitElement {
   _searchIndex() {
     const out = [];
     const label = (f) => f.label || LABELS[f.name] || f.name.replace(/[._]/g, " ");
-    for (const [area, title, groups] of [["station", "Weather station", [["Current condition", STATION_FIELDS]]], ["background", "Background", BACKGROUND_GROUPS], ["general", "Appearance", APPEARANCE_GROUPS], ["behavior", "Screen fit & layout", LAYOUT_GROUPS], ["buttons", "Panel behavior", PANEL_GROUPS]])
+    for (const [area, title, groups] of [["station", "Weather station", [["Current condition", STATION_FIELDS]]], ["background", "Background", BACKGROUND_GROUPS], ["general", "Appearance", APPEARANCE_GROUPS], ["behavior", "Screen fit & layout", LAYOUT_GROUPS], ["collapse", "Collapsible Panel Defaults", PANEL_GROUPS]])
       for (const [g, fields] of groups) for (const f of fields) out.push({ label: label(f), help: f.helper || "", where: `${title} › ${g}`, go: { open: area }, f });
-    for (const f of REMEMBER) out.push({ label: label(f), help: f.helper || "", where: "Panel behavior › Panel buttons", go: { open: "buttons" }, f });
+    for (const f of REMEMBER) out.push({ label: label(f), help: f.helper || "", where: "Button Menu", go: { open: "buttons" }, f });
     const add = (p, key, nested) => {
       const m = panelMeta(p);
       if (!m) return;
@@ -1073,7 +1074,7 @@ class WeatherStationFlexCardEditor extends LitElement {
     // Spacing sliders (some panels) live with the other sizes.
     // Spacing and size sliders that belong with Size and Scaling (the hero's own
     // Auto scale sliders stay in its group).
-    const SPACING = ["content_width", "content_height", ...(["daily", "hourly", "forecast", "sky_tracker"].includes(p.type) ? ["text_scale", "icon_scale", "chart_scale", "bar_scale", "arc_scale"] : [])];
+    const SPACING = ["content_width", "content_height", ...(["daily", "hourly", "forecast", "sky_tracker"].includes(p.type) ? ["text_scale", "icon_scale", "chart_scale", "bar_scale", "arc_scale"] : []), ...(p.type === "hero" ? ["text_scale", "icon_scale_all"] : [])];
     const spacing = (m0.schema || []).filter((f) => SPACING.includes(f.name)).map((f) => ({ ...f, section: "Size and Scaling" }));
     const m = spacing.length ? { ...m0, schema: m0.schema.filter((f) => !SPACING.includes(f.name)) } : m0;
     const defs = nested ? { show_title: TITLE_WHEN_SET.has(p.type) ? !!p.title : true } : panelDefaults(p);

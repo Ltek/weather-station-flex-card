@@ -492,7 +492,7 @@ class WeatherStationFlexCard extends LitElement {
   }
 
   // Icons: the small pop-over (a folded panel opening over the others) and the
-  // full-size one (expand to the whole card / pop-up), chosen in Panel behavior.
+  // full-size one (expand to the whole card / pop-up), chosen in Collapsible Panel Defaults.
   get _iconSmall() {
     return openIcon(this._config, "open_icon_small", OPEN_ICONS_SMALL);
   }
@@ -1062,7 +1062,7 @@ class WeatherStationFlexCard extends LitElement {
           @click=${titleTap ? (e) => this._titleTap(e, p, i) : nothing}>
         ${collapsible
           ? html`<button class="collapse" type="button" @click=${() => this._toggleCollapse(p, i)} aria-expanded=${String(!collapsed)}
-              aria-label=${`${collapsed ? "Expand" : "Collapse"} ${p.title || this._autoTitle(p)}`} title=${collapsed ? "Show" : "Collapse to its title"}>
+              aria-label=${`${collapsed ? "Expand" : "Collapse"} ${p.title || this._autoTitle(p)}`} title=${collapsed ? "Expand" : "Collapse to its title"}>
               <ha-icon icon=${this._foldIcon(p, collapsed)}></ha-icon></button>`
           : nothing}
         ${tapToOpen && !collapsed
