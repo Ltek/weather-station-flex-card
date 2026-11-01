@@ -134,12 +134,12 @@ With no `panels:` the card shows its default dashboard (hero, bulletin, Sky Trac
 | `row_height` | number 40–300 px |  | **Row height** — Height of one row unit (default 110). |
 | `gap` | number 0–32 px |  | **Gap** — Space between panels (default 12). |
 
-### Every collapsible panel
+### Collapsing and opening
 
 | Option | Value | Default | What it does |
 |---|---|---|---|
-| `collapsed_view` | `minimal` · `compact` | `minimal` | **Default view when collapsed** — For panels with Collapse button on; panels without a tiles view use Minimal. Each panel can override it — Convert all now clears those overrides. |
-| `collapsed_open` | `auto` · `inplace` · `overlay` · `popup` | `auto` | **A collapsed panel opens** — Each panel can override this (Collapse → Opens). |
+| `collapsed_view` | `minimal` · `compact` | `minimal` | **Panels set up with a collapse button collapse to** — For panels whose YAML has collapsible: true without a view of their own. Panels set with Panel View don't use this. |
+| `collapsed_open` | `auto` · `inplace` · `overlay` · `popup` | `auto` | **Collapsed panels open (card default)** — Each panel can override this (Collapse → Opens). |
 | `open_icon_small` | `picture-in-picture-top-right` · `open-in-new` · `resize` · `image-size-select-large` · `dock-window` · `custom` | `picture-in-picture-top-right` | **Small pop-over icon** — On a collapsed panel that opens over the others. |
 | `open_icon_small_custom` | icon, e.g. `mdi:weather-windy` |  | **Custom icon** — Any Home Assistant icon, e.g. mdi:arrow-expand-down. |
 | `open_icon_full` | `arrow-expand` · `fullscreen` · `arrow-expand-all` · `custom` | `arrow-expand` | **Full-size icon** — Expand to the whole card, tap-to-open tiles and panels that open as a pop-up. |
