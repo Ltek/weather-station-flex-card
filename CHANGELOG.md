@@ -1,5 +1,13 @@
 # Changelog
 
+## v2026.11.01.102
+
+- **Alerts Bar** is its own editor section (it was a group in Appearance).
+- **Appearance → Text & icons:** card-wide **Text size** (px, designed at 14) and **Icon size** (px, designed at 24) for every panel. A panel's own Text size / Icon size (%) scales the card-wide size, so panels can still be set larger or smaller.
+- **Appearance → Panel titles:** **Title text size** and **Title icon size** (px; not set = they follow Text size / Icon size), and the **title text and icon colours**, now for every panel (before, they only applied to collapsible panels). Each panel can override the colours under Default Overrides. Collapsed-title colours stay in Collapsible Panel Defaults.
+- **"Every panel uses …" buttons** under Text contrast, Text & icons and Panel titles: one tap clears the setting on every panel (stacked panels included), so they all follow the card's value. Each button shows how many panels set their own, and is greyed out when none do.
+- **Chart readings in the title row** (Temp & Humidity, UV & Solar, Graph): new **Readings** option. **Auto** (default) puts the current values between the title and the 24h / 7d / 30d buttons when they fit, and moves them below when the title would be cut off. The chart gets the height of the readings row. **In the title row** and **Below the title row** pick one.
+
 ## v2026.11.01.101
 
 - **Text contrast** (Appearance → Panels, `text_contrast`): **Auto** puts a soft halo behind every panel's text and icons, **Strong** an outline-like one, so they read on the animated sky and see-through panels. The halo is dark in a dark theme and light in a light one. Each panel can override it (Default Overrides → Text contrast). Off by default.

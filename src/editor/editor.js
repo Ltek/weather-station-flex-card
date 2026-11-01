@@ -16,7 +16,7 @@
 import { LitElement, html, css, nothing } from "lit";
 import "./core-editor.js";
 import { CARD_VERSION, CARD_NAME, CARD_TYPE } from "../card/constants.js";
-import { PANEL_TYPES, COMMON_SCHEMA, COLLAPSE_COLORS, STACK_CHILD_SCHEMA, NO_TITLE, TITLE_WHEN_SET, panelMeta, spanOf, rowsOf, inBarOf, normalizePanels } from "../card/panels.js";
+import { PANEL_TYPES, COMMON_SCHEMA, COLLAPSE_COLORS, TITLE_COLORS, STACK_CHILD_SCHEMA, NO_TITLE, TITLE_WHEN_SET, panelMeta, spanOf, rowsOf, inBarOf, normalizePanels } from "../card/panels.js";
 import { CORE_EDITOR_TAG, flexOverride, deepMerge } from "../card/core.js";
 import { flexBase, trackerConfig } from "../panels/flex.js";
 import { prune, clone, fitMode } from "../card/config.js";
@@ -84,9 +84,21 @@ const APPEARANCE_GROUPS = [
     { name: "subtitle", selector: { text: {} } },
     { name: "icon", selector: { icon: {} } },
   ]],
+  ["Text & icons", [
+    { name: "text_size", label: "Text size", selector: { number: { min: 8, max: 32, step: 1, mode: "slider", unit_of_measurement: "px" } }, default: 14, helper: "Base text size for every panel (designed at 14 px): all their text grows or shrinks with it. A panel's own Text size (%) scales this." },
+    { name: "icon_size", label: "Icon size", selector: { number: { min: 12, max: 64, step: 1, mode: "slider", unit_of_measurement: "px" } }, default: 24, helper: "Base icon size for every panel (designed at 24 px). A panel's own Icon size (%) scales this." },
+    { name: "_reset_sizes", kind: "action", label: "Every panel uses these sizes", helper: "Clears the Text size and Icon size set on single panels." },
+  ]],
+  ["Panel titles", [
+    { name: "title_size", label: "Title text size", selector: { number: { min: 8, max: 40, step: 1, mode: "slider", unit_of_measurement: "px" } }, helper: "Not set: follows Text size (15 px at the default)." },
+    { name: "title_icon_size", label: "Title icon size", selector: { number: { min: 10, max: 64, step: 1, mode: "slider", unit_of_measurement: "px" } }, helper: "Not set: follows Icon size (20 px at the default)." },
+    ...TITLE_COLORS,
+    { name: "_reset_titles", kind: "action", label: "Every panel uses these title colours", helper: "Clears the title colours set on single panels." },
+  ]],
   ["Panels", [
     { name: "text_contrast", label: "Text contrast", selector: { select: { options: [{ value: "off", label: "Off" }, { value: "auto", label: "Auto — a soft halo behind text and icons" }, { value: "strong", label: "Strong — an outline around text and icons" }] } }, default: "off",
       helper: "Makes text and icons readable on any background (the animated sky, see-through panels): the halo is dark in a dark theme and light in a light one. Each panel can override it (Default Overrides)." },
+    { name: "_reset_contrast", kind: "action", label: "Every panel uses this setting", helper: "Clears Text contrast set on single panels." },
     { name: "panel_opacity", selector: { number: { min: 0, max: 1, step: 0.05, mode: "slider" } }, helper: "With a card background: panel opacity (0 = fully transparent, 1 = solid). Default 0.55." },
     { name: "panel_blur", selector: { number: { min: 0, max: 30, step: 1, mode: "slider", unit_of_measurement: "px" } }, when: (d) => !d.anim_low_power, helper: "With a card background: blur behind panels. Default 6 (off with Low-power animation)." },
     { name: "panel_radius", selector: { number: { min: 0, max: 40, step: 1, mode: "slider", unit_of_measurement: "px" } }, helper: "Auto: your theme's card corner radius (shown above). Move the slider to set your own; × goes back to Auto." },
@@ -97,6 +109,9 @@ const APPEARANCE_GROUPS = [
     { name: "panel_glow_color", when: (d) => !!d.panel_glow, selector: { text: {} }, helper: "Not set: the border color, else the theme's primary color." },
     { name: "panel_glow_size", when: (d) => !!d.panel_glow, selector: { number: { min: 2, max: 40, step: 1, mode: "slider", unit_of_measurement: "px" } }, default: 10 },
   ]],
+];
+// Alerts Bar section.
+const ALERTS_GROUPS = [
   ["Alerts bar", [
     { name: "alerts_bar", label: "Alerts bar", selector: { boolean: {} }, default: false, helper: "A thin row at the top that appears only while something needs attention: heat or frost (the Frost & heat watch rules), lightning within 10 miles in the last 30 minutes, and weather alerts. Tap one to open its panel." },
     { name: "alerts_watch", label: "Heat and frost", when: (d) => !!d.alerts_bar, selector: { boolean: {} }, default: true },
@@ -104,6 +119,12 @@ const APPEARANCE_GROUPS = [
     { name: "alerts_entity", label: "Weather alerts sensor", when: (d) => !!d.alerts_bar, selector: { entity: { domain: "sensor" } }, helper: "Optional, e.g. the NWS Alerts integration's sensor (its Alerts attribute)." },
   ]],
 ];
+// "Every panel uses …" buttons: the panel settings each one clears.
+const RESET_ACTIONS = {
+  _reset_contrast: ["text_contrast"],
+  _reset_sizes: ["text_scale", "icon_scale", "icon_scale_all"],
+  _reset_titles: ["expanded_icon_color", "expanded_text_color"],
+};
 // An icon choice: the listed icons or "Custom icon…", which shows an icon picker.
 function openIconFields(name, label, list, helper) {
   return [
@@ -152,7 +173,7 @@ const PANEL_GROUPS = [
 ];
 // In the Button Menu section.
 const REMEMBER = [{ name: "remember", selector: { boolean: {} }, default: true, helper: "Keep which panels were shown or hidden with the panel buttons after a refresh, in each browser. Off: every load starts from the panels' Shown setting (the eye icon)." }];
-const GENERAL_SCHEMA = [...STATION_FIELDS, ...[...BACKGROUND_GROUPS, ...APPEARANCE_GROUPS, ...LAYOUT_GROUPS, ...PANEL_GROUPS].flatMap(([, f]) => f)];
+const GENERAL_SCHEMA = [...STATION_FIELDS, ...[...BACKGROUND_GROUPS, ...APPEARANCE_GROUPS, ...ALERTS_GROUPS, ...LAYOUT_GROUPS, ...PANEL_GROUPS].flatMap(([, f]) => f)].filter((f) => f.kind !== "action");
 const GENERAL_DEFAULTS = { layout: "auto", panel_bar: true, remember: true, screen_fit: "rows", layout_size: "auto", background: "none", panel_opacity: 0.55, panel_blur: 6 };
 
 const LABELS = {
@@ -418,6 +439,7 @@ class WeatherStationFlexCardEditor extends LitElement {
         ${this._section("station", "mdi:weather-cloudy-clock", "Weather station", () => this._stationEditor())}
         ${this._section("background", "mdi:image-filter-hdr", "Background", () => this._general(BACKGROUND_GROUPS), (this._config.background || "none") === "animated" ? this._bgPreviewButton() : nothing)}
         ${this._section("general", "mdi:palette-outline", "Appearance", () => this._general(APPEARANCE_GROUPS))}
+        ${this._section("alerts", "mdi:alert-outline", "Alerts Bar", () => this._general(ALERTS_GROUPS))}
         ${this._section("behavior", "mdi:fit-to-screen-outline", "Screen fit & layout", () => this._general(LAYOUT_GROUPS))}
         ${this._section("buttons", "mdi:gesture-tap-button", "Button Menu", () => this._buttonsEditor())}
         ${this._section("collapse", "mdi:arrow-collapse-vertical", "Collapsible Panel Defaults", () => html`${this._general(PANEL_GROUPS)}${this._convertBar()}`)}
@@ -431,8 +453,8 @@ class WeatherStationFlexCardEditor extends LitElement {
   _searchIndex() {
     const out = [];
     const label = (f) => f.label || LABELS[f.name] || f.name.replace(/[._]/g, " ");
-    for (const [area, title, groups] of [["station", "Weather station", [["Current condition", STATION_FIELDS]]], ["background", "Background", BACKGROUND_GROUPS], ["general", "Appearance", APPEARANCE_GROUPS], ["behavior", "Screen fit & layout", LAYOUT_GROUPS], ["collapse", "Collapsible Panel Defaults", PANEL_GROUPS]])
-      for (const [g, fields] of groups) for (const f of fields) out.push({ label: label(f), help: f.helper || "", where: `${title} › ${g}`, go: { open: area }, f });
+    for (const [area, title, groups] of [["station", "Weather station", [["Current condition", STATION_FIELDS]]], ["background", "Background", BACKGROUND_GROUPS], ["general", "Appearance", APPEARANCE_GROUPS], ["alerts", "Alerts Bar", ALERTS_GROUPS], ["behavior", "Screen fit & layout", LAYOUT_GROUPS], ["collapse", "Collapsible Panel Defaults", PANEL_GROUPS]])
+      for (const [g, fields] of groups) for (const f of fields.filter((x) => x.kind !== "action")) out.push({ label: label(f), help: f.helper || "", where: `${title} › ${g}`, go: { open: area }, f });
     for (const f of REMEMBER) out.push({ label: label(f), help: f.helper || "", where: "Button Menu", go: { open: "buttons" }, f });
     const add = (p, key, nested) => {
       const m = panelMeta(p);
@@ -496,7 +518,7 @@ class WeatherStationFlexCardEditor extends LitElement {
   // ha-form only for selectors we don't draw (entity, device, icon, object …).
   _form(data, schema, onChange, whenData, isSet) {
     return renderFields({
-      data, schema, onChange, whenData, isSet,
+      data, schema, onChange, whenData, isSet, action: (f) => this._resetAction(f),
       label: (f) => f.label || LABELS[f.name] || f.name,
       helper: (f) => f.helper,
       haForm: (d, sch, cb) => this._haForm(d, sch, cb),
@@ -585,6 +607,31 @@ class WeatherStationFlexCardEditor extends LitElement {
       };
       return html`${prev ? this._bgPreview() : nothing}<div class="agrp"><div class="agrp-t">${title}${dot ? html`<i class="chg" title="Has changed settings"></i>` : nothing}</div>${form(main)}${subs.map(sub)}</div>`;
     });
+  }
+
+  // "Every panel uses …": clears the listed settings on every panel (and stacked panel),
+  // so they all follow the card-wide value. Disabled when none sets them.
+  _overrideCount(keys) {
+    let n = 0;
+    const walk = (list) => { for (const p of list || []) { if (keys.some((k) => p?.[k] !== undefined)) n++; if (Array.isArray(p?.panels)) walk(p.panels); } };
+    walk(this._config.panels);
+    return n;
+  }
+
+  _resetAction(f) {
+    const keys = RESET_ACTIONS[f.name] || [];
+    const n = this._overrideCount(keys);
+    const go = () => {
+      const strip = (list) => list.map((p) => {
+        const q = { ...p };
+        for (const k of keys) delete q[k];
+        if (Array.isArray(q.panels)) q.panels = strip(q.panels);
+        return q;
+      });
+      this._emit({ ...this._config, panels: strip(this._config.panels || []) });
+    };
+    return html`<div class="fact-btn" data-action=${f.name}><button type="button" ?disabled=${!n} @click=${go}><ha-icon icon="mdi:format-paint"></ha-icon>${f.label}</button>
+      <span class="fhelp">${n ? `${f.helper} ${n === 1 ? "1 panel sets its own." : `${n} panels set their own.`}` : "No panel sets its own."}</span></div>`;
   }
 
   // Background preview (on demand): the animated background for any condition.
@@ -1309,4 +1356,4 @@ customElements.get("weather-station-flex-card-editor") || customElements.define(
 // For tests.
 globalThis.__wsfcEditorHelpers = { stackWithNext, unstack, moveIntoStack };
 // For scripts/gen-config-doc.mjs (docs/CONFIGURATION.md is generated from these).
-globalThis.__wsfcSchemas = { STATION_FIELDS, BACKGROUND_GROUPS, APPEARANCE_GROUPS, LAYOUT_GROUPS, PANEL_GROUPS, GENERAL_DEFAULTS, REMEMBER, LABELS, PANEL_TYPES, COMMON_SCHEMA, STACK_CHILD_SCHEMA };
+globalThis.__wsfcSchemas = { STATION_FIELDS, BACKGROUND_GROUPS, APPEARANCE_GROUPS, ALERTS_GROUPS, RESET_ACTIONS, LAYOUT_GROUPS, PANEL_GROUPS, GENERAL_DEFAULTS, REMEMBER, LABELS, PANEL_TYPES, COMMON_SCHEMA, STACK_CHILD_SCHEMA };

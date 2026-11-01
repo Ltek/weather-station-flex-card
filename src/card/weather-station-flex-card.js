@@ -82,6 +82,13 @@ export function panelStyleVars(c) {
   return out;
 }
 
+// Card-wide text and icon sizes (Appearance → Text & icons) as factors of the
+// designed sizes (14 px text, 24 px icons), and the panel title sizes in px (0 = follow).
+export function baseSizes(c = {}) {
+  const n = (v, d) => (Number(v) > 0 ? Number(v) : d);
+  return { text: n(c.text_size, 14) / 14, icon: n(c.icon_size, 24) / 24, title: Number(c.title_size) > 0 ? Number(c.title_size) : 0, titleIcon: Number(c.title_icon_size) > 0 ? Number(c.title_icon_size) : 0 };
+}
+
 // Text contrast: a halo behind text and icons, opposite to the text so it reads
 // on any background (dark halo in a dark theme, light in a light one).
 //   auto: soft halo; strong: an outline-like halo.
@@ -1058,7 +1065,8 @@ class WeatherStationFlexCard extends LitElement {
       const titleTap = collapsible && this._collapseOpt(p, "collapse_title_tap", true);
       // Title colours: collapsed and expanded each have an icon and a text colour.
       const contrast = p.text_contrast && p.text_contrast !== "default" ? p.text_contrast : this._config.text_contrast;
-      const heads = (collapsible ? this._foldColors(p, collapsed) : "") + contrastVars(contrast, !!this.hass?.themes?.darkMode);
+      // Title colours apply to every panel; collapsed ones only to collapsible panels.
+      const heads = this._foldColors(p, collapsible && collapsed) + contrastVars(contrast, !!this.hass?.themes?.darkMode);
       const h = `calc(${rows} * var(--wsfc-row) + ${rows - 1} * var(--wsfc-gap))`;
       // Tracks are quarter rows: a 1-row panel spans 4, a folded one 2 (half a row).
       const at = placed?.pos?.get(i);
@@ -1177,7 +1185,14 @@ class WeatherStationFlexCard extends LitElement {
     // vendored forecast chart reads), on top of the overall scale.
     // (The hero's icon_scale is its Auto scale condition icon; its group icon size is icon_scale_all.)
     const heroAuto = p.type === "hero" && !!p.auto_scale;
-    const ts = heroAuto ? 100 : Number(p.text_scale) || 100, is = p.type === "hero" ? (heroAuto ? 100 : Number(p.icon_scale_all) || 100) : Number(p.icon_scale) || 100, cs = Number(p.chart_scale) || 100;
+    // The panel's own Text / Icon size (%) scales the card-wide sizes (Appearance → Text & icons, in px).
+    const tsP = heroAuto ? 100 : Number(p.text_scale) || 100, isP = p.type === "hero" ? (heroAuto ? 100 : Number(p.icon_scale_all) || 100) : Number(p.icon_scale) || 100;
+    const g = baseSizes(this._config), gT = heroAuto ? 1 : g.text, gI = heroAuto ? 1 : g.icon;
+    const ts = Math.round(tsP * gT * 100) / 100, is = Math.round(isP * gI * 100) / 100, cs = Number(p.chart_scale) || 100;
+    el.sizeBase = { text: gT, icon: gI };
+    // Panel titles: their own px sizes when set, else they follow the text / icon sizes.
+    el.style.setProperty("--wsfc-title-px", g.title ? `${(g.title * tsP) / 100}px` : "");
+    el.style.setProperty("--wsfc-title-ipx", g.titleIcon ? `${(g.titleIcon * isP) / 100}px` : "");
     el.style.setProperty("--ha-font-size-s", ts !== 100 ? `${(12 * ts) / 100}px` : "");
     el.style.setProperty("--ha-font-size-m", ts !== 100 ? `${(14 * ts) / 100}px` : "");
     el.style.setProperty("--ha-font-size-l", ts !== 100 ? `${(16 * ts) / 100}px` : "");

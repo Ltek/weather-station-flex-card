@@ -130,6 +130,7 @@ export const PANEL_TYPES = {
       { name: "ranges", selector: { select: { multiple: true, options: RANGES.map((r) => ({ value: r, label: r })) } } },
       { name: "range", selector: { select: { options: RANGES.map((r) => ({ value: r, label: r })) } }, helper: "Range shown first." },
       { name: "show_readings", selector: { boolean: {} }, default: true },
+      { name: "readings_place", label: "Readings", when: (d) => d.show_readings !== false, selector: { select: { options: opt([["auto", "In the title row when they fit, else below it"], ["header", "In the title row"], ["below", "Below the title row"]]) } }, default: "auto", helper: "In the title row, the chart gets the height of the readings row." },
       { name: "left_min", selector: { number: { mode: "box" } } },
       { name: "left_max", selector: { number: { mode: "box" } } },
       { name: "right_min", selector: { number: { mode: "box" } } },
@@ -141,6 +142,7 @@ export const PANEL_TYPES = {
     schema: [
       { name: "range", selector: { select: { options: RANGES.map((r) => ({ value: r, label: r })) } } },
       { name: "show_readings", selector: { boolean: {} }, default: true },
+      { name: "readings_place", label: "Readings", when: (d) => d.show_readings !== false, selector: { select: { options: opt([["auto", "In the title row when they fit, else below it"], ["header", "In the title row"], ["below", "Below the title row"]]) } }, default: "auto", helper: "In the title row, the chart gets the height of the readings row." },
     ],
   },
   uv_solar: {
@@ -148,6 +150,7 @@ export const PANEL_TYPES = {
     schema: [
       { name: "range", selector: { select: { options: RANGES.map((r) => ({ value: r, label: r })) } } },
       { name: "show_readings", selector: { boolean: {} }, default: true },
+      { name: "readings_place", label: "Readings", when: (d) => d.show_readings !== false, selector: { select: { options: opt([["auto", "In the title row when they fit, else below it"], ["header", "In the title row"], ["below", "Below the title row"]]) } }, default: "auto", helper: "In the title row, the chart gets the height of the readings row." },
     ],
   },
   stack: {
@@ -547,9 +550,12 @@ export const TITLE_WHEN_SET = new Set(["chips", "sky_tracker", "card"]);
 
 // Folding a panel down to its title header (per panel; the colours, title tap
 // and hint text also have card-wide defaults under Appearance).
-export const COLLAPSE_COLORS = [
+// Panel title colours (every panel; the card-wide ones are in Appearance → Panel titles).
+export const TITLE_COLORS = [
   { name: "expanded_icon_color", label: "Title icon color", selector: { text: {} }, helper: "Not set: the theme's normal title icon colour." },
   { name: "expanded_text_color", label: "Title text color", selector: { text: {} }, helper: "Not set: the theme's text colour." },
+];
+export const COLLAPSE_COLORS = [
   { name: "collapsed_icon_color", label: "Collapsed icon color", selector: { text: {} }, helper: "Not set: the same as the title icon colour." },
   { name: "collapsed_text_color", label: "Collapsed title color", selector: { text: {} }, helper: "Not set: the same as the title text colour." },
 ];
@@ -590,6 +596,7 @@ export const COMMON_SCHEMA = [
   // Title, panel button and this panel's Appearance defaults.
   ...TITLE_FIELDS.map((f) => ({ ...f, section: "Default Overrides" })),
   { section: "Default Overrides", name: "in_bar", label: "Panel button", selector: { boolean: {} }, helper: "Adds a button for this panel to the button menu, to show or hide it (or open its pop-up). Off: no button, and the panel is always shown (unless hidden with the eye icon in the panel list)." },
+  ...TITLE_COLORS.map((f) => ({ ...f, section: "Default Overrides", when: (d) => !NO_TITLE.has(d.type) && d.show_title !== false, helper: `${f.helper.replace(".", "")} or the card's (Appearance → Panel titles).` })),
   { name: "text_contrast", section: "Default Overrides", label: "Text contrast", selector: { select: { options: opt([["default", "Card default (Appearance)"], ["off", "Off"], ["auto", "Auto — soft halo"], ["strong", "Strong — outline"]]) } }, default: "default" },
   { name: "tile_background", section: "Default Overrides", label: "Panel background", selector: { select: { options: opt([["default", "Default"], ["translucent", "See-through (uses Panel opacity)"], ["solid", "Solid"], ["none", "None"]]) } }, default: "default" },
   { name: "tile_shadow", section: "Default Overrides", label: "Disable shadow", invert: true, selector: { boolean: {} }, default: true },

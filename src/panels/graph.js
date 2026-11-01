@@ -52,6 +52,34 @@ export class WsfcGraph extends LitElement {
     });
   }
 
+  // Readings in the title row (Readings: auto / header / below). Auto tries the
+  // title row and moves them below when the title or the readings get squeezed;
+  // it tries again once the panel is 24 px wider than where they last didn't fit.
+  get _inHead() {
+    const m = this.config?.readings_place || "auto";
+    return m === "header" || (m === "auto" && !this._rdBelow);
+  }
+
+  _checkReadings() {
+    if ((this.config?.readings_place || "auto") !== "auto" || this.config?.show_readings === false) return;
+    const w = this.clientWidth;
+    if (!w) return;
+    if (this._rdBelow) {
+      if (w > this._rdBelow + 24) { this._rdBelow = 0; this.requestUpdate(); }
+      return;
+    }
+    const hd = this.renderRoot?.querySelector(".head"), title = hd?.querySelector(".title"), rd = hd?.querySelector(".readings");
+    if (!hd || !rd) return;
+    const squeezed = hd.scrollWidth > hd.clientWidth + 1 || rd.scrollWidth > rd.clientWidth + 1 || (title && title.textContent && title.scrollWidth > title.clientWidth + 1);
+    if (squeezed) { this._rdBelow = w; this.requestUpdate(); }
+  }
+
+  connectedCallback() {
+    super.connectedCallback();
+    this._rdRo ||= new ResizeObserver(() => requestAnimationFrame(() => this._checkReadings()));
+    this._rdRo.observe(this);
+  }
+
   _ranges() {
     const r = this.config?.ranges;
     return (Array.isArray(r) && r.length ? r : ["24h", "7d", "30d"]).filter((x) => RANGE_HOURS[x]);
@@ -63,22 +91,25 @@ export class WsfcGraph extends LitElement {
     const range = this._range || this.config?.range || ranges[0];
     const series = this._series();
     const rangeSel = ranges.length > 1 ? seg(ranges.map((v) => ({ value: v, label: v })), range, (v) => (this._range = v), "History range") : nothing;
+    const rd = this.config?.show_readings === false
+      ? nothing
+      : html`<div class="readings ${this._inHead ? "in-head" : ""}">
+          ${series.map((s) => {
+            const v = entityValue(this.hass, s.entity);
+            return reading(this, { label: s.label, value: v?.value, unit: v?.unit, digits: digitsFor(s.metric, v?.unit || "", s.digits), color: s.color, entity: s.entity });
+          })}
+        </div>`;
+    const inHead = rd !== nothing && this._inHead;
     return html`
-      ${head(this.config, this.defaultIcon, this.defaultTitle, rangeSel)}
-      ${this.config?.show_readings === false
-        ? nothing
-        : html`<div class="readings">
-            ${series.map((s) => {
-              const v = entityValue(this.hass, s.entity);
-              return reading(this, { label: s.label, value: v?.value, unit: v?.unit, digits: digitsFor(s.metric, v?.unit || "", s.digits), color: s.color, entity: s.entity });
-            })}
-          </div>`}
+      ${head(this.config, this.defaultIcon, this.defaultTitle, inHead ? html`${rd}${rangeSel}` : rangeSel, inHead ? "rd-in" : "")}
+      ${inHead ? nothing : rd}
       <div class="body"><canvas aria-label=${`${this.config?.title || this.defaultTitle} history`}></canvas></div>
       ${this._error ? html`<div class="note">${this._error}</div>` : nothing}
     `;
   }
 
   updated() {
+    requestAnimationFrame(() => this._checkReadings());
     const range = this._range || this.config?.range || this._ranges()[0];
     const series = this._series();
     const key = JSON.stringify([range, series.map((s) => [s.entity, s.style, s.axis, s.color, s.cumulative]), this.hass?.themes?.darkMode]);
@@ -91,6 +122,7 @@ export class WsfcGraph extends LitElement {
 
   disconnectedCallback() {
     super.disconnectedCallback();
+    this._rdRo?.disconnect();
     this._chart?.destroy();
     this._chart = null;
     this._loadedKey = "";

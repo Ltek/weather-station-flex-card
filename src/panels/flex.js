@@ -324,7 +324,8 @@ class WsfcHeroPanel extends WsfcFlexPanel {
     // Text & icons (sizes left at automatic follow the theme sizes, which the
     // card scales with the same sliders).
     else {
-      const ts = (Number(this.config?.text_scale) || 100) / 100, is = (Number(this.config?.icon_scale_all) || 100) / 100;
+      const sc = scaledSizes(this.config, this.sizeBase);
+      const ts = (Number(sc.text_scale) || 100) / 100, is = (Number(sc.icon_scale_all) || 100) / 100;
       if (ts !== 1 || is !== 1) {
         const r = resolveWfc(cfg) || {}, cur = (cfg.wfc.current ||= {}), det = (cfg.wfc.details ||= {});
         const mul = (o, from, key, f) => { const v = Number(o[key] ?? from[key]); if (v > 0 && f !== 1) o[key] = Math.round(v * f * 10) / 10; };
@@ -513,6 +514,14 @@ export function trackerConfig(p, station, offsetHours = 0) {
   return cfg;
 }
 
+// The panel's Text / Icon size (%) times the card-wide sizes (Appearance → Text & icons;
+// `base` = { text, icon } factors set by the card).
+export function scaledSizes(c = {}, base) {
+  if (!base || (base.text === 1 && base.icon === 1)) return c;
+  const m = (v, f) => Math.round((Number(v) || 100) * f * 100) / 100;
+  return { ...c, text_scale: m(c.text_scale, base.text), icon_scale: m(c.icon_scale, base.icon), icon_scale_all: m(c.icon_scale_all, base.icon) };
+}
+
 // Chip icons follow the chip text unless they have their own size: with Icon
 // size set, give them one (the text-derived default × the icon scale).
 function chipIcons(cfg, p) {
@@ -529,7 +538,7 @@ function chipIcons(cfg, p) {
 class WsfcChipsPanel extends WsfcFlexPanel {
   type = "chips";
   _coreConfig() {
-    return chipIcons(super._coreConfig(), this.config);
+    return chipIcons(super._coreConfig(), scaledSizes(this.config, this.sizeBase));
   }
   defaultTitle = "Current Weather Metrics";
   defaultIcon = "mdi:format-list-bulleted-square";
@@ -555,7 +564,7 @@ class WsfcSkyTracker extends WsfcFlexPanel {
   static properties = { ...WsfcFlexPanel.properties, _offset: { state: true } };
 
   _coreConfig() {
-    return trackerConfig(this.config, this.station, this._offset || 0);
+    return trackerConfig(scaledSizes(this.config, this.sizeBase), this.station, this._offset || 0);
   }
 
   // Step buttons: ◀ / Now / ▶ move the window by `step_hours`, up to

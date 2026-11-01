@@ -51,7 +51,7 @@ const hex6 = (v) => (/^#[0-9a-fA-F]{6}$/.test(v || "") ? v : null);
  * object with the edited field set (undefined = cleared). `haForm(data, schema,
  * onChange)` draws the fields we don't.
  */
-export function renderFields({ data, schema, onChange, label, helper, haForm, auto, whenData, isSet }) {
+export function renderFields({ data, schema, onChange, label, helper, haForm, auto, whenData, isSet, action }) {
   const out = [];
   let run = [];
   const flush = () => {
@@ -63,6 +63,7 @@ export function renderFields({ data, schema, onChange, label, helper, haForm, au
   for (const f of schema) {
     // Sub-settings of a feature that's off are hidden (design system: no dead controls).
     if (typeof f.when === "function" && !f.when(whenData ? { ...whenData, ...data } : data)) continue;
+    if (f.kind === "action") { flush(); if (action) out.push(action(f)); continue; }
     if (!nativeField(f)) { run.push(f); continue; }
     flush();
     const set = (v) => onChange({ ...data, [f.name]: v });
@@ -173,6 +174,14 @@ export const fieldStyles = css`
     background: transparent; color: var(--ltek-c-accent, var(--primary-color)); font: inherit; font-size: var(--ltek-fs-small, 12px); }
   .fdefault ha-icon { --mdc-icon-size: 14px; }
   .fdefault:hover { background: color-mix(in srgb, var(--ltek-c-accent, var(--primary-color)) 12%, transparent); }
+  .fact-btn { display: flex; align-items: center; gap: var(--ltek-sp-3, 8px); flex-wrap: wrap; padding: var(--ltek-sp-1, 4px) 0 var(--ltek-sp-2, 6px); }
+  .fact-btn button { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; cursor: pointer; font: inherit; font-size: var(--ltek-fs-small, 13px);
+    border: 1px solid var(--ltek-c-accent, var(--primary-color)); background: transparent; color: var(--ltek-c-accent, var(--primary-color)); }
+  .fact-btn button ha-icon { --mdc-icon-size: 16px; }
+  .fact-btn button:disabled { opacity: 0.45; cursor: default; border-color: var(--ltek-c-muted, var(--divider-color)); color: var(--ltek-c-muted, var(--secondary-text-color)); }
+  .fact-btn button:not(:disabled):hover { background: color-mix(in srgb, var(--ltek-c-accent, var(--primary-color)) 12%, transparent); }
+  .fact-btn button:focus-visible { outline: 2px solid var(--ltek-c-accent, var(--primary-color)); outline-offset: 2px; }
+  .fact-btn .fhelp { flex: 1 1 200px; margin: 0; }
   .fdefault:focus-visible { outline: 2px solid var(--ltek-c-accent, var(--primary-color)); outline-offset: 1px; }
   .frow { display: flex; align-items: center; gap: var(--ltek-sp-4, 12px); flex-wrap: wrap; justify-content: flex-start; }
   .frow.nowrap { flex-wrap: nowrap; }

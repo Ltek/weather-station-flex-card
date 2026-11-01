@@ -23,8 +23,8 @@ export const panelStyles = css`
     margin-bottom: 8px;
     padding-right: var(--wsfc-head-pad, 0);
   }
-  .head ha-icon { --mdc-icon-size: calc(20px * var(--wsfc-is, 1)); color: var(--wsfc-head-icon, var(--wsfc-muted)); }
-  .head .title { font-size: calc(15px * var(--wsfc-ts, 1)); font-weight: 500; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--wsfc-head-text, inherit); }
+  .head ha-icon { --mdc-icon-size: var(--wsfc-title-ipx, calc(20px * var(--wsfc-is, 1))); color: var(--wsfc-head-icon, var(--wsfc-muted)); }
+  .head .title { font-size: var(--wsfc-title-px, calc(15px * var(--wsfc-ts, 1))); font-weight: 500; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--wsfc-head-text, inherit); }
   /* Folding panels: the title header can be tapped; a hint shows while folded. */
   :host([title-tap]) .head { cursor: pointer; }
   :host([collapsed]) > :not(.head):not(style) { display: none !important; }
@@ -57,6 +57,11 @@ export const panelStyles = css`
     gap: 6px 18px;
     margin-bottom: 8px;
   }
+  /* Readings in the title row: between the title and the controls, kept to one line. */
+  .head .readings.in-head { flex: 0 1 auto; flex-wrap: nowrap; margin: 0 4px 0 0; min-width: 0; overflow: hidden; gap: 4px 16px; }
+  .head.rd-in .title { flex: 0 1 auto; min-width: 2em; }
+  .head .readings.in-head + * { margin-left: auto; }
+  .head .readings.in-head:last-child { margin-left: auto; }
   .reading { display: flex; flex-direction: column; cursor: pointer; }
   .reading .v { font-size: calc(22px * var(--wsfc-ts, 1)); font-weight: 500; line-height: 1.15; white-space: nowrap; }
   .reading .v small { font-size: calc(13px * var(--wsfc-ts, 1)); font-weight: 400; color: var(--wsfc-muted); margin-left: 2px; }
@@ -141,9 +146,9 @@ export function moreInfo(host, entityId) {
  * Panel header: icon + title + optional right-side controls.
  * show_title: false hides the title (and icon); show_icon: false hides just the icon.
  */
-export function head(config, icon, defTitle, right = nothing) {
-  if (config?.show_title === false) return right === nothing ? nothing : html`<div class="head"><span class="title"></span>${right}</div>`;
-  return html`<div class="head">
+export function head(config, icon, defTitle, right = nothing, cls = "") {
+  if (config?.show_title === false) return right === nothing ? nothing : html`<div class="head ${cls}"><span class="title"></span>${right}</div>`;
+  return html`<div class="head ${cls}">
     ${config?.show_icon === false ? nothing : html`<ha-icon icon=${config?.icon || icon}></ha-icon>`}
     <span class="title">${config?.title || defTitle}</span>${right}
   </div>`;
