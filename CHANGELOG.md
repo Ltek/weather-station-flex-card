@@ -1,5 +1,9 @@
 # Changelog
 
+## v2026.11.01.107
+
+- **Wind rose larger:** Home Assistant pads every card's content by 16 px. The Wind Rose Card inside the Wind panel got that padding on top of the panel's own, so the rose was 32 px narrower and shorter than the space it had. The padding is removed inside the panel.
+
 ## v2026.11.01.106
 
 - **Fix: wind rose not filling its panel.** The rose was sized step by step from its previous size. If it was fitted while the panel was smaller (during loading, or while the screen was being scaled), it could stay smaller, leaving space below and at the sides. It's now sized directly from the height left after the title row, and checked again every 3 s for 30 s, then every 30 s.

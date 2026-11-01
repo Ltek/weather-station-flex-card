@@ -28,6 +28,8 @@ function roseDrawn(el) {
   return walk(el.shadowRoot || el);
 }
 
+let unpadSheet;
+
 class WsfcWind extends LitElement {
   static properties = {
     hass: { attribute: false },
@@ -294,6 +296,7 @@ class WsfcWind extends LitElement {
   }
 
   updated(changed) {
+    this._unpadRose();
     if (changed.has("fit")) this.toggleAttribute("fit", !!this.fit);
     if (this.fit) this._watchFit();
     else if (this._fitRo) { this._fitRo.disconnect(); this._fitRo = null; this._fitPx = null; }
@@ -347,7 +350,20 @@ class WsfcWind extends LitElement {
     return next;
   }
 
+  // Home Assistant pads a card's .card-content by 16 px; inside our panel (which
+  // has its own padding) that only shrinks the rose, so the Wind Rose Card gets none.
+  _unpadRose() {
+    for (const el of [this._wrEl, this._wrNext]) {
+      const sr = el?.shadowRoot;
+      if (!sr || sr.__wsfcUnpad) continue;
+      if (!unpadSheet) { unpadSheet = new CSSStyleSheet(); unpadSheet.replaceSync(".card-content { padding: 0 !important; } ha-card { padding: 0 !important; }"); }
+      sr.adoptedStyleSheets = [...sr.adoptedStyleSheets, unpadSheet];
+      sr.__wsfcUnpad = true;
+    }
+  }
+
   _refit() {
+    this._unpadRose();
     const fitmain = this.renderRoot.querySelector(".fitmain");
     const kids = [...this.renderRoot.children].filter((k) => k.getBoundingClientRect().height > 0 && getComputedStyle(k).position !== "absolute");
     if (!fitmain || !kids.length) return;
