@@ -90,7 +90,7 @@ Current build: **v2026.11.01.110** · full history in [CHANGELOG.md](CHANGELOG.m
 
 ## The editor
 
-- **Weather station** — your Weather Sources in priority order, and **Values used**: every value the card reads, the sensor it uses, its integration and live reading.
+- **Data Sources** — every connected source and what it supplies (your station, weather entity, air quality, pollen, alerts, the online map and climate services), your Weather Sources in priority order, and **Values used**: every value the card reads, the sensor it uses, its integration and live reading.
 - **Appearance** — card title, background, panel style and layout.
 - **Panel buttons** — where the buttons go, which panels get one, and whether each browser remembers them.
 - **Layout** — a map of the grid: drag to move, drag edges to resize, keyboard arrows too, and a **screen guide** for a chosen display size.
