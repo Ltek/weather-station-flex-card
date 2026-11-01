@@ -325,6 +325,13 @@ class WsfcWind extends LitElement {
       this._fitObserved = main;
     }
     requestAnimationFrame(() => this._refit());
+    // Content that settles late (the rose card redraws as data arrives): check again
+    // every 3 s for half a minute, then every 30 s (cheap: it only measures).
+    if (!this._fitTimer) {
+      let n = 0;
+      const tick = () => { if (!this.isConnected || !this.fit) { this._fitTimer = null; return; } this._refit(); this._fitTimer = setTimeout(tick, ++n < 10 ? 3000 : 30000); };
+      this._fitTimer = setTimeout(tick, 3000);
+    }
   }
 
   // Bars "auto": beside the rose in a wide panel, under it in a tall one
@@ -354,11 +361,15 @@ class WsfcWind extends LitElement {
     const cs = getComputedStyle(fitmain);
     const used = bottom - top - (parseFloat(cs.marginTop) || 0) - (parseFloat(cs.marginBottom) || 0);
     const extra = used - hostH; // > 0: too tall; < 0: room to grow
+    // Narrower than the fitted size (the panel shrank sideways): shrink to the width first.
+    const maxW0 = fitmain.classList.contains("byh") ? fitmain.clientWidth : main.parentElement?.clientWidth || this.clientWidth;
+    if (this._fitPx != null && this._fitPx > maxW0 + 1) { this._fitPx = Math.round(maxW0); return; }
     if (Math.abs(extra) < 3) return;
-    // The rose / dial is about as tall as it is wide (plus fixed parts), so
-    // changing its width by Δ changes its height by about Δ × (mh / mw).
-    const ratio = Math.max(0.5, mh / mw);
-    let next = mw - extra / ratio;
+    // The rose / dial keeps its shape (height = width × mh / mw); the rest of
+    // the panel (title row, readings) has a fixed height. So the width that fills
+    // the height left over is known directly, whatever size it was fitted to before.
+    const ratio = Math.max(0.3, mh / mw);
+    let next = (hostH - (used - mh)) / ratio;
     const maxW = fitmain.classList.contains("byh") ? fitmain.clientWidth : main.parentElement?.clientWidth || this.clientWidth;
     next = Math.max(80, Math.min(maxW, next));
     if (extra < 0 && this._fitPx == null) return; // fits already at full size
@@ -370,6 +381,7 @@ class WsfcWind extends LitElement {
 
   disconnectedCallback() {
     super.disconnectedCallback();
+    clearTimeout(this._fitTimer); this._fitTimer = null;
     this._fitRo?.disconnect();
     this._fitRo = null;
     this._fitObserved = null;

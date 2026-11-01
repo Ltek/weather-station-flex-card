@@ -1,5 +1,10 @@
 # Changelog
 
+## v2026.11.01.106
+
+- **Fix: wind rose not filling its panel.** The rose was sized step by step from its previous size. If it was fitted while the panel was smaller (during loading, or while the screen was being scaled), it could stay smaller, leaving space below and at the sides. It's now sized directly from the height left after the title row, and checked again every 3 s for 30 s, then every 30 s.
+- **Fix:** when the Wind panel got narrower without getting shorter, the rose kept its old width and was cut off at the sides.
+
 ## v2026.11.01.105
 
 - **Fix: chart time axis wider than the range.** Temp & Humidity, UV & Solar, Graph and the Wind history chart rounded their time axis out to "nice" numbers, so a 24 h chart spanned about 32 h with empty space at both ends. The axis now covers exactly the chosen range, ending now, with labels on round local times: every 4 h for 24 h, midnights for 7 d, weekly for 30 d.
