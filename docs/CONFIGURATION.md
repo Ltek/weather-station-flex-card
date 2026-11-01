@@ -123,24 +123,24 @@ With no `panels:` the card shows its default dashboard (hero, bulletin, Sky Trac
 | `row_height` | number 40–300 px |  | **Row height** — Height of one row unit (default 110). |
 | `gap` | number 0–32 px |  | **Gap** — Space between panels (default 12). |
 
-### Collapsed panels
+### Every collapsible panel
 
 | Option | Value | Default | What it does |
 |---|---|---|---|
 | `collapsed_view` | `minimal` · `compact` | `minimal` | **Default view when collapsed** — For panels with Collapse button on; panels without a tiles view use Minimal. Each panel can override it — Convert all now clears those overrides. |
-| `collapsed_open` | `auto` · `inplace` · `overlay` · `popup` | `auto` | **A folded panel opens** — Each panel can override this (Collapse → Opens). |
-| `open_icon_small` | `picture-in-picture-top-right` · `open-in-new` · `resize` · `image-size-select-large` · `dock-window` · `custom` | `picture-in-picture-top-right` | **Small pop-over icon** — On a folded panel that opens over the others. |
+| `collapsed_open` | `auto` · `inplace` · `overlay` · `popup` | `auto` | **A collapsed panel opens** — Each panel can override this (Collapse → Opens). |
+| `open_icon_small` | `picture-in-picture-top-right` · `open-in-new` · `resize` · `image-size-select-large` · `dock-window` · `custom` | `picture-in-picture-top-right` | **Small pop-over icon** — On a collapsed panel that opens over the others. |
 | `open_icon_small_custom` | icon, e.g. `mdi:weather-windy` |  | **Custom icon** — Any Home Assistant icon, e.g. mdi:arrow-expand-down. |
 | `open_icon_full` | `arrow-expand` · `fullscreen` · `arrow-expand-all` · `custom` | `arrow-expand` | **Full-size icon** — Expand to the whole card, tap-to-open tiles and panels that open as a pop-up. |
 | `open_icon_full_custom` | icon, e.g. `mdi:weather-windy` |  | **Custom icon** — Any Home Assistant icon, e.g. mdi:arrow-expand-down. |
-| `collapse_title_tap` | `true` / `false` | `true` | **Tap the title to fold / unfold** — For panels with Collapse button on (each panel can override this). |
-| `show_collapse_hint` | `true` / `false` | `false` | **Hint under the title while folded** — e.g. "Tap title to show" (off by default: the open button already says it). |
+| `collapse_title_tap` | `true` / `false` | `true` | **Tap the title to collapse / expand** — For panels with Collapse button on (each panel can override this). |
+| `show_collapse_hint` | `true` / `false` | `false` | **Hint under the title while collapsed** — e.g. "Tap title to show" (off by default: the open button already says it). |
 | `collapse_hint` | text |  | **Hint text** — Default "Tap title to show". |
-| `collapsed_info` | `summary` · `off` | `summary` | **Info in the header while folded** |
+| `collapsed_info` | `summary` · `off` | `summary` | **Info in the header while collapsed** |
 | `expanded_icon_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Title icon color** — Not set: the theme's normal title icon colour. |
 | `expanded_text_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Title text color** — Not set: the theme's text colour. |
-| `collapsed_icon_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Folded icon color** — Not set: the same as the title icon colour. |
-| `collapsed_text_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Folded title color** — Not set: the same as the title text colour. |
+| `collapsed_icon_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Collapsed icon color** — Not set: the same as the title icon colour. |
+| `collapsed_text_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Collapsed title color** — Not set: the same as the title text colour. |
 
 ### Panel buttons
 
@@ -164,23 +164,23 @@ Where the buttons go: `panel_bar: false` hides the bar; a Button Menu panel (`he
 | `icon_scale` | number 50–250 % | `100` | **Icon size** |
 | `chart_scale` | number 40–200 % | `100` | **Chart height** — The chart's smallest height (it grows to fill the panel). |
 | `content_scale` | number 40–200 % | `100` | **Scale all Panel Contents** — Everything inside the panel bigger or smaller (text, icons, tiles), so it fits the space. |
-| `collapsible` | `true` / `false` | `false` | **Collapse button** — Fold the panel down to its title header to save space (e.g. maps). A folded map is paused. With Remember Panel Button States, this browser remembers what you folded. |
+| `collapsible` | `true` / `false` | `false` | **Collapse button** — Collapse the panel to its title header to save space (e.g. maps). A collapsed map is paused. With Remember Panel Button States, this browser remembers what you collapsed. |
 | `collapsed` | `true` / `false` | `false` | **Start collapsed** |
 | `collapsed_open` | `default` · `inplace` · `overlay` · `popup` | `default` | **Opens** |
 | `collapsed_view` | `default` · `minimal` · `compact` | `default` | **View when collapsed** |
-| `compact_expand` | `true` / `false` | `true` | **Tap the tiles to open the full panel** — Compact view. Off: a tap on a tile opens that sensor (the fold button still opens the panel). |
+| `compact_expand` | `true` / `false` | `true` | **Tap the tiles to open the full panel** — Compact view. Off: a tap on a tile opens that sensor (the collapse button still opens the panel). |
 | `compact_icon` | `true` / `false` | `true` | **Show the icon in the tiles row** |
 | `compact_title` | `true` / `false` | `true` | **Show the title in the tiles row** |
-| `collapse_title_tap` | `default` · `on` · `off` | `default` | **Tap the title to fold / unfold** |
-| `show_collapse_hint` | `default` · `on` · `off` | `default` | **Hint under the title while folded** |
+| `collapse_title_tap` | `default` · `on` · `off` | `default` | **Tap the title to collapse / expand** |
+| `show_collapse_hint` | `default` · `on` · `off` | `default` | **Hint under the title while collapsed** |
 | `collapse_hint` | text |  | **Hint text** — Default "Tap title to show". |
-| `collapsed_info` | `default` · `summary` · `entity` · `off` | `default` | **Info in the header while folded** |
-| `collapsed_entity` | entity id |  | **Entity to show** — Its value in the folded header (used by "An entity's value", and instead of the summary when set). |
+| `collapsed_info` | `default` · `summary` · `entity` · `off` | `default` | **Info in the header while collapsed** |
+| `collapsed_entity` | entity id |  | **Entity to show** — Its value in the collapsed header (used by "An entity's value", and instead of the summary when set). |
 | `collapsed_label` | text |  | **Label before the value** |
 | `expanded_icon_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Title icon color** — Not set: the theme's normal title icon colour. |
 | `expanded_text_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Title text color** — Not set: the theme's text colour. |
-| `collapsed_icon_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Folded icon color** — Not set: the same as the title icon colour. |
-| `collapsed_text_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Folded title color** — Not set: the same as the title text colour. |
+| `collapsed_icon_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Collapsed icon color** — Not set: the same as the title icon colour. |
+| `collapsed_text_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Collapsed title color** — Not set: the same as the title text colour. |
 | `show_title` | `true` / `false` | `true` | **Show the title** |
 | `title` | text |  | **Title** |
 | `show_icon` | `true` / `false` | `true` | **Show the title icon** |
@@ -203,23 +203,23 @@ Panels inside a `stack` have no grid place of their own; they take:
 | `min_width` | number 80–800 px |  | **Narrowest width** — Side-by-side stack: the narrowest this panel gets before the stack wraps it onto a new line (default 180 px). |
 | `rows` | number 0–10 |  | **Height** — Vertical: minimum height in row units (quarter steps allowed). |
 | `compact` | `true` / `false` | `false` | **Compact view** — Show this panel as one row of small tiles with all its data; tapping it opens the full panel. |
-| `collapsible` | `true` / `false` | `false` | **Collapse button** — Fold the panel down to its title header to save space (e.g. maps). A folded map is paused. With Remember Panel Button States, this browser remembers what you folded. |
+| `collapsible` | `true` / `false` | `false` | **Collapse button** — Collapse the panel to its title header to save space (e.g. maps). A collapsed map is paused. With Remember Panel Button States, this browser remembers what you collapsed. |
 | `collapsed` | `true` / `false` | `false` | **Start collapsed** |
 | `collapsed_open` | `default` · `inplace` · `overlay` · `popup` | `default` | **Opens** |
 | `collapsed_view` | `default` · `minimal` · `compact` | `default` | **View when collapsed** |
-| `compact_expand` | `true` / `false` | `true` | **Tap the tiles to open the full panel** — Compact view. Off: a tap on a tile opens that sensor (the fold button still opens the panel). |
+| `compact_expand` | `true` / `false` | `true` | **Tap the tiles to open the full panel** — Compact view. Off: a tap on a tile opens that sensor (the collapse button still opens the panel). |
 | `compact_icon` | `true` / `false` | `true` | **Show the icon in the tiles row** |
 | `compact_title` | `true` / `false` | `true` | **Show the title in the tiles row** |
-| `collapse_title_tap` | `default` · `on` · `off` | `default` | **Tap the title to fold / unfold** |
-| `show_collapse_hint` | `default` · `on` · `off` | `default` | **Hint under the title while folded** |
+| `collapse_title_tap` | `default` · `on` · `off` | `default` | **Tap the title to collapse / expand** |
+| `show_collapse_hint` | `default` · `on` · `off` | `default` | **Hint under the title while collapsed** |
 | `collapse_hint` | text |  | **Hint text** — Default "Tap title to show". |
-| `collapsed_info` | `default` · `summary` · `entity` · `off` | `default` | **Info in the header while folded** |
-| `collapsed_entity` | entity id |  | **Entity to show** — Its value in the folded header (used by "An entity's value", and instead of the summary when set). |
+| `collapsed_info` | `default` · `summary` · `entity` · `off` | `default` | **Info in the header while collapsed** |
+| `collapsed_entity` | entity id |  | **Entity to show** — Its value in the collapsed header (used by "An entity's value", and instead of the summary when set). |
 | `collapsed_label` | text |  | **Label before the value** |
 | `expanded_icon_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Title icon color** — Not set: the theme's normal title icon colour. |
 | `expanded_text_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Title text color** — Not set: the theme's text colour. |
-| `collapsed_icon_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Folded icon color** — Not set: the same as the title icon colour. |
-| `collapsed_text_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Folded title color** — Not set: the same as the title text colour. |
+| `collapsed_icon_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Collapsed icon color** — Not set: the same as the title icon colour. |
+| `collapsed_text_color` | color: `#rrggbb`, `var(--primary-color)`, any CSS color |  | **Collapsed title color** — Not set: the same as the title text colour. |
 | `show_title` | `true` / `false` | `true` | **Show the title** |
 | `title` | text |  | **Title** |
 | `show_icon` | `true` / `false` | `true` | **Show the title icon** |
@@ -261,11 +261,6 @@ Default size: 12 of 12 wide, 3 rows high. Also takes `flex:`: Weather Flex secti
 | `date_scale` | number 30–300 % | `100` | **Date** |
 | `secondary_scale` | number 30–300 % | `100` | **Temperature sub-header** — The line under the temperature, e.g. today's high / low. |
 | `chips_scale` | number 30–300 % | `100` | **Metric chips** |
-
-**Sun & moon facts**
-
-| Option | Value | Default | What it does |
-|---|---|---|---|
 | `show_facts` | `true` / `false` | `false` | **Show sun & moon facts** |
 | `facts` | list of: `dawn` · `sunrise` · `solar_noon` · `sunset` · `dusk` · `day_length` · `visible_light` · `moonrise` · `moonset` · `moon_phase` · `moon_illumination` · `next_full` · `next_new` | `["dawn","sunrise","solar_noon","sunset","dusk","day_length","visible_light","moonrise","moonset","moon_phase","moon_illumination","next_full","next_new"]` | **Facts** |
 | `fact_position` | `bottom` · `top` | `bottom` | **Position** |
@@ -329,11 +324,6 @@ Default size: 6 of 12 wide, 3 rows high.
 |---|---|---|---|
 | `show_chart` | `true` / `false` | `true` | **Altitude chart** — Sun and moon altitude over the day. |
 | `show_table` | `true` / `false` | `true` | **Sun & moon table** — Rise and set times for the sun, the three twilights and the moon. |
-
-**Sun & moon facts**
-
-| Option | Value | Default | What it does |
-|---|---|---|---|
 | `show_facts` | `true` / `false` | `true` | **Show sun & moon facts** |
 | `facts` | list of: `dawn` · `sunrise` · `solar_noon` · `sunset` · `dusk` · `day_length` · `visible_light` · `moonrise` · `moonset` · `moon_phase` · `moon_illumination` · `next_full` · `next_new` | `["dawn","sunrise","solar_noon","sunset","dusk","day_length","visible_light","moonrise","moonset","moon_phase","moon_illumination","next_full","next_new"]` | **Facts** |
 | `fact_position` | `below` · `above` | `below` | **Position** |
@@ -629,11 +619,6 @@ Default size: 4 of 12 wide, 2 rows high. Also takes `flex:`: Weather Flex sectio
 | `step_hours` | `6` · `12` · `24` | `12` | **Step** |
 | `max_ahead` | number 12–168 h | `48` | **How far ahead** — Hourly forecasts usually reach 48 h; beyond that the bar shows daylight only. |
 | `return_after` | number 0–600 s | `60` | **Back to now after** — 0 = stay. |
-
-**Sun & moon facts**
-
-| Option | Value | Default | What it does |
-|---|---|---|---|
 | `show_facts` | `true` / `false` | `false` | **Show sun & moon facts** |
 | `facts` | list of: `dawn` · `sunrise` · `solar_noon` · `sunset` · `dusk` · `day_length` · `visible_light` · `moonrise` · `moonset` · `moon_phase` · `moon_illumination` · `next_full` · `next_new` | `["dawn","sunrise","solar_noon","sunset","dusk","day_length","visible_light","moonrise","moonset","moon_phase","moon_illumination","next_full","next_new"]` | **Facts** |
 | `fact_position` | `below` · `above` · `header` | `below` | **Position** |
@@ -774,7 +759,7 @@ Default size: 6 of 12 wide, 4 rows high.
 
 | Option | Value | Default | What it does |
 |---|---|---|---|
-| `wr_bars` | `preset` · `right` · `bottom` · `hidden` | `preset` | **Speed bars** |
+| `wr_bars` | `preset` · `auto` · `right` · `bottom` · `hidden` | `preset` | **Speed bars** |
 | `wr_beaufort` | `preset` · `on` · `off` | `preset` | **Bar scale** |
 | `wr_bar_full` | `preset` · `on` · `off` | `preset` | **Full colour scale** — Every range gets its own colour (blue → green → yellow → red), like the Beaufort bars. |
 | `wr_range_step` | number 1–20 |  | **Range step** — Speed bars in your unit: width of each colour band (e.g. 5 mph). Smaller = more colours. |
@@ -989,7 +974,7 @@ CoAgMET package: copy both files from `extras/coagmet/` (`coagmet_records.yaml` 
 - type: lightning            # hidden until a lightning sensor exists
 ```
 
-### Full screen that fits exactly, maps folded at load
+### Full screen that fits exactly, maps collapsed at load
 
 ```yaml
 layout: fullscreen
@@ -998,7 +983,7 @@ layout_screen: 1280x800      # the editor's layout map shows this screen at load
 panels:
   - type: radar
     collapsible: true
-    collapsed: true          # starts folded to its title (and paused)
+    collapsed: true          # starts collapsed to its title (and paused)
   - type: air_quality
     layout: tiles
     content_scale: 85        # everything inside smaller
