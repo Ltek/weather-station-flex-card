@@ -1,5 +1,17 @@
 # Changelog
 
+## v2026.11.04.111
+
+- **Sunlight Visualizer panel** (`type: sunlight`): [Sunlight Visualizer](https://github.com/NoUsername10/Sunlight_Visualizer)'s house card in the grid, sized to its panel and following it when it resizes.
+  - Views: **2.5D** (default, light on tablets), Automatic or 3D.
+  - Options: weather effects (3D), the % shown on walls and roof, the energy overlay, slow turning, and an Advanced box passed straight to it.
+  - **Controls:** read-only by default, so its buttons can't change Sunlight Visualizer's settings (camera, house direction, options) for every dashboard. Choose Allow changes to let them. Rotating and zooming the view still work.
+  - It pauses while collapsed or while you edit. Without the integration, the panel says how to install it.
+- **Sun on the house alert** (Alerts Bar, off by default), e.g. "West side: strong direct sun, 88 °F". It shows when a side of the house faces the sun, the sun is strong and it's hot. All three limits are adjustable: alignment 50 %, sunlight 600 W/m², temperature 80 °F / 27 °C.
+  - Which walls face the sun comes from Sunlight Visualizer, named by compass direction from your house's direction.
+  - Sunlight strength comes from the best source available: your station's solar sensor, another solar sensor in your Data Sources, Sunlight Visualizer's Open-Meteo reading, the card's own Open-Meteo reading (no setup), or an estimate from the sun's height and the weather's cloud cover.
+  - It turns off a little below the limits, so it doesn't flicker. The Alerts Bar section lists the entities it reads, and Data Sources lists Sunlight Visualizer.
+
 ## v2026.11.01.110
 
 - **Map panels renamed** to say what they are. Your YAML keeps working: the old names are read as the new ones and written as the new ones the next time you edit.

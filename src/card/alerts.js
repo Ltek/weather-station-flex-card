@@ -8,6 +8,7 @@ import { metricValue, entityValue } from "./resolve.js";
 import { metricEntity } from "./metrics.js";
 import { watchState } from "../panels/watch.js";
 import { lightningIds, strikeTime } from "../panels/lightning.js";
+import { svEntities, sunAlert, sunStrength, tempNow, sunThresholds, houseAngle, wallBearings, compassName, WALLS } from "./sunlight.js";
 
 const toF = (v) => (v?.unit === "°C" ? (v.value * 9) / 5 + 32 : v?.value);
 const toMph = (v) => {
@@ -54,6 +55,7 @@ export function alertSources(hass, station, c) {
       rule: "A strike within 10 mi (16 km) in the last 30 minutes (the 30-30 rule: stay indoors until 30 minutes after the last close strike).",
       items: [{ label: "Strike distance", entity: ids.distance || null, how: lc.distance_entity ? "chosen" : ids.distance ? "found" : "missing", note: lc.distance_entity ? "Set in the Lightning panel." : "" },
         { label: "Last strike time", entity: ids.time || null, how: lc.time_entity ? "chosen" : ids.time ? "found" : "missing", note: ids.time ? "" : "Without it, the distance sensor's last change is used." }] },
+    sunSources(hass, station, c),
     { key: "weather", title: "Weather alerts", on: c.alerts_weather !== false,
       rule: "Up to 3 active alerts from the sensor's Alerts list (watches, warnings, advisories); severe and extreme ones in red.",
       items: [{ label: "Alerts sensor", entity: c.alerts_entity || found, how: c.alerts_entity ? "chosen" : found ? "found" : "missing",
@@ -61,11 +63,29 @@ export function alertSources(hass, station, c) {
   ];
 }
 
+// Sun on the house: what it reads (walls from Sunlight Visualizer, sunlight and temperature).
+function sunSources(hass, station, c) {
+  const sv = svEntities(hass), th = sunThresholds(c, hass);
+  const base = { key: "sun", title: "Sun on the house", on: c.alerts_sun === true };
+  if (!sv) return { ...base, rule: "Needs the Sunlight Visualizer integration (HACS): it knows which walls of your house face the sun.", items: [{ label: "Sunlight Visualizer", entity: null, how: "missing", note: "Not installed. Install it from HACS, then set your house's direction there." }] };
+  const bear = wallBearings(houseAngle(hass, sv) ?? 0);
+  const sun = sunStrength(hass, station, c, null, sv), t = tempNow(hass, station);
+  return {
+    ...base,
+    rule: `A side of the house faces the sun (alignment ${th.alignment} % or more), the sun is strong (${th.solar} W/m² or more) and it's hot (${th.temp} ${t?.unit || (hass?.config?.unit_system?.temperature === "°C" ? "°C" : "°F")} or more).`,
+    items: [
+      ...WALLS.map((w) => ({ label: `${compassName(bear[w])} side (${w})`, entity: sv.walls[w], how: sv.walls[w] ? "found" : "missing" })),
+      { label: "Sunlight strength", entity: sun?.entity || null, how: sun?.entity ? "found" : sun ? "found" : "missing", note: sun ? `${sun.source}${sun.entity ? "" : sun.how === "forecast" ? " (online, no setup)" : ""}: ${Math.round(sun.value)} W/m² now.` : "" },
+      { label: "Temperature", entity: t?.entity || null, how: t ? "found" : "missing" },
+    ],
+  };
+}
+
 /**
  * Active alerts: [{ kind, icon, text, level: "warn" | "danger", type? }].
  * `low` = tonight's forecast low in °F (or null).
  */
-export function activeAlerts(hass, station, c, low) {
+export function activeAlerts(hass, station, c, low, ctx = {}) {
   const out = [];
   const s = station, h = hass;
   const on = (k) => c[`alerts_${k}`] !== false;
@@ -91,6 +111,12 @@ export function activeAlerts(hass, station, c, low) {
       const us = h.config?.unit_system?.length !== "km";
       out.push({ kind: "lightning", icon: "mdi:flash-alert", text: `Lightning ${us ? `${Math.round(km / 1.609344)} mi` : `${Math.round(km)} km`} away — head indoors`, level: "danger", type: "lightning" });
     }
+  }
+  // Sun on the house (off by default): `ctx.om` = Open-Meteo now, `ctx.sunOn` = walls on last time.
+  if (c.alerts_sun === true) {
+    const r = sunAlert(h, s, c, ctx.om || null, ctx.sunOn || new Set());
+    ctx.sunOn = r.on;
+    if (r.text) out.push({ kind: "sun", icon: "mdi:sun-thermometer-outline", text: r.text, level: "warn", type: "sunlight" });
   }
   const eid = alertsEntity(c, h);
   const st = eid && h.states[eid];

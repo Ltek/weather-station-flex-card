@@ -317,6 +317,21 @@ export const PANEL_TYPES = {
       ...factsFields(undefined, true),
     ],
   },
+  sunlight: {
+    tag: "wsfc-panel-sunlight", label: "Sunlight Visualizer (house sun & shade)", icon: "mdi:home-lightbulb-outline", span: 4, rows: 3,
+    schema: [
+      { name: "renderer", label: "View", selector: { select: { options: opt([["two_point_five_d", "2.5D: light, good on tablets"], ["auto", "Automatic: 3D when the device can, else 2.5D"], ["three_d", "3D: the full house (heavier)"]]) } }, default: "two_point_five_d",
+        helper: "Needs the Sunlight Visualizer integration and card (HACS). Without it the panel says how to install it." },
+      { name: "sv_controls", label: "Controls", selector: { select: { options: opt([["read_only", "Read-only: buttons can't change Sunlight Visualizer's settings"], ["allow", "Allow changes (camera view, house direction…)"]]) } }, default: "read_only",
+        helper: "Read-only keeps a wall display from changing Sunlight Visualizer's settings for every dashboard. Rotating and zooming the view still work." },
+      { name: "weather_visuals", label: "Weather effects (3D)", when: (d) => d.renderer && d.renderer !== "two_point_five_d", selector: { select: { options: opt([["automatic", "Automatic"], ["subtle", "Subtle"], ["normal", "Normal"], ["strong", "Strong"], ["off", "Off"]]) } }, default: "automatic", helper: "Needs 3D weather visuals turned on in the Sunlight Visualizer integration." },
+      { name: "wall_percent_source", label: "% on the walls", selector: { select: { options: opt([["auto", "Automatic"], ["sun_alignment", "Sun alignment"], ["shading_demand", "Shading demand (needs its Open-Meteo)"]]) } }, default: "auto" },
+      { name: "roof_percent_source", label: "% on the roof", selector: { select: { options: opt([["roof_sun_alignment", "Sun alignment"], ["roof_radiation_percentage", "Radiation, % of today's peak (needs its Open-Meteo)"], ["roof_sunlight_alignment_percentage", "Alignment, % of today's best"]]) } }, default: "roof_sun_alignment" },
+      { name: "energy_hud", label: "Energy overlay", selector: { boolean: {} }, default: true, helper: "Solar, home and grid power, when set up in Sunlight Visualizer." },
+      { name: "auto_rotate", label: "Turn the house slowly", selector: { boolean: {} }, default: false },
+      { name: "sv", label: "Advanced: Sunlight Visualizer's own settings", selector: { object: {} }, helper: "Any of its card settings (see its README), e.g. shadowEnabled: false. They're passed to it as they are." },
+    ],
+  },
   windy_map: {
     tag: "wsfc-panel-windy-map", label: "Windy Map (wind, rain, radar, temperature…)", icon: "mdi:map-marker-radius-outline", span: 6, rows: 3,
     schema: [
@@ -578,7 +593,7 @@ export const COLLAPSE_FIELDS = [
 ];
 
 // Panels with their own size sliders, or none that make sense here.
-const OWN_SIZES = new Set(["daily", "hourly", "forecast", "sky_tracker", "hero", "rainviewer", "windy_map", "stack", "heading", "clock"]);
+const OWN_SIZES = new Set(["daily", "hourly", "forecast", "sky_tracker", "hero", "rainviewer", "windy_map", "sunlight", "stack", "heading", "clock"]);
 const CHART_TYPES = new Set(["graph", "temp_humidity", "uv_solar", "statistics"]);
 export const COMMON_SCHEMA = [
   { section: "Size and Scaling", name: "display", label: "Location", selector: { select: { options: opt([["grid", "In the grid"], ["tile_popup", "In the grid — tap it to open larger"], ["popup", "Pop-up only (from its panel button)"]]) } } },
@@ -586,7 +601,7 @@ export const COMMON_SCHEMA = [
   { section: "Size and Scaling", name: "rows", selector: { number: { min: 0, max: 10, step: 0.25, mode: "slider" } }, helper: "Height in row units, in quarter steps (0 = fit content, 0.5 = half height)." },
   { section: "Size and Scaling", name: "overflow", label: "When the content doesn't fit", selector: { select: { options: opt([["default", "Card default (Screen fit & layout)"], ["grow", "Grow — the panel gets taller"], ["scroll", "Scroll — keep the set height, with a scroll bar"]]) } }, default: "default", helper: "Scroll needs a height of at least 1 row (it is raised to 1 when you pick Scroll)." },
   { section: "Size and Scaling", name: "compact", label: "Compact view", selector: { boolean: {} }, default: false, helper: "Show this panel as one row of small tiles with all its data; tapping it opens the full panel (see Collapse → Opens)." },
-  { section: "Size and Scaling", name: "fill", label: "Fill the panel", when: (d) => !["hero", "wind", "rainviewer", "windy_map", "stack", "heading", "clock"].includes(d.type), selector: { select: { options: opt([["default", "Card default (Screen fit & layout)"], ["on", "On — contents scale to fill the panel"], ["off", "Off"]]) } }, default: "default",
+  { section: "Size and Scaling", name: "fill", label: "Fill the panel", when: (d) => !["hero", "wind", "rainviewer", "windy_map", "sunlight", "stack", "heading", "clock"].includes(d.type), selector: { select: { options: opt([["default", "Card default (Screen fit & layout)"], ["on", "On — contents scale to fill the panel"], ["off", "Off"]]) } }, default: "default",
     helper: "For a panel with a set height. With it on, Scale all Panel Contents is a share of the filled size (e.g. 90% leaves some room). If the contents don't fit even at the Smallest content scale, the panel scrolls." },
   // Group sizes for the panels that don't have their own (forecasts, Sky Tracker).
   { section: "Size and Scaling", name: "text_scale", label: "Text size", when: (d) => !OWN_SIZES.has(d.type), selector: { number: { min: 50, max: 200, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100, helper: "All the panel's text, relative to its other parts." },

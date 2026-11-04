@@ -32,6 +32,7 @@ import { canCollapseType } from "../card/weather-station-flex-card.js";
 import { viewOptions, readView, writeView, viewKind, VIEW_KEYS } from "./panel-view.js";
 import { alertSources, alertsEntity } from "../card/alerts.js";
 import { pollenModel } from "../card/pollen.js";
+import { svEntities } from "../card/sunlight.js";
 import { OPEN_ICONS_SMALL, OPEN_ICONS_FULL } from "../card/icons.js";
 import { COMPACT_TYPES } from "../card/compact.js";
 import { metricSensor, entityValue, integrationOf } from "../card/resolve.js";
@@ -123,6 +124,10 @@ const ALERTS_GROUPS = [
     { name: "alerts_watch", label: "Heat and frost", when: (d) => !!d.alerts_bar, selector: { boolean: {} }, default: true, helper: "From your station's temperature, feels-like, dew point and wind, and tonight's forecast low." },
     { name: "alerts_lightning", label: "Lightning nearby", when: (d) => !!d.alerts_bar, selector: { boolean: {} }, default: true, helper: "From your station's lightning sensor (e.g. Ecowitt WH57): strikes within 10 mi in the last 30 minutes." },
     { name: "alerts_weather", label: "Weather alerts", when: (d) => !!d.alerts_bar, selector: { boolean: {} }, default: true, helper: "Official watches and warnings from an alerts sensor, such as the NWS Alerts integration's." },
+    { name: "alerts_sun", label: "Sun on the house", when: (d) => !!d.alerts_bar, selector: { boolean: {} }, default: false, helper: "Strong direct sun on a side of the house while it's hot, e.g. \"West side: strong direct sun, 88 °F\". Needs the Sunlight Visualizer integration (which walls face the sun); the sun's strength comes from your station's solar sensor first." },
+    { name: "alerts_sun_alignment", label: "Wall faces the sun at least", when: (d) => !!d.alerts_bar && d.alerts_sun === true, selector: { number: { min: 10, max: 100, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 50, helper: "Sunlight Visualizer's sun alignment for that wall: 100 % = the sun straight in front of it." },
+    { name: "alerts_sun_solar", label: "Sun at least", when: (d) => !!d.alerts_bar && d.alerts_sun === true, selector: { number: { min: 100, max: 1000, step: 50, mode: "slider", unit_of_measurement: "W/m²" } }, default: 600, helper: "Sunlight on flat ground: about 1000 W/m² on a clear summer noon, under 200 when overcast." },
+    { name: "alerts_sun_temp", label: "Temperature at least", when: (d) => !!d.alerts_bar && d.alerts_sun === true, selector: { number: { min: 10, max: 120, step: 1, mode: "slider" } }, helper: "In your temperature unit. Not set: 80 °F (27 °C)." },
     { name: "alerts_entity", label: "Weather alerts sensor", when: (d) => !!d.alerts_bar && d.alerts_weather !== false, selector: { entity: { domain: "sensor" } }, helper: "Not set: the card uses the alerts sensor it finds (shown above). Choose one to use a different sensor." },
   ]],
 ];
@@ -817,6 +822,8 @@ class WeatherStationFlexCardEditor extends LitElement {
     if (types.has("rainviewer") && panelsOf("rainviewer").some((p) => p.owm_api_key)) add("OpenWeatherMap maps", "map layers", "key");
     if (types.has("rainviewer")) add("Map tiles (Esri, OpenStreetMap…)", "base map", "web");
     if (types.has("windy_map")) add("Windy", "weather maps", "web");
+    const sv = svEntities(h);
+    if (sv && (types.has("sunlight") || c.alerts_sun === true)) add("Sunlight Visualizer", "house sun alignment, house direction", "auto", sv.walls.front || sv.all[0]);
     if (["records", "rain", "garden"].some((t) => types.has(t))) add("Open-Meteo", "climate history and normals", "web");
     const order = { listed: 0, auto: 1, key: 2, web: 3 };
     return [...map.values()].sort((a, b) => order[a.how] - order[b.how]);
@@ -1035,7 +1042,7 @@ class WeatherStationFlexCardEditor extends LitElement {
       <div class="rows">${panels.map((p, i) => this._panelRow(p, i, panels, setList, prefix ? `${prefix}.${i}` : `${i}`, nested))}</div>
       <div class="add">
         <select class="sel" @change=${(e) => { this._addTypes[addKey] = e.target.value; this.requestUpdate(); }} aria-label="Panel type to add">
-          ${types.map(([k, m]) => html`<option value=${k} ?selected=${k === addType}>${m.label}</option>`)}
+          ${types.map(([k, m]) => html`<option value=${k} ?selected=${k === addType}>${m.label}${k === "sunlight" && !customElements.get("sunlight-visualizer-card") ? " (not installed)" : ""}</option>`)}
         </select>
         <button class="btn" @click=${() => {
           const p = { type: addType };

@@ -681,6 +681,21 @@ Default size: 4 of 12 wide, fits its content.
 | `show_ids` | `true` / `false` | `true` | **Hardware IDs** |
 | `devices` | device id — list |  | **More devices** — Any other devices to show (battery, signal, online). |
 
+### Sunlight Visualizer (house sun & shade) — `type: sunlight`
+
+Default size: 4 of 12 wide, 3 rows high.
+
+| Option | Value | Default | What it does |
+|---|---|---|---|
+| `renderer` | `two_point_five_d` · `auto` · `three_d` | `two_point_five_d` | **View** — Needs the Sunlight Visualizer integration and card (HACS). Without it the panel says how to install it. |
+| `sv_controls` | `read_only` · `allow` | `read_only` | **Controls** — Read-only keeps a wall display from changing Sunlight Visualizer's settings for every dashboard. Rotating and zooming the view still work. |
+| `weather_visuals` | `automatic` · `subtle` · `normal` · `strong` · `off` | `automatic` | **Weather effects (3D)** — Needs 3D weather visuals turned on in the Sunlight Visualizer integration. |
+| `wall_percent_source` | `auto` · `sun_alignment` · `shading_demand` | `auto` | **% on the walls** |
+| `roof_percent_source` | `roof_sun_alignment` · `roof_radiation_percentage` · `roof_sunlight_alignment_percentage` | `roof_sun_alignment` | **% on the roof** |
+| `energy_hud` | `true` / `false` | `true` | **Energy overlay** — Solar, home and grid power, when set up in Sunlight Visualizer. |
+| `auto_rotate` | `true` / `false` | `false` | **Turn the house slowly** |
+| `sv` | mapping / list |  | **Advanced: Sunlight Visualizer's own settings** — Any of its card settings (see its README), e.g. shadowEnabled: false. They're passed to it as they are. |
+
 ### Temp & Humidity — `type: temp_humidity`
 
 Default size: 6 of 12 wide, 3 rows high.
@@ -1001,6 +1016,22 @@ panels:
     content_scale: 85        # everything inside smaller
     content_width: 70        # narrower tiles and gaps
     content_height: 60       # tighter rows
+```
+
+### Sunlight Visualizer house and the Sun on the house alert
+
+Needs the [Sunlight Visualizer](https://github.com/NoUsername10/Sunlight_Visualizer) integration (HACS), with your house's direction set there.
+
+```yaml
+alerts_bar: true
+alerts_sun: true              # "West side: strong direct sun, 88 °F"
+alerts_sun_solar: 650         # W/m² (default 600)
+panels:
+  - type: sunlight
+    span: 4
+    rows: 3
+    renderer: auto            # default two_point_five_d (2.5D)
+    # sv_controls: allow      # default read_only
 ```
 
 ## Notes

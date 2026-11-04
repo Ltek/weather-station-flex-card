@@ -17,7 +17,7 @@ full history in [CHANGELOG.md](CHANGELOG.md)
 
 | | |
 |---|---|
-| Panel types | **31** |
+| Panel types | **32** |
 | Card-wide settings | **72** (data sources, background, appearance, alerts, screen fit, panel views) |
 | Settings every panel has | **37** (size, position, view, title, style overrides) |
 | Settings for particular panels | **334**, plus the hero's, forecasts' and Sky Tracker's own style sections |
@@ -47,6 +47,7 @@ full history in [CHANGELOG.md](CHANGELOG.md)
 | Forecasts | Hourly · Daily · Forecast (both) · Day forecast |
 | Sky, sun & moon | Sky Tracker · Astronomy · Moon |
 | Wind & maps | Wind (compass or wind rose) · Windy Map (wind, rain, radar, temperature…) · RainViewer + OpenWeatherMap (radar & weather) |
+| Your house | Sunlight Visualizer (which sides of the house get the sun, in 2.5D or 3D) |
 | Graphs | Graph · Temp & Humidity · UV & Solar · Station graph |
 | Air & garden | Air quality · Pollen · Air dryness (VPD) · Frost & the garden · Frost & heat watch |
 | Records & rain | Weather records · Rain totals · Lightning |
@@ -65,6 +66,7 @@ full history in [CHANGELOG.md](CHANGELOG.md)
 | [NWS Alerts](https://github.com/finity69x2/nws_alerts) or another alerts sensor | Optional | Weather alerts in the Alerts bar |
 | [Wind Rose Card](https://github.com/aukedejong/lovelace-windrose-card) | Optional | The full-featured wind rose |
 | [Statistics Graph Chart Card](https://github.com/cataseven/Statistics-Graph-Chart-Card) | Optional | Richer station graphs |
+| [Sunlight Visualizer](https://github.com/NoUsername10/Sunlight_Visualizer) | Optional | The house panel, and which sides of the house face the sun for the Sun on the house alert |
 | CoAgMET records package ([`extras/coagmet`](extras/coagmet)), Colorado | Optional | Measured area records, rain normals, frost dates |
 | RainViewer, Windy, Open-Meteo, map tiles | Built in, no account | Radar, weather maps, climate history |
 | OpenWeatherMap map layers | Optional, free API key | Cloud, rain, wind and temperature map layers |

@@ -239,14 +239,16 @@ export function openMeteoNow(hass, c = {}) {
   const home = homeOf(hass, c);
   if (!home) return Promise.resolve(null);
   const us = usUnits(hass);
-  const key = `wsfc-om-now:${home.lat.toFixed(2)},${home.lon.toFixed(2)}:${us ? "us" : "si"}`;
+  const key = `wsfc-om-now2:${home.lat.toFixed(2)},${home.lon.toFixed(2)}:${us ? "us" : "si"}`;
   const hit = load(key);
   if (hit && Date.now() - hit.at < NOW_TTL) return Promise.resolve(hit.data);
   return once(key, async () => {
     try {
       const { q, u } = omUnits(us);
       const hourly = ["soil_temperature_6cm", "soil_temperature_18cm", "soil_moisture_3_to_9cm", "soil_moisture_9_to_27cm"];
-      const url = `${FORECAST}?latitude=${home.lat}&longitude=${home.lon}&daily=${[TMAX, TMIN, PRECIP, ET0].join(",")}&hourly=${hourly.join(",")}&past_days=7&forecast_days=7&timezone=auto${q}`;
+      // Sunlight now (Sun on the house alert): sunlight on flat ground and cloud cover.
+      const sky = ["shortwave_radiation", "cloud_cover"];
+      const url = `${FORECAST}?latitude=${home.lat}&longitude=${home.lon}&daily=${[TMAX, TMIN, PRECIP, ET0].join(",")}&hourly=${[...hourly, ...sky].join(",")}&past_days=7&forecast_days=7&timezone=auto${q}`;
       const r = await fetch(url);
       if (!r.ok) throw new Error(`Open-Meteo ${r.status}`);
       const j = await r.json();
@@ -263,6 +265,7 @@ export function openMeteoNow(hass, c = {}) {
         days,
         today: isoDay(new Date()),
         soil: Object.fromEntries(hourly.map((n) => [n, h[n]?.[k] == null ? null : { value: h[n][k], unit: hu[n] || "" }])),
+        sky: Object.fromEntries(sky.map((n) => [n, h[n]?.[k] == null ? null : { value: h[n][k], unit: hu[n] || "" }])),
       };
       save(key, { at: Date.now(), data });
       return data;

@@ -35,6 +35,7 @@ import "../panels/info.js";
 import "../panels/stack.js";
 import "../panels/astronomy.js";
 import "../panels/windy-map.js";
+import "../panels/sunlight.js";
 import "../panels/statistics.js";
 import "../panels/health.js";
 import "../panels/pollen.js";
@@ -44,6 +45,9 @@ import "../panels/records.js";
 import { foldInfo } from "./fold-info.js";
 import { OPEN_ICONS_SMALL, OPEN_ICONS_FULL, openIcon } from "./icons.js";
 import { activeAlerts, alertsBar, alertStyles } from "./alerts.js";
+import { svEntities } from "./sunlight.js";
+import { metricValue } from "./resolve.js";
+import { openMeteoNow } from "./climate.js";
 import { COMPACT_TYPES, NEEDS_PANEL, compactTiles, compactRow, compactStyles } from "./compact.js";
 import "../panels/watch.js";
 import "../panels/rain.js";
@@ -224,7 +228,7 @@ class WeatherStationFlexCard extends LitElement {
 
   // Panels that size their own content (or can't be scaled: live maps).
   _ownFit(p) {
-    return p.type === "hero" || p.type === "rainviewer" || p.type === "windy_map" || (p.type === "wind" && p.fit !== false);
+    return p.type === "hero" || p.type === "rainviewer" || p.type === "windy_map" || p.type === "sunlight" || (p.type === "wind" && p.fit !== false);
   }
 
   /**
@@ -911,12 +915,27 @@ class WeatherStationFlexCard extends LitElement {
     const c = this._config;
     if (!c.alerts_bar) return nothing;
     this._watchHourly();
-    const list = activeAlerts(this.hass, this._station, c, this._lowF());
+    // Sun on the house: the card's own Open-Meteo reading when no sunlight sensor is found.
+    if (c.alerts_sun === true) this._watchOmNow();
+    this._alertCtx ||= {};
+    this._alertCtx.om = this._omNow || null;
+    const list = activeAlerts(this.hass, this._station, c, this._lowF(), this._alertCtx);
     return html`<div class="alertrow">${alertsBar(list, (a) => {
       if (a.entity) return this.dispatchEvent(new CustomEvent("hass-more-info", { detail: { entityId: a.entity }, bubbles: true, composed: true }));
       const i = c.panels.findIndex((p) => p.type === a.type);
       if (i >= 0) this._focus = i;
     })}</div>`;
+  }
+
+  // Open-Meteo "now" (cached 30 min by openMeteoNow), only while the Sun on the house alert needs it.
+  _watchOmNow() {
+    if (Date.now() - (this._omAt || 0) < 15 * 60e3) return;
+    const sv = svEntities(this.hass);
+    const m = metricValue(this._station, this.hass, "solar_radiation");
+    const hasSensor = (m && !String(m.entity).startsWith("weather.")) || (sv?.shortwave && this.hass.states[sv.shortwave]);
+    this._omAt = Date.now();
+    if (hasSensor) return;
+    openMeteoNow(this.hass, this._config).then((d) => { if (d) { this._omNow = d; this.requestUpdate(); } }).catch(() => {});
   }
 
   _renderTitle() {

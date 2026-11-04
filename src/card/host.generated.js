@@ -17,13 +17,14 @@ import * as m13 from "./metrics.js";
 import * as m14 from "./panels.js";
 import * as m15 from "./pollen.js";
 import * as m16 from "./resolve.js";
-import * as m17 from "./unsaved.js";
-import * as m18 from "./weather-station-flex-card.js";
-import * as m19 from "./../panels/flex.js";
-import * as m20 from "./../panels/graph.js";
-import * as m21 from "./../panels/statistics.js";
-import * as m22 from "./../../vendor/weather-forecast-card/src/types.ts";
-import * as m23 from "./../../vendor/weather-forecast-card/src/weather-forecast-card.ts";
+import * as m17 from "./sunlight.js";
+import * as m18 from "./unsaved.js";
+import * as m19 from "./weather-station-flex-card.js";
+import * as m20 from "./../panels/flex.js";
+import * as m21 from "./../panels/graph.js";
+import * as m22 from "./../panels/statistics.js";
+import * as m23 from "./../../vendor/weather-forecast-card/src/types.ts";
+import * as m24 from "./../../vendor/weather-forecast-card/src/weather-forecast-card.ts";
 globalThis.__wsfcHost = {
   "lit": m0,
   "lit/decorators": m1,
@@ -42,11 +43,12 @@ globalThis.__wsfcHost = {
   "src/card/panels.js": m14,
   "src/card/pollen.js": m15,
   "src/card/resolve.js": m16,
-  "src/card/unsaved.js": m17,
-  "src/card/weather-station-flex-card.js": m18,
-  "src/panels/flex.js": m19,
-  "src/panels/graph.js": m20,
-  "src/panels/statistics.js": m21,
-  "vendor/weather-forecast-card/src/types.ts": m22,
-  "vendor/weather-forecast-card/src/weather-forecast-card.ts": m23,
+  "src/card/sunlight.js": m17,
+  "src/card/unsaved.js": m18,
+  "src/card/weather-station-flex-card.js": m19,
+  "src/panels/flex.js": m20,
+  "src/panels/graph.js": m21,
+  "src/panels/statistics.js": m22,
+  "vendor/weather-forecast-card/src/types.ts": m23,
+  "vendor/weather-forecast-card/src/weather-forecast-card.ts": m24,
 };

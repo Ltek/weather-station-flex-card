@@ -124,6 +124,21 @@ function stationStates() {
       { ...sensor(P + "last_lightning_strike", new Date(Date.now() - 12 * 60e3).toISOString(), "", "timestamp", "GW2000B Last Lightning Strike") },
     ] : []),
     ...(params.get("soil") ? [sensor(P + "soil_moisture_1", 34, "%", "moisture", "GW2000B Soil Moisture 1")] : []),
+    // ?sunlight=1: Sunlight Visualizer's sensors (house front facing south, sun in the
+    // south-west: the right-hand wall faces west), ?sunlight=hot: and a hot day.
+    ...(params.get("sunlight") ? (() => {
+      const sv = { sunlight_visualizer_source: "sunlight_visualizer", house_angle: 180 };
+      return [
+        sensor("sensor.front_wall_sunlight", 62, "%", undefined, "Front Wall Sun Alignment", sv),
+        sensor("sensor.right_wall_sunlight", 78, "%", undefined, "Right Wall Sun Alignment", sv),
+        sensor("sensor.back_wall_sunlight", 0, "%", undefined, "Back Wall Sun Alignment", sv),
+        sensor("sensor.left_wall_sunlight", 0, "%", undefined, "Left Wall Sun Alignment", sv),
+        sensor("sensor.roof_sunlight", 71, "%", undefined, "Roof Sun Alignment", sv),
+        { ...sensor("number.house_angle", 180, "°", undefined, "House Angle", sv) },
+        { ...sensor("number.house_camera_rotation_h", 45, "°", undefined, "House Camera Rotation H", sv) },
+        sensor("sensor.open_meteo_shortwave_radiation", 690, "W/m²", "irradiance", "Open-Meteo Shortwave Radiation", sv),
+      ];
+    })() : []),
   ];
 }
 
@@ -137,6 +152,21 @@ if (params.get("sgcc")) {
   document.head.append(sc);
 }
 // ?windrose=1: same for aukedejong's Wind Rose Card (preview/build/windrose/).
+// ?sunlight=1: a stand-in for Sunlight Visualizer's card (shows its size and view;
+// its "save camera" button calls number.set_value like the real card).
+if (params.get("sunlight") && !customElements.get("sunlight-visualizer-card")) {
+  customElements.define("sunlight-visualizer-card", class extends HTMLElement {
+    setConfig(c) { this._c = c; this._draw(); }
+    set hass(h) { this._h = h; }
+    get hass() { return this._h; }
+    saveCamera() { return this._h?.callService("number", "set_value", { entity_id: "number.house_camera_rotation_h", value: 90 }); }
+    _draw() {
+      const c = this._c || {};
+      if (!this.shadowRoot) this.attachShadow({ mode: "open" });
+      this.shadowRoot.innerHTML = `<ha-card><div class="card-content" style="padding:16px"><div class="house" style="box-sizing:border-box;width:${c.cardWidth}px;height:${c.cardHeight}px;display:grid;place-items:center;border:1px dashed #6a8;color:#8c8;font:12px sans-serif;background:linear-gradient(#2a4060,#1b2a36)">🏠 ${c.rendererMode} ${c.cardWidth}×${c.cardHeight}</div></div></ha-card>`;
+    }
+  });
+}
 if (params.get("windrose")) {
   const sc = document.createElement("script");
   sc.type = "module";

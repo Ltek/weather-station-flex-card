@@ -161,6 +161,22 @@ panels:
     content_height: 60       # tighter rows
 ```
 
+### Sunlight Visualizer house and the Sun on the house alert
+
+Needs the [Sunlight Visualizer](https://github.com/NoUsername10/Sunlight_Visualizer) integration (HACS), with your house's direction set there.
+
+```yaml
+alerts_bar: true
+alerts_sun: true              # "West side: strong direct sun, 88 °F"
+alerts_sun_solar: 650         # W/m² (default 600)
+panels:
+  - type: sunlight
+    span: 4
+    rows: 3
+    renderer: auto            # default two_point_five_d (2.5D)
+    # sv_controls: allow      # default read_only
+```
+
 ## Notes
 
 - An OpenWeatherMap API key in the card's config can be read by anyone who can view the dashboard.
