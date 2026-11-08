@@ -1,5 +1,9 @@
 # Changelog
 
+## v2026.11.08.112
+
+- **Fix: a whole Weather Flex card in one Hero panel.** A hero whose Weather Flex settings show the sun arc now keeps its Sky Bar settings (ticks, forecast row, colours). Before, they were removed as if they were from the hero's old built-in Sky Bar, so the arc's sky baseline lost its forecast row. A Weather Flex Card config now converts to one Hero panel that looks the same as the original card.
+
 ## v2026.11.04.111
 
 - **Sunlight Visualizer panel** (`type: sunlight`): [Sunlight Visualizer](https://github.com/NoUsername10/Sunlight_Visualizer)'s house card in the grid, sized to its panel and following it when it resizes.

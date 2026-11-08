@@ -732,6 +732,9 @@ function stripHeroSky(p) {
   const { sky_bar: _s, ...rest } = p;
   const sp = rest.flex?.wfc?.sun_position;
   if (!sp) return rest;
+  // A hero that shows the sun arc keeps them: the arc draws its sky baseline
+  // with the Sky Bar settings (e.g. a whole Weather Flex card set up in one hero).
+  if (rest.flex.wfc.sun_arc?.show === true) return rest;
   const { sun_position: _sp, ...wfc } = rest.flex.wfc;
   const flex = { ...rest.flex, wfc };
   if (!Object.keys(wfc).length) delete flex.wfc;
