@@ -94,7 +94,12 @@ class WsfcLayoutMap extends LitElement {
   // Grid panels = everything not shown as a pop-up.
   // Panels hidden on load aren't on the map (they're listed under it).
   _inMap(p) {
-    return p.display !== "popup" && p.show !== false;
+    return p.display !== "popup" && p.show !== false && !this._inHero(p);
+  }
+
+  // Placed inside the hero (needs a hero on the grid).
+  _inHero(p) {
+    return p.place === "hero" && ["sky_tracker", "daily", "hourly", "forecast"].includes(p.type) && (this.panels || []).some((q) => q.type === "hero" && q.display !== "popup");
   }
 
   _gridIdx() {
@@ -145,6 +150,9 @@ class WsfcLayoutMap extends LitElement {
       ${this._screen()}
       ${hidden.length
         ? html`<div class="pops"><span>Hidden on load (not on the map):</span>${hidden.map((i) => html`<span class="pop"><ha-icon icon=${iconOf(panels[i])}></ha-icon>${nameOf(panels[i])}</span>`)}</div>`
+        : nothing}
+      ${(this.panels || []).some((p) => this._inHero(p))
+        ? html`<div class="pops"><span>Inside the hero:</span>${(this.panels || []).map((p, i) => [p, i]).filter(([p]) => this._inHero(p)).map(([p]) => html`<span class="pop"><ha-icon icon=${iconOf(p)}></ha-icon>${nameOf(p)}</span>`)}</div>`
         : nothing}
       ${popups.length
         ? html`<div class="pops"><span>Pop-ups:</span>${popups.map((i) => html`<span class="pop"><ha-icon icon=${iconOf(panels[i])}></ha-icon>${nameOf(panels[i])}</span>`)}</div>`

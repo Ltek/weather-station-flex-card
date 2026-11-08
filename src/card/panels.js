@@ -596,6 +596,9 @@ export const COLLAPSE_FIELDS = [
 const OWN_SIZES = new Set(["daily", "hourly", "forecast", "sky_tracker", "hero", "rainviewer", "windy_map", "sunlight", "stack", "heading", "clock"]);
 const CHART_TYPES = new Set(["graph", "temp_humidity", "uv_solar", "statistics"]);
 export const COMMON_SCHEMA = [
+  { section: "Size and Scaling", name: "place", label: "Place", when: (d) => ["sky_tracker", "daily", "hourly", "forecast"].includes(d.type), selector: { select: { options: opt([["grid", "In the grid, as its own panel"], ["hero", "Inside the hero panel"]]) } }, default: "grid",
+    helper: "Inside the hero: drawn in the hero on its background, with no panel frame (its size here is then not used). All its settings stay on this panel." },
+  { section: "Size and Scaling", name: "hero_position", label: "Where in the hero", when: (d) => d.place === "hero", selector: { select: { options: opt([["top", "At the top"], ["after_current", "After the current conditions"], ["bottom", "At the bottom"]]) } }, default: "after_current" },
   { section: "Size and Scaling", name: "display", label: "Location", selector: { select: { options: opt([["grid", "In the grid"], ["tile_popup", "In the grid — tap it to open larger"], ["popup", "Pop-up only (from its panel button)"]]) } } },
   { section: "Size and Scaling", name: "span", selector: { number: { min: 1, max: 12, mode: "slider" } }, helper: "Width in twelfths of the card." },
   { section: "Size and Scaling", name: "rows", selector: { number: { min: 0, max: 10, step: 0.25, mode: "slider" } }, helper: "Height in row units, in quarter steps (0 = fit content, 0.5 = half height)." },

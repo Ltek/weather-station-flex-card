@@ -1,5 +1,13 @@
 # Changelog
 
+## v2026.11.08.113
+
+- **Place inside the hero.** The Sky Tracker, Daily, Hourly and Forecast panels have a new **Place** setting: in the grid as their own panel (default), or **inside the hero panel**.
+  - Inside the hero, a panel is drawn on the hero's animated background with no frame or title, at the top, after the current conditions (default) or at the bottom.
+  - All its settings stay on that panel. A Sky Tracker inside the hero keeps its step buttons, facts, timeframe and sizes.
+  - Its panel button still shows and hides it. The Layout Map lists it under "Inside the hero".
+  - This lets a Weather Flex Card setup (current conditions, sun arc with the Sky Bar, daily forecast) become one hero with the Sky Tracker and Daily forecast placed inside it.
+
 ## v2026.11.08.112
 
 - **Fix: a whole Weather Flex card in one Hero panel.** A hero whose Weather Flex settings show the sun arc now keeps its Sky Bar settings (ticks, forecast row, colours). Before, they were removed as if they were from the hero's old built-in Sky Bar, so the arc's sky baseline lost its forecast row. A Weather Flex Card config now converts to one Hero panel that looks the same as the original card.

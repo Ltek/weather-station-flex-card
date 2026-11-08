@@ -60,6 +60,8 @@ import { lazyLib } from "./lazy.js";
 
 const NARROW_PX = 720;
 // Panels with a title header, which can fold down to it.
+// Panels that can be placed inside the hero.
+export const EMBED_TYPES = new Set(["sky_tracker", "daily", "hourly", "forecast"]);
 export const canCollapseType = (t) => !["hero", "metric", "stack", "clock", "chips", "heading"].includes(t);
 const MEDIUM_PX = 1100;
 
@@ -1043,7 +1045,7 @@ class WeatherStationFlexCard extends LitElement {
 
   _renderPanels() {
     const panels = this._config.panels;
-    let idx = panels.map((p, i) => i).filter((i) => panels[i].display !== "popup" && !this._isHidden(panels[i], i) && !this._isEmpty(panels[i], i));
+    let idx = panels.map((p, i) => i).filter((i) => panels[i].display !== "popup" && !this._isHidden(panels[i], i) && !this._isEmpty(panels[i], i) && !this._inHero(i));
     // Phone layout (narrow screens): its own order, widths and heights.
     const phone = this._phoneLayout();
     if (phone) {
@@ -1174,6 +1176,29 @@ class WeatherStationFlexCard extends LitElement {
   // Panel elements are cached by position + config, so toggling or a hass
   // update never rebuilds charts/maps, while an edited panel is rebuilt.
   // fill: whether the tile fills (decided by the grid from the panel's rows in the current layout).
+  // The hero shown in the grid (index), for panels placed inside it.
+  get _heroIndex() {
+    const panels = this._config.panels || [];
+    return panels.findIndex((p, i) => p?.type === "hero" && p.display !== "popup" && !this._isHidden(p, i));
+  }
+
+  // A forecast or Sky Tracker panel drawn inside the hero (Place: Inside the hero).
+  _inHero(i) {
+    const p = this._config.panels?.[i];
+    return !!p && EMBED_TYPES.has(p.type) && p.place === "hero" && this._heroIndex >= 0 && this._focus == null;
+  }
+
+  // The panels placed inside the hero, with their elements and positions.
+  _heroEmbeds() {
+    const panels = this._config.panels || [];
+    return panels.map((p, j) => [p, j]).filter(([p, j]) => this._inHero(j) && !this._isHidden(p, j) && !this._isEmpty(p, j))
+      .map(([p, j]) => {
+        // Inside the hero they have no title unless one is asked for.
+        const q = { ...p, show_title: p.show_title ?? false };
+        return { p: q, i: j, at: ["top", "after_current", "bottom"].includes(p.hero_position) ? p.hero_position : "after_current", el: this._panelEl(q, j) };
+      });
+  }
+
   _panelEl(p, i, popup = false, fill = false) {
     this._els ||= new Map();
     // Most panels get a fresh element when their settings change. Wind keeps
@@ -1189,6 +1214,11 @@ class WeatherStationFlexCard extends LitElement {
     el.config = p;
     el.station = this._station;
     el.cardBg = this._animatedBg;
+    if (p.type === "hero" && !popup) {
+      el.embeds = this._heroEmbeds();
+      // With panels inside it, the hero draws the animated background behind all of them.
+      el.bgLayer = el.embeds.length && !this._animatedBg ? this._renderBackground() : null;
+    }
     // A collapsed panel is paused too (a folded map stops loading and animating).
     const folded = !popup && this._canCollapse(p) && this._focus == null && this._isCollapsed(p, i);
     // A foldable panel only shows when the user opens it: start its animation then.

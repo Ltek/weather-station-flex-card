@@ -235,15 +235,71 @@ class WsfcFlexPanel extends LitElement {
   }
 }
 
+// Step buttons (Sky Tracker, and a hero showing the sun arc): ◀ / Now / ▶ move
+// the time window by `step_hours`, up to `max_ahead` hours, back to now after
+// `return_after` seconds. `el._offset` holds the shift in hours.
+function stepBy(el, dir) {
+  const c = el.config || {};
+  const step = Number(c.step_hours) || 12;
+  const max = Number(c.max_ahead ?? 48);
+  const next = dir === 0 ? 0 : Math.max(0, Math.min(max, (el._offset || 0) + dir * step));
+  el._offset = next;
+  clearTimeout(el._back);
+  const after = Number(c.return_after ?? 60);
+  if (next && after > 0) el._back = setTimeout(() => (el._offset = 0), after * 1000);
+}
+
+function stepButtons(el, { timeframe = "hours", hours = 24, anchor = "now_center" } = {}) {
+  const c = el.config || {};
+  const off = el._offset || 0;
+  const step = Number(c.step_hours) || 12;
+  const max = Number(c.max_ahead ?? 48);
+  let label = "";
+  if (off) {
+    const lang = el.hass?.locale?.language;
+    const t0 = Date.now() + off * 3600e3 - (anchor === "now_center" && timeframe === "hours" ? (hours / 2) * 3600e3 : 0);
+    const d = new Date(t0), today = new Date();
+    const days = Math.round((new Date(d).setHours(0, 0, 0, 0) - new Date(today).setHours(0, 0, 0, 0)) / 864e5);
+    const day = days === 0 ? "Today" : days === 1 ? "Tomorrow" : new Intl.DateTimeFormat(lang, { weekday: "long" }).format(d);
+    label = timeframe === "hours" ? `${day} ${new Intl.DateTimeFormat(lang, { hour: "numeric" }).format(d)} onward` : day;
+  }
+  return html`<span class="steps">
+    ${label ? html`<span class="when">${label}</span>` : nothing}
+    <button type="button" ?disabled=${off <= 0} @click=${() => stepBy(el, -1)} aria-label="Earlier" title="Earlier"><ha-icon icon="mdi:chevron-left"></ha-icon></button>
+    <button type="button" class="now" ?disabled=${off === 0} @click=${() => stepBy(el, 0)} title="Back to now">Now</button>
+    <button type="button" ?disabled=${off + step > max} @click=${() => stepBy(el, 1)} aria-label="Later" title="Later"><ha-icon icon="mdi:chevron-right"></ha-icon></button>
+  </span>`;
+}
+
+const stepCss = css`
+  .steps { display: inline-flex; align-items: center; gap: 4px; flex: 0 0 auto; }
+  .steps .when { font-size: calc(12px * var(--wsfc-ts, 1)); color: var(--secondary-text-color); margin-right: 6px; white-space: nowrap; }
+  .steps button { display: inline-grid; place-items: center; min-width: 28px; height: 28px; padding: 0 8px; border-radius: 999px; cursor: pointer; font: inherit; font-size: calc(12px * var(--wsfc-ts, 1));
+    border: 1px solid var(--divider-color, rgba(127,127,127,.35)); background: transparent; color: var(--primary-text-color); }
+  .steps button ha-icon { --mdc-icon-size: calc(18px * var(--wsfc-is, 1)); }
+  .steps button:disabled { opacity: 0.35; cursor: default; }
+  .steps button:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 2px; }
+`;
+
+
 class WsfcHeroPanel extends WsfcFlexPanel {
   type = "hero";
-  static properties = { ...WsfcFlexPanel.properties, cardBg: { attribute: false }, lite: { attribute: false }, fit: { attribute: false }, _k: { state: true } };
+  static properties = { ...WsfcFlexPanel.properties, cardBg: { attribute: false }, lite: { attribute: false }, fit: { attribute: false }, _k: { state: true }, embeds: { attribute: false }, bgLayer: { attribute: false } };
   static styles = [
     panelStyles,
     coreStyles,
     factStyles,
     css`
       :host { position: relative; }
+      /* Panels inside the hero, over its animated background. */
+      .hero-bg { position: absolute; inset: 0; z-index: 0; border-radius: inherit; overflow: hidden; pointer-events: none; }
+      .hero-bg > * { position: absolute; inset: 0; }
+      .hero-embed, .core, .hero-facts { position: relative; z-index: 1; }
+      .hero-embed { flex: 0 0 auto; padding: 0 12px; }
+      .hero-embed > * { --wsfc-head-pad: 0; background: transparent; }
+      :host([has-embeds]) .core { flex: 0 0 auto; }
+      :host([has-embeds]) .core > * { height: auto; }
+
       /* Sun & moon facts along the bottom (or top) of the hero: in the flow, so the
          hero's content fits above (below) them, and on one line, scaled to fit it. */
       .hero-facts { flex: 0 0 auto; margin: 0 16px 10px; pointer-events: none; min-width: 0; overflow: hidden; }
@@ -348,6 +404,8 @@ class WsfcHeroPanel extends WsfcFlexPanel {
   updated(changed) {
     fillTile(this._slot.el);
     adoptContrast(this._slot.el);
+    this.toggleAttribute("has-embeds", !!this.embeds?.length);
+    if (this._slot2?.el) { adoptContrast(this._slot2.el); }
     this.toggleAttribute("fit", this._fitting);
     this._watchContent();
     if (!this._fitting) { this._k = undefined; requestAnimationFrame(() => this._fitFacts()); return; }
@@ -425,7 +483,34 @@ class WsfcHeroPanel extends WsfcFlexPanel {
     const top = (this.config?.fact_position || "bottom") === "top";
     // A tight fit also tightens the card's padding (16 px down to 6 px).
     const pad = this._fitting && (this._k || 1) < 1 ? `;--wsfc-hero-pad:${Math.round(Math.max(6, 16 * (this._k || 1)))}px` : "";
-    return html`<div class="core" style="--wfc-clock-auto:${a.clock}px;--wfc-clock-date-auto:${a.date}px${pad}">${this._slot.update(this._coreConfig(), this.hass)}</div>
+    const vars = `--wfc-clock-auto:${a.clock}px;--wfc-clock-date-auto:${a.date}px${pad}`;
+    const embeds = this.embeds || [];
+    if (!embeds.length) {
+      return html`<div class="core" style=${vars}>${this._slot.update(this._coreConfig(), this.hass)}</div>
+        ${facts === nothing ? nothing : html`<div class="hero-facts ${top ? "top" : ""}">${facts}</div>`}
+        ${this._slot.error ? html`<div class="err">${this._slot.error}</div>` : nothing}`;
+    }
+    // Panels placed inside the hero (Sky Tracker, forecasts): at the top, after the
+    // current conditions, or at the bottom. "After the current conditions" splits the
+    // hero's own Weather Flex sections in two around them.
+    let cfg = this._coreConfig();
+    // The animated background goes behind the whole hero (the card draws it when it has one).
+    if (this.bgLayer || this.cardBg) cfg = deepMerge(cfg, { show_condition_effects: false, wfc: { card: { bg_color: "transparent" } } });
+    const order = (cfg.wfc?.order || ["current", "details"]).filter((k) => cfg.wfc?.[k]?.show !== false);
+    const head = [], rest = [];
+    for (const k of order) (rest.length || !["current", "details"].includes(k) ? rest : head).push(k);
+    const at = (pos) => embeds.filter((e) => e.at === pos).map((e) => html`<div class="hero-embed">${e.el}</div>`);
+    const mid = at("after_current");
+    const split = mid.length && rest.length;
+    const coreA = split ? deepMerge(cfg, { wfc: { order: head } }) : cfg;
+    const coreB = split ? deepMerge(cfg, { wfc: { order: rest }, show_condition_effects: false }) : null;
+    this._slot2 ||= new CoreSlot();
+    return html`${this.bgLayer ? html`<div class="hero-bg">${this.bgLayer}</div>` : nothing}
+      ${at("top")}
+      <div class="core" style=${vars}>${this._slot.update(coreA, this.hass)}</div>
+      ${mid}
+      ${split ? html`<div class="core core2" style=${vars}>${this._slot2.update(coreB, this.hass)}</div>` : nothing}
+      ${at("bottom")}
       ${facts === nothing ? nothing : html`<div class="hero-facts ${top ? "top" : ""}">${facts}</div>`}
       ${this._slot.error ? html`<div class="err">${this._slot.error}</div>` : nothing}`;
   }
@@ -549,17 +634,10 @@ class WsfcSkyTracker extends WsfcFlexPanel {
   type = "sky_tracker";
   defaultTitle = "Sky Tracker";
   defaultIcon = "mdi:sun-clock-outline";
-  static styles = [...WsfcFlexPanel.styles, factStyles, css`
-    .steps { display: inline-flex; align-items: center; gap: 4px; flex: 0 0 auto; }
+  static styles = [...WsfcFlexPanel.styles, factStyles, stepCss, css`
     .headfacts { flex: 1; min-width: 0; margin-right: 8px; }
     .head:has(.headfacts) .steps { margin-left: auto; }
     .headfacts .facts { margin: 0; }
-    .steps .when { font-size: calc(12px * var(--wsfc-ts, 1)); color: var(--secondary-text-color); margin-right: 6px; white-space: nowrap; }
-    .steps button { display: inline-grid; place-items: center; min-width: 28px; height: 28px; padding: 0 8px; border-radius: 999px; cursor: pointer; font: inherit; font-size: calc(12px * var(--wsfc-ts, 1));
-      border: 1px solid var(--divider-color, rgba(127,127,127,.35)); background: transparent; color: var(--primary-text-color); }
-    .steps button ha-icon { --mdc-icon-size: calc(18px * var(--wsfc-is, 1)); }
-    .steps button:disabled { opacity: 0.35; cursor: default; }
-    .steps button:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 2px; }
   `];
   static properties = { ...WsfcFlexPanel.properties, _offset: { state: true } };
 
@@ -567,18 +645,7 @@ class WsfcSkyTracker extends WsfcFlexPanel {
     return trackerConfig(scaledSizes(this.config, this.sizeBase), this.station, this._offset || 0);
   }
 
-  // Step buttons: ◀ / Now / ▶ move the window by `step_hours`, up to
-  // `max_ahead` hours, and return to now after `return_after` seconds.
-  _step(dir) {
-    const c = this.config || {};
-    const step = Number(c.step_hours) || 12;
-    const max = Number(c.max_ahead ?? 48);
-    const next = dir === 0 ? 0 : Math.max(0, Math.min(max, (this._offset || 0) + dir * step));
-    this._offset = next;
-    clearTimeout(this._back);
-    const after = Number(c.return_after ?? 60);
-    if (next && after > 0) this._back = setTimeout(() => (this._offset = 0), after * 1000);
-  }
+  _step(dir) { stepBy(this, dir); }
 
   disconnectedCallback() {
     super.disconnectedCallback();
@@ -587,26 +654,7 @@ class WsfcSkyTracker extends WsfcFlexPanel {
 
   _steps() {
     const c = this.config || {};
-    const off = this._offset || 0;
-    const step = Number(c.step_hours) || 12;
-    const max = Number(c.max_ahead ?? 48);
-    let label = "";
-    if (off) {
-      const lang = this.hass?.locale?.language;
-      const hours = Number(c.hours) || 24;
-      const anchor = c.anchor || "now_center";
-      const t0 = Date.now() + off * 3600e3 - (anchor === "now_center" && (c.timeframe || "hours") === "hours" ? (hours / 2) * 3600e3 : 0);
-      const d = new Date(t0), today = new Date();
-      const days = Math.round((new Date(d).setHours(0, 0, 0, 0) - new Date(today).setHours(0, 0, 0, 0)) / 864e5);
-      const day = days === 0 ? "Today" : days === 1 ? "Tomorrow" : new Intl.DateTimeFormat(lang, { weekday: "long" }).format(d);
-      label = (c.timeframe || "hours") === "hours" ? `${day} ${new Intl.DateTimeFormat(lang, { hour: "numeric" }).format(d)} onward` : day;
-    }
-    return html`<span class="steps">
-      ${label ? html`<span class="when">${label}</span>` : nothing}
-      <button type="button" ?disabled=${off <= 0} @click=${() => this._step(-1)} aria-label="Earlier" title="Earlier"><ha-icon icon="mdi:chevron-left"></ha-icon></button>
-      <button type="button" class="now" ?disabled=${off === 0} @click=${() => this._step(0)} title="Back to now">Now</button>
-      <button type="button" ?disabled=${off + step > max} @click=${() => this._step(1)} aria-label="Later" title="Later"><ha-icon icon="mdi:chevron-right"></ha-icon></button>
-    </span>`;
+    return stepButtons(this, { timeframe: c.timeframe || "hours", hours: Number(c.hours) || 24, anchor: c.anchor || "now_center" });
   }
 
   render() {
