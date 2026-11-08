@@ -163,6 +163,8 @@ Where the buttons go: `panel_bar: false` hides the bar; a Button Menu panel (`he
 
 | Option | Value | Default | What it does |
 |---|---|---|---|
+| `place` | `grid` · `hero` | `grid` | **Place** — Inside the hero: drawn in the hero on its background, with no panel frame (its size here is then not used). All its settings stay on this panel. |
+| `hero_position` | `top` · `after_current` · `bottom` | `after_current` | **Where in the hero** |
 | `display` | `grid` · `tile_popup` · `popup` |  | **Location** |
 | `span` | number 1–12 |  | **Width** — Width in twelfths of the card. |
 | `rows` | number 0–10 |  | **Height** — Height in row units, in quarter steps (0 = fit content, 0.5 = half height). |
