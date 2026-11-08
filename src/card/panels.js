@@ -6,6 +6,8 @@ import { WINDROSE_PRESETS } from "../panels/windrose.js";
 import { factsFields } from "../panels/astro-facts.js";
 import { lightningIds } from "../panels/lightning.js";
 
+import { FORECAST_CHART_OVERLAYS, FORECAST_CHART_METRICS } from "../../vendor/weather-forecast-card/src/data/forecast-chart-metrics";
+
 const opt = (pairs) => pairs.map(([value, label]) => ({ value, label }));
 const RANGES = ["6h", "12h", "24h", "48h", "7d", "30d", "90d", "365d"];
 const OWM = opt([["wind_new", "Wind"], ["precipitation_new", "Precipitation"], ["clouds_new", "Clouds"], ["temp_new", "Temperature"], ["pressure_new", "Pressure"]]);
@@ -267,8 +269,11 @@ export const PANEL_TYPES = {
   },
   hourly: {
     tag: "wsfc-panel-hourly", label: "Hourly forecast", icon: "mdi:clock-outline", span: 8, rows: 3, flex: true, flexPanels: ["Hourly Forecast"],
-    flexHide: ONE_SECTION_HIDE,
+    flexHide: [...ONE_SECTION_HIDE, "hourly_chart_attribute", "check:Show metric selector"],
     schema: [
+      { name: "chart_attribute", label: "Chart metric", selector: { select: { options: FORECAST_CHART_METRICS } }, default: "temperature_and_precipitation", helper: "Choose the chart shown when the panel opens. Requires forecast values from your weather provider." },
+      { name: "show_attribute_selector", label: "Show metric selector", selector: { boolean: {} }, default: false, helper: "Let viewers switch chart metrics. Only metrics supplied by the weather provider appear." },
+      { name: "chart_overlays", label: "Temperature overlays", when: (d) => !d.chart_attribute || d.chart_attribute === "temperature_and_precipitation" || d.show_attribute_selector, selector: { select: { multiple: true, options: FORECAST_CHART_OVERLAYS.map(({ value, label }) => ({ value, label })) } }, default: [], helper: "Add forecast lines alongside temperature and precipitation. Missing readings leave gaps; metrics without readings are omitted." },
       { name: "text_scale", label: "Text size", selector: { number: { min: 50, max: 200, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100, helper: "Day and time labels, temperatures and chart figures. Separate from Scale all Panel Contents." },
       { name: "icon_scale", label: "Icon size", selector: { number: { min: 50, max: 250, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100, helper: "The condition icons in the forecast." },
       { name: "chart_scale", label: "Chart height", selector: { number: { min: 40, max: 200, step: 5, mode: "slider", unit_of_measurement: "%" } }, default: 100, helper: "The temperature / precipitation chart under the icons. With Fill the panel on, the chart gives up height first so text and icons can be larger: this sets how much of the panel it keeps (about a third at 100%)." },
