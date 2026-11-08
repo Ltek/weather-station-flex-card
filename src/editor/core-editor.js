@@ -15,6 +15,10 @@ import { WeatherForecastCardEditor } from "../../vendor/weather-forecast-card/sr
   const sourcesPanel = P._wfcWeatherSourcesPanel;
   const render = P.render;
   const updated = P.updated;
+  const forecastSelect = P._wfcForecastSelect;
+  P._wfcForecastSelect = function (field, ...args) {
+    return this.wsfcHide?.includes(field) ? "" : forecastSelect.call(this, field, ...args);
+  };
   P._wfcWeatherSourcesPanel = function () {
     return this.wsfcMode === "sections" ? "" : sourcesPanel.call(this);
   };

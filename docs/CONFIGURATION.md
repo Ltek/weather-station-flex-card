@@ -490,6 +490,9 @@ Default size: 8 of 12 wide, 3 rows high. Also takes `flex:`: Weather Flex sectio
 
 | Option | Value | Default | What it does |
 |---|---|---|---|
+| `chart_attribute` | `temperature_and_precipitation` · `apparent_temperature` · `humidity` · `pressure` · `uv_index` | `temperature_and_precipitation` | **Chart metric** — Choose the chart shown when the panel opens. Requires forecast values from your weather provider. |
+| `show_attribute_selector` | `true` / `false` | `false` | **Show metric selector** — Let viewers switch chart metrics. Only metrics supplied by the weather provider appear. |
+| `chart_overlays` | list of: `dew_point` · `apparent_temperature` | `[]` | **Temperature overlays** — Add forecast lines alongside temperature and precipitation. Missing readings leave gaps; metrics without readings are omitted. |
 | `text_scale` | number 50–200 % | `100` | **Text size** — Day and time labels, temperatures and chart figures. Separate from Scale all Panel Contents. |
 | `icon_scale` | number 50–250 % | `100` | **Icon size** — The condition icons in the forecast. |
 | `chart_scale` | number 40–200 % | `100` | **Chart height** — The temperature / precipitation chart under the icons. With Fill the panel on, the chart gives up height first so text and icons can be larger: this sets how much of the panel it keeps (about a third at 100%). |
@@ -1033,6 +1036,37 @@ panels:
     renderer: auto            # default two_point_five_d (2.5D)
     # sv_controls: allow      # default read_only
 ```
+
+### Hourly forecast metrics and overlays
+
+Choose `chart_attribute` to set the initial hourly chart: `temperature_and_precipitation`
+(the default), `apparent_temperature` (feels like), `humidity`, `pressure`, or `uv_index`.
+Enable `show_attribute_selector` to let viewers switch between metrics supplied by
+your weather provider.
+
+Use `chart_overlays` to add dew point, feels like, or both alongside temperature and
+precipitation. Dew point uses a solid blue line; feels like uses a dashed purple line.
+Both share the forecast's temperature unit and axis. Missing readings leave gaps;
+metrics with no readings are omitted. Overlays appear only in the hourly temperature /
+precipitation view and do not affect daily forecasts or other chart views.
+
+```yaml
+entity: weather.forecast_home
+panels:
+  - type: hourly
+    title: Hourly weather
+    span: 12
+    rows: 3
+    chart_attribute: temperature_and_precipitation
+    show_attribute_selector: true
+    chart_overlays:
+      - dew_point
+      - apparent_temperature
+```
+
+All three settings are available in the hourly panel's visual editor. By default,
+no overlays or metric selector are shown. Forecast metrics require values supplied
+by the weather provider; current-weather sensors do not supply future readings.
 
 ## Notes
 

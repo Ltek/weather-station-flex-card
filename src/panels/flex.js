@@ -202,7 +202,18 @@ class WsfcFlexPanel extends LitElement {
   }
 
   _coreConfig() {
-    return deepMerge(flexBase(this.type, this.station), this.config?.flex || {});
+    const config = deepMerge(flexBase(this.type, this.station), this.config?.flex || {});
+    if (this.type === "hourly") {
+      const fields = {
+        chart_overlays: "chart_overlays",
+        chart_attribute: "hourly_chart_attribute",
+        show_attribute_selector: "hourly_show_attribute_selector",
+      };
+      for (const [key, target] of Object.entries(fields)) {
+        if (this.config?.[key] != null) config.forecast[target] = this.config[key];
+      }
+    }
+    return config;
   }
 
   // Redraw only when the station's or the panel's own entities change (the
