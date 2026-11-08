@@ -1,3 +1,5 @@
+import { FORECAST_CHART_METRICS } from "./data/forecast-chart-metrics";
+import type { ForecastChartOverlay } from "./data/forecast-chart-metrics";
 import {
   ActionConfig,
   ActionHandlerDetail,
@@ -50,15 +52,9 @@ export const WEATHER_EFFECTS = [
 export type CurrentWeatherAttributes =
   (typeof CURRENT_WEATHER_ATTRIBUTES)[number];
 
-export const CHART_ATTRIBUTES = [
-  "temperature_and_precipitation",
-  "apparent_temperature",
-  "humidity",
-  "pressure",
-  "uv_index",
-] as const;
+export const CHART_ATTRIBUTES = FORECAST_CHART_METRICS.map((metric) => metric.value);
 
-export type ChartAttributes = (typeof CHART_ATTRIBUTES)[number];
+export type ChartAttributes = (typeof FORECAST_CHART_METRICS)[number]["value"];
 
 export const DEFAULT_CHART_ATTRIBUTE: ChartAttributes =
   "temperature_and_precipitation";
@@ -100,6 +96,7 @@ export interface WeatherForecastCardForecastConfig {
   temperature_precision?: number;
   show_attribute_selector?: boolean;
   default_chart_attribute?: ChartAttributes;
+  chart_overlays?: readonly ForecastChartOverlay[];
 }
 
 export interface WeatherForecastCardCurrentConfig {

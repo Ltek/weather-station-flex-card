@@ -28,6 +28,8 @@ import {
   WEATHER_ATTRIBUTE_ICON_MAP,
   WeatherEntity,
 } from "../data/weather";
+import { FORECAST_CHART_OVERLAYS } from "../data/forecast-chart-metrics";
+import { forecastDewPoint } from "../data/forecast-dew-point";
 import { getUvIndexColor } from "../data/uv-index";
 import {
   LineController,
@@ -138,10 +140,22 @@ export class WfcForecastChart extends LitElement {
     this._chart = null;
   }
 
-  protected firstUpdated(): void {
-    if (this.config?.forecast?.default_chart_attribute) {
-      this._selectedAttribute = this.config.forecast.default_chart_attribute;
+  protected willUpdate(changedProps: PropertyValues): void {
+    const previous = changedProps.get("config")?.forecast?.default_chart_attribute;
+    const next = this.config?.forecast?.default_chart_attribute;
+    const firstForecast = changedProps.has("forecast") && !changedProps.get("forecast")?.length;
+    if ((changedProps.has("config") && previous !== next) || firstForecast) {
+      this._selectedAttribute = next ?? DEFAULT_CHART_ATTRIBUTE;
     }
+    if (changedProps.has("config") || changedProps.has("forecast")) {
+      const available = this._getChartOptions();
+      if (!available.some((option) => option.value === this._selectedAttribute)) {
+        this._selectedAttribute = DEFAULT_CHART_ATTRIBUTE;
+      }
+    }
+  }
+
+  protected firstUpdated(): void {
     this.initChart();
   }
 
@@ -149,6 +163,7 @@ export class WfcForecastChart extends LitElement {
     super.updated(changedProps);
 
     const hasChanged =
+      changedProps.has("config") ||
       changedProps.has("forecast") ||
       changedProps.has("weatherEntity") ||
       changedProps.has("hass") ||
@@ -172,6 +187,9 @@ export class WfcForecastChart extends LitElement {
       return nothing;
     }
 
+    const overlayLegend = this.forecastType === "hourly" && this._selectedAttribute === "temperature_and_precipitation"
+      ? this.getChartConfig().data.datasets.filter((line) => line.label)
+      : [];
     const count = forecast.length;
     const gaps = Math.max(count - 1, 0);
     const fontSize = this._getChartFontSize();
@@ -242,6 +260,15 @@ export class WfcForecastChart extends LitElement {
           @closed=${this._onSettingsClosed}
         ></wfc-chart-attribute-selector>
       </div>
+      ${overlayLegend.length ? html`
+        <div style="display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12px;margin-bottom:6px">
+          ${overlayLegend.map((line) => html`
+            <span style="display:inline-flex;align-items:center;gap:6px">
+              <span style=${styleMap({ width: "18px", borderTop: `2px ${line.borderDash ? "dashed" : "solid"} ${line.borderColor}` })}></span>
+              ${line.label}
+            </span>
+          `)}
+        </div>` : nothing}
       <div
         class="${classMap({
           "wfc-mask-container": true,
@@ -440,7 +467,51 @@ export class WfcForecastChart extends LitElement {
     style: CSSStyleDeclaration,
     options: ChartOptions
   ): ChartConfiguration {
-    const { minTemp, maxTemp } = this.computeScaleLimits(data);
+    // Temperature overlays share one axis; precipitation retains its own scale.
+    const overlays: ChartDataset<"line">[] = [];
+    const selected = this.config.forecast?.chart_overlays;
+    if (this.forecastType === "hourly" && Array.isArray(selected)) {
+      for (const metric of FORECAST_CHART_OVERLAYS) {
+        if (!selected.includes(metric.value)) continue;
+        let hasCalculatedValues = false;
+        const unit = getWeatherUnit(this.hass, this.weatherEntity, "temperature");
+        const values = data.map((f) => {
+          if (metric.value === "dew_point") {
+            const reading = forecastDewPoint(f, unit);
+            if (reading?.source === "calculated") hasCalculatedValues = true;
+            return reading?.value ?? null;
+          }
+          const value = f[metric.value];
+          return typeof value === "number" && Number.isFinite(value) ? value : null;
+        });
+        if (values.some((v) => v !== null)) {
+          const name = this.hass.formatEntityAttributeName(this.weatherEntity, metric.value) || metric.label;
+          const label = hasCalculatedValues ? `${name} (calculated)` : name;
+          overlays.push({
+            label,
+            data: values,
+            yAxisID: "yTemp",
+            borderColor: metric.color,
+            pointBackgroundColor: metric.color,
+            borderWidth: 2,
+            borderDash: metric.dashed ? [5, 3] : undefined,
+            fill: false,
+            spanGaps: false,
+            datalabels: {
+              anchor: "start",
+              align: "bottom",
+              color: metric.color,
+              formatter: (value) => value == null ? null :
+                `${formatTemperature(this.hass, this.weatherEntity, value, this.config.forecast?.temperature_precision, true)}°`,
+            },
+          });
+        }
+      }
+    }
+    const { minTemp, maxTemp } = this.computeScaleLimits(
+      data,
+      overlays.flatMap((line) => line.data.filter((v): v is number => typeof v === "number"))
+    );
     const highTempLabelColor = style.getPropertyValue(
       "--wfc-chart-temp-high-label-color"
     );
@@ -465,6 +536,7 @@ export class WfcForecastChart extends LitElement {
       data: {
         labels: data.map((f) => f.datetime),
         datasets: [
+          ...overlays,
           {
             data: data.map((f) => f.temperature),
             yAxisID: "yTemp",
@@ -816,19 +888,20 @@ export class WfcForecastChart extends LitElement {
    *   5. Round values to the nearest integer for cleaner grid lines.
    *
    * @param forecast - The forecast data to compute the scale limits for.
+   * @param overlayTemps - Valid forecast overlay temperatures on this axis.
    * @returns An object containing `minTemp` and `maxTemp` properties.
    */
-  private computeScaleLimits(forecast: ForecastAttribute[]): {
+  private computeScaleLimits(forecast: ForecastAttribute[], overlayTemps: number[] = []): {
     minTemp: number;
     maxTemp: number;
   } {
     const temps = forecast.map((f) => f.temperature);
     const lows = forecast.map((f) => f.templow ?? f.temperature);
 
-    const dataMin = Math.min(...lows);
-    const dataMax = Math.max(...temps);
+    const dataMin = Math.min(...lows, ...overlayTemps);
+    const dataMax = Math.max(...temps, ...overlayTemps);
 
-    const hasLowTempData = forecast.some(
+    const hasLowTempData = overlayTemps.length > 0 || forecast.some(
       (f) => f.templow !== undefined && f.templow !== null
     );
 
@@ -1012,7 +1085,7 @@ export class WfcForecastChart extends LitElement {
 
       return forecast.some((f) => {
         const value = f[attr as keyof ForecastAttribute];
-        return value != null;
+        return typeof value === "number" && Number.isFinite(value);
       });
     };
 

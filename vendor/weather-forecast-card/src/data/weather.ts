@@ -44,6 +44,7 @@ export interface ForecastAttribute {
   wind_bearing?: number | string;
   uv_index?: number;
   apparent_temperature?: number;
+  dew_point?: number;
 }
 
 export interface WeatherEntityAttributes extends HassEntityAttributeBase {
@@ -537,7 +538,11 @@ export const aggregateHourlyForecastData = (
       .filter((e): e is number => e !== undefined);
     const validApparentTemp = group
       .map((e) => e.apparent_temperature)
-      .filter((e): e is number => e !== undefined);
+      .filter((e): e is number => typeof e === "number" && Number.isFinite(e));
+
+    const validDewPoints = group
+      .map((e) => e.dew_point)
+      .filter((e): e is number => Number.isFinite(e));
 
     const lastEntryDate = new Date(group[group.length - 1]!.datetime);
     lastEntryDate.setMinutes(59);
@@ -549,6 +554,10 @@ export const aggregateHourlyForecastData = (
       condition: getWorstCondition(group),
       temperature: parseFloat(average(temperatures).toFixed(1)),
     };
+
+    if (validDewPoints.length > 0) {
+      aggregatedEntry.dew_point = parseFloat(average(validDewPoints).toFixed(1));
+    }
 
     if (validHumidity.length > 0) {
       aggregatedEntry.humidity = Math.round(average(validHumidity));

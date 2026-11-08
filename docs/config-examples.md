@@ -177,6 +177,42 @@ panels:
     # sv_controls: allow      # default read_only
 ```
 
+### Hourly forecast metrics and overlays
+
+Choose `chart_attribute` to set the initial hourly chart: `temperature_and_precipitation`
+(the default), `apparent_temperature` (feels like), `humidity`, `pressure`, or `uv_index`.
+Enable `show_attribute_selector` to let viewers switch between metrics supplied by
+your weather provider.
+
+Use `chart_overlays` to add dew point, feels like, or both alongside temperature and
+precipitation. Dew point uses a solid blue line; feels like uses a dashed purple line.
+Both share the forecast's temperature unit and axis. If the provider omits dew
+point, the card calculates it from that forecast slot's temperature and relative
+humidity using the [Magnus equation](https://www.npl.co.uk/resources/q-a/dew-point-and-relative-humidity).
+The legend marks a line containing calculated readings as **Dew point (calculated)**.
+Provider-supplied dew points take priority. Calculation supports °C, °F, and K,
+with temperatures and calculated dew points between −45 °C and 60 °C. Missing or
+invalid inputs leave gaps; metrics with no usable readings are omitted. Overlays appear only in the hourly temperature /
+precipitation view and do not affect daily forecasts or other chart views.
+
+```yaml
+entity: weather.forecast_home
+panels:
+  - type: hourly
+    title: Hourly weather
+    span: 12
+    rows: 3
+    chart_attribute: temperature_and_precipitation
+    show_attribute_selector: true
+    chart_overlays:
+      - dew_point
+      - apparent_temperature
+```
+
+All three settings are available in the hourly panel's visual editor. By default,
+no overlays or metric selector are shown. Forecast metrics require values supplied
+by the weather provider; current-weather sensors do not supply future readings.
+
 ## Notes
 
 - An OpenWeatherMap API key in the card's config can be read by anyone who can view the dashboard.
