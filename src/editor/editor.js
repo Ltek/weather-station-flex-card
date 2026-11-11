@@ -49,6 +49,8 @@ const MAP_LABELS = { wind_bearing: "Wind direction", precipitation: "Rain rate" 
 const STATION_FIELDS = [
   { name: "condition_source", label: "Current condition from", selector: { select: { options: [{ value: "entity", label: "The weather entity" }, { value: "station", label: "Your station's readings (the entity fills in the rest)" }] } }, default: "entity",
     helper: "With the station: rain rate, solar radiation (or light), humidity, wind, temperature and the lightning sensor decide sunny, partly cloudy, cloudy, rain, snow, fog, windy and lightning. The hero, bulletin and background follow it. At night, and when the sun is low, the entity's view of the sky is used." },
+  { name: "fog_check", label: "Fog check", selector: { boolean: {} }, default: true, helper: "Weather services report haze, smoke, dust and mist as fog. When the entity says fog but your station's humidity is below the limit, the card shows the sky your station sees (or the entity's cloud cover) instead." },
+  { name: "fog_check_humidity", label: "Real fog from", when: (d) => d.fog_check !== false, selector: { number: { min: 70, max: 100, step: 1, mode: "slider", unit_of_measurement: "%" } }, default: 90, helper: "Humidity at or above this lets the entity's fog stand." },
   { name: "station_solar_scale", label: "Clear-sky calibration", when: (d) => d.condition_source === "station", selector: { number: { min: 20, max: 160, step: 5, mode: "slider", unit_of_measurement: "%" } },
     helper: "Auto (not set): learned from the sensor's last 10 days against the clear-sky model, so it's judged against its own clear days. Set it to force a value: lower if clear days read as cloudy, higher if cloudy days read as sunny." },
   { name: "station_windy_mph", label: "Windy from", when: (d) => d.condition_source === "station", selector: { number: { min: 10, max: 60, step: 1, mode: "slider", unit_of_measurement: "mph" } }, default: 25 },
@@ -774,7 +776,7 @@ class WeatherStationFlexCardEditor extends LitElement {
           this._emit(next);
         }}></wsfc-sources-editor>
       ${this._general([["Current condition", STATION_FIELDS]])}
-      ${this._config.condition_source === "station" ? html`<p class="hint cond-now"><b>Now:</b> ${conditionSummary(this.hass, this._station, this._config)}</p>` : nothing}
+      ${this._config.condition_source === "station" || this.hass?.states?.[this._config.entity]?.state === "fog" ? html`<p class="hint cond-now"><b>Now:</b> ${conditionSummary(this.hass, this._station, this._config)}</p>` : nothing}
       <details class="sub">
         <summary><ha-icon icon="mdi:format-list-checks"></ha-icon><span>Values used</span><span class="cnt">${found} of ${rows.length} found</span></summary>
         <div class="map">

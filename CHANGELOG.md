@@ -1,5 +1,12 @@
 # Changelog
 
+## v2026.11.11.114
+
+- **Fog check (on by default):** weather services report haze, smoke, dust and mist as "fog". Home Assistant's OpenWeatherMap integration does this, so on a sunny but hazy or smoky day the card showed fog.
+  - When the weather entity says fog but your station's humidity is below 90 % (adjustable: Data Sources → Real fog from), the card shows the sky your station sees: sunny, partly cloudy or cloudy from its light sensor in daylight. Near sunrise and sunset and at night it uses the entity's cloud cover instead.
+  - This works with either condition source. The animated background, the hero and the bulletin all follow it, and the editor's Now line says when it overrode the entity.
+  - Real fog (humid air) still shows as fog.
+
 ## v2026.11.08.113
 
 - **Place inside the hero.** The Sky Tracker, Daily, Hourly and Forecast panels have a new **Place** setting: in the grid as their own panel (default), or **inside the hero panel**.

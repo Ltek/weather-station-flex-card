@@ -110,6 +110,36 @@ export function lightDetails(hass, station, now = new Date(), c = {}) {
   return { reading: v.value, unit: sr ? "W/m²" : "lx", entity: v.entity, model, scale, clear, ratio: Math.min(1.3, v.value / clear), elevation: el };
 }
 
+/**
+ * Fog check: weather services report haze, smoke, dust and mist as "fog"
+ * (Home Assistant's OpenWeatherMap integration does). When the station's
+ * humidity is below `fog_check_humidity` (90 %), that isn't fog: the sky is
+ * judged from the station's light in daylight, else from the entity's cloud
+ * cover. Returns the replacement condition, or null when the fog stands.
+ */
+export function notFog(hass, station, c = {}, now = new Date()) {
+  if (c.fog_check === false) return null;
+  const w = hass?.states?.[station?.entity];
+  const hum = num(metricValue(station, hass, "humidity"))?.value;
+  const limit = Number(c.fog_check_humidity) || 90;
+  if (hum == null || hum >= limit) return null;
+  const el = sunElevation(hass, now);
+  const night = el != null ? el < -3 : /night/.test(w?.state || "");
+  const clear = night ? null : skyClearness(hass, station, now, c);
+  if (clear != null) return clear >= 0.7 ? "sunny" : clear >= 0.35 ? "partlycloudy" : "cloudy";
+  const cover = Number(w?.attributes?.cloud_coverage);
+  if (Number.isFinite(cover)) return cover >= 70 ? "cloudy" : cover >= 20 ? "partlycloudy" : night ? "clear-night" : "sunny";
+  return night ? "clear-night" : "sunny";
+}
+
+/** The condition the card shows: the station's (condition_source: station) or the entity's, after the fog check. */
+export function shownCondition(hass, station, c = {}, now = new Date()) {
+  const w = hass?.states?.[station?.entity];
+  if (!w) return null;
+  const base = c.condition_source === "station" ? stationCondition(hass, station, c, now) ?? w.state : w.state;
+  return base === "fog" ? notFog(hass, station, c, now) ?? "fog" : base;
+}
+
 export function stationCondition(hass, station, c = {}, now = new Date()) {
   if (!hass || !station?.entity) return null;
   const w = hass.states[station.entity];
@@ -141,7 +171,8 @@ export function stationCondition(hass, station, c = {}, now = new Date()) {
 
   if (night) {
     // The station can't see night-time cloud: use the entity's view of the sky.
-    const es = w?.state;
+    // (Entity "fog" that the fog check rejects counts as its replacement.)
+    const es = w?.state === "fog" ? notFog(hass, station, c, now) ?? "fog" : w?.state;
     if (windy) return es === "cloudy" || es === "partlycloudy" || es === "windy-variant" ? "windy-variant" : "windy";
     if (!es || /sunny|clear/.test(es)) return "clear-night";
     if (["cloudy", "partlycloudy", "fog", "windy", "windy-variant", "exceptional"].includes(es)) return es === "partlycloudy" ? "partlycloudy" : es === "windy" ? "clear-night" : "cloudy";
@@ -168,15 +199,18 @@ export function conditionSummary(hass, station, c = {}, now = new Date()) {
   else if (d) parts.push(`${Math.round(d.reading)} ${d.unit} of a clear-sky ${Math.round(d.clear)} (model ${Math.round(d.model)} × calibration ${d.scale.toFixed(2)}, sun at ${d.elevation.toFixed(0)}°) = ${Math.round(d.ratio * 100)} %`);
   const rate = num(metricValue(station, hass, "precipitation")), hum = num(metricValue(station, hass, "humidity")), wind = num(metricValue(station, hass, "wind_speed"));
   parts.push(`rain ${rate ? `${rate.value} ${rate.unit}` : "—"} · humidity ${hum ? `${hum.value} %` : "—"} · wind ${wind ? `${wind.value} ${wind.unit}` : "—"}`);
-  return `${parts.join(" · ")} → ${result ? name(result) : "no verdict"}. Entity: ${name(w?.attributes?.wsfc_entity_condition || w?.state)}.`;
+  const ent = w?.attributes?.wsfc_entity_condition || w?.state;
+  const shown = shownCondition(hass, station, c, now);
+  const fogNote = ent === "fog" && shown !== "fog" ? ` The entity's "fog" isn't fog at ${hum?.value} % humidity (under ${Number(c.fog_check_humidity) || 90} %): likely haze or smoke.` : "";
+  return `${parts.join(" · ")} → ${result ? name(result) : "no verdict"}. Entity: ${name(ent)}.${fogNote}`;
 }
 
 /** hass with the weather entity's state replaced (same object while nothing changed). */
-export function deriveHass(hass, entity, condition, cache) {
+export function deriveHass(hass, entity, condition, cache, source = "station") {
   const st = hass?.states?.[entity];
   if (!st || !condition || st.state === condition) return hass;
   if (cache && cache.hass === hass && cache.cond === condition) return cache.out;
-  const out = { ...hass, states: { ...hass.states, [entity]: { ...st, state: condition, attributes: { ...st.attributes, wsfc_entity_condition: st.state, wsfc_condition_source: "station" } } } };
+  const out = { ...hass, states: { ...hass.states, [entity]: { ...st, state: condition, attributes: { ...st.attributes, wsfc_entity_condition: st.state, wsfc_condition_source: source } } } };
   if (cache) Object.assign(cache, { hass, cond: condition, out });
   return out;
 }

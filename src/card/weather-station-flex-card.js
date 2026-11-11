@@ -22,9 +22,9 @@ globalThis.__wsfcStorm = { planFlash, boltPath, LIGHTNING_COLORS, cloudPuffs };
 import { trackerConfig } from "../panels/flex.js";
 import { resolveWfc } from "./core.js";
 globalThis.__wsfcTracker = { trackerConfig, resolveWfc };
-import { stationCondition, deriveHass, clearSkyRadiation, skyClearness, ensureSolarScale, conditionSummary, resetSolarScale, sunElevation } from "./condition.js";
+import { stationCondition, shownCondition, notFog, deriveHass, clearSkyRadiation, skyClearness, ensureSolarScale, conditionSummary, resetSolarScale, sunElevation } from "./condition.js";
 import { metricEntity } from "./metrics.js";
-globalThis.__wsfcCondition = { stationCondition, clearSkyRadiation, skyClearness, metricEntity, conditionSummary, resetSolarScale, sunElevation };
+globalThis.__wsfcCondition = { stationCondition, shownCondition, notFog, clearSkyRadiation, skyClearness, metricEntity, conditionSummary, resetSolarScale, sunElevation };
 import "../panels/flex.js";
 import "../panels/graph.js";
 import "../panels/wind.js";
@@ -700,10 +700,12 @@ class WeatherStationFlexCard extends LitElement {
   willUpdate(changed) {
     // Current condition from the station: the weather entity's state is replaced
     // in the hass every panel sees (changes here don't start another update).
-    if ((changed.has("hass") || changed.has("_config")) && this.hass && this._config?.condition_source === "station") {
-      ensureSolarScale(this.hass, this._station, this._config, () => this.requestUpdate());
-      const cond = stationCondition(this.hass, this._station, this._config);
-      this.hass = deriveHass(this.hass, this._config.entity, cond, (this._condCache ||= {}));
+    // The fog check applies either way: an entity "fog" with low station humidity is haze or smoke.
+    if ((changed.has("hass") || changed.has("_config")) && this.hass && this._config) {
+      const station = this._config.condition_source === "station";
+      if (station || this._config.fog_check !== false) ensureSolarScale(this.hass, this._station, this._config, () => this.requestUpdate());
+      const cond = shownCondition(this.hass, this._station, this._config);
+      this.hass = deriveHass(this.hass, this._config.entity, cond, (this._condCache ||= {}), station ? "station" : "fog_check");
     }
   }
 
