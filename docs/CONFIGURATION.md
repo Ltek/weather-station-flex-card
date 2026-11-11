@@ -36,6 +36,8 @@ With no `panels:` the card shows its default dashboard (hero, bulletin, Sky Trac
 | Option | Value | Default | What it does |
 |---|---|---|---|
 | `condition_source` | `entity` · `station` | `entity` | **Current condition from** — With the station: rain rate, solar radiation (or light), humidity, wind, temperature and the lightning sensor decide sunny, partly cloudy, cloudy, rain, snow, fog, windy and lightning. The hero, bulletin and background follow it. At night, and when the sun is low, the entity's view of the sky is used. |
+| `fog_check` | `true` / `false` | `true` | **Fog check** — Weather services report haze, smoke, dust and mist as fog. When the entity says fog but your station's humidity is below the limit, the card shows the sky your station sees (or the entity's cloud cover) instead. |
+| `fog_check_humidity` | number 70–100 % | `90` | **Real fog from** — Humidity at or above this lets the entity's fog stand. |
 | `station_solar_scale` | number 20–160 % |  | **Clear-sky calibration** — Auto (not set): learned from the sensor's last 10 days against the clear-sky model, so it's judged against its own clear days. Set it to force a value: lower if clear days read as cloudy, higher if cloudy days read as sunny. |
 | `station_windy_mph` | number 10–60 mph | `25` | **Windy from** |
 | `station_pouring_inh` | number 0.1–1 in/h | `0.3` | **Pouring from** |
