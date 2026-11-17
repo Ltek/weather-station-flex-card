@@ -8,7 +8,7 @@ import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
-const require = createRequire("/shared/user/code/_tests/package.json");
+const require = createRequire(path.join(root, "package.json")); // the repo's own devDependencies (happy-dom)
 const { Window } = require("happy-dom");
 const win = new Window({ url: "http://localhost/" });
 for (const k of ["window", "document", "customElements", "HTMLElement", "CustomEvent", "Event", "Node", "navigator", "getComputedStyle", "ResizeObserver", "CSSStyleSheet", "ShadowRoot", "Element", "DocumentFragment", "MutationObserver", "requestAnimationFrame", "cancelAnimationFrame", "Document", "Text", "Comment", "HTMLTemplateElement", "NodeFilter", "HTMLCanvasElement", "TreeWalker", "DOMParser", "matchMedia", "Image", "HTMLDivElement", "localStorage"]) {

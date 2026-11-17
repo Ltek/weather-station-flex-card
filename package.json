@@ -5,7 +5,6 @@
   "description": "Full-screen capable weather station dashboard card for Home Assistant (Ltek)",
   "license": "MIT",
   "scripts": {
-    "port": "node scripts/port-wfc-sections.mjs",
     "build": "node build.mjs",
     "preview": "node build.mjs --preview && node scripts/serve.mjs",
     "docs:config": "node build.mjs && node scripts/gen-config-doc.mjs"
@@ -27,6 +26,7 @@
   "devDependencies": {
     "acorn": "8.14.0",
     "acorn-walk": "8.3.4",
-    "esbuild": "0.28.2"
+    "esbuild": "0.28.2",
+    "happy-dom": "^21.0.1"
   }
 }
